@@ -1,39 +1,42 @@
 {
-  "global": {
-    "palette": {
-      "blue": {
-        "100": { "value": "#E0F7FA", "type": "color" },
-        "200": { "value": "#B2EBF2", "type": "color" },
-        "500": { "value": "#00BCD4", "type": "color" },
-        "700": { "value": "#0097A7", "type": "color" }
-      },
-      "green": {
-        "500": { "value": "#A5D6A7", "type": "color" }
-      },
-      "gold": {
-        "500": { "value": "#FFD54F", "type": "color" }
-      },
-      "neutral": {
-        "white": { "value": "#FFFFFF", "type": "color" },
-        "charcoal": { "value": "#333333", "type": "color" },
-        "gray": {
-          "100": { "value": "#F5F5F5", "type": "color" },
-          "300": { "value": "#E0E0E0", "type": "color" }
-        }
-      }
-    }
-  },
   "light": {
     "color": {
-      "primary": { "value": "{palette.blue.500}", "type": "color" },
-      "primaryVariant": { "value": "{palette.blue.700}", "type": "color" },
-      "secondary": { "value": "{palette.green.500}", "type": "color" },
-      "background": { "value": "{palette.neutral.white}", "type": "color" },
-      "surface": { "value": "{palette.neutral.gray.100}", "type": "color" },
-      "onPrimary": { "value": "{palette.neutral.white}", "type": "color" },
-      "onSecondary": { "value": "{palette.neutral.charcoal}", "type": "color" },
-      "onBackground": { "value": "{palette.neutral.charcoal}", "type": "color" },
-      "onSurface": { "value": "{palette.neutral.charcoal}", "type": "color" }
+      "primary": {
+        "$value": "#00BCD4",
+        "$type": "color"
+      },
+      "primaryVariant": {
+        "$value": "#0097A7",
+        "$type": "color"
+      },
+      "secondary": {
+        "$value": "#A5D6A7",
+        "$type": "color"
+      },
+      "background": {
+        "$value": "#FFFFFF",
+        "$type": "color"
+      },
+      "surface": {
+        "$value": "#F5F5F5",
+        "$type": "color"
+      },
+      "onPrimary": {
+        "$value": "#FFFFFF",
+        "$type": "color"
+      },
+      "onSecondary": {
+        "$value": "#333333",
+        "$type": "color"
+      },
+      "onBackground": {
+        "$value": "#333333",
+        "$type": "color"
+      },
+      "onSurface": {
+        "$value": "#333333",
+        "$type": "color"
+      }
     }
   }
 }
