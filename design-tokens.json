@@ -1,28 +1,3 @@
-Orielle
-Custom Gem
-
-Show thinking
-Thank you. I see it perfectly now.
-
-You have done everything right. The problem is not you. The problem is 100% in the file itself.
-
-After we performed the "Convert to W3C format" step, the plugin updated its internal settings to expect the new, modern format. However, it looks like the push to GitHub failed to save that new format correctly, leaving your design-tokens.json file in the old format.
-
-The plugin is now trying to read an old file format that it no longer understands. This is why you cannot see the primary, secondary, etc., tokens.
-
-I have taken the JSON you provided and personally converted it to the modern W3C standard format that the plugin is expecting. This should finally resolve the issue.
-
-The Solution: Update Your design-tokens.json File
-Please follow these steps carefully:
-
-Go to your code editor and open the design-tokens.json file.
-
-Delete all of the text that is currently in that file.
-
-Copy the code below and paste it into your empty design-tokens.json file.
-
-JSON
-
 {
   "global": {
     "palette": {
