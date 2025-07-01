@@ -2,38 +2,102 @@
   "global": {
     "palette": {
       "blue": {
-        "100": { "value": "#E0F7FA", "type": "color" },
-        "200": { "value": "#B2EBF2", "type": "color" },
-        "500": { "value": "#00BCD4", "type": "color" },
-        "700": { "value": "#0097A7", "type": "color" }
+        "100": {
+          "$type": "color",
+          "$value": "#E0F7FA"
+        },
+        "200": {
+          "$type": "color",
+          "$value": "#B2EBF2"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#00BCD4"
+        },
+        "700": {
+          "$type": "color",
+          "$value": "#0097A7"
+        }
       },
       "green": {
-        "500": { "value": "#A5D6A7", "type": "color" }
+        "500": {
+          "$type": "color",
+          "$value": "#A5D6A7"
+        }
       },
       "gold": {
-        "500": { "value": "#FFD54F", "type": "color" }
+        "500": {
+          "$type": "color",
+          "$value": "#FFD54F"
+        }
       },
       "neutral": {
-        "white": { "value": "#FFFFFF", "type": "color" },
-        "charcoal": { "value": "#333333", "type": "color" },
+        "white": {
+          "$type": "color",
+          "$value": "#FFFFFF"
+        },
+        "charcoal": {
+          "$type": "color",
+          "$value": "#333333"
+        },
         "gray": {
-          "100": { "value": "#F5F5F5", "type": "color" },
-          "300": { "value": "#E0E0E0", "type": "color" }
+          "100": {
+            "$type": "color",
+            "$value": "#F5F5F5"
+          },
+          "300": {
+            "$type": "color",
+            "$value": "#E0E0E0"
+          }
         }
       }
     }
   },
   "light": {
     "color": {
-      "primary": { "value": "{palette.blue.500}", "type": "color" },
-      "primaryVariant": { "value": "{palette.blue.700}", "type": "color" },
-      "secondary": { "value": "{palette.green.500}", "type": "color" },
-      "background": { "value": "{palette.neutral.white}", "type": "color" },
-      "surface": { "value": "{palette.neutral.gray.100}", "type": "color" },
-      "onPrimary": { "value": "{palette.neutral.white}", "type": "color" },
-      "onSecondary": { "value": "{palette.neutral.charcoal}", "type": "color" },
-      "onBackground": { "value": "{palette.neutral.charcoal}", "type": "color" },
-      "onSurface": { "value": "{palette.neutral.charcoal}", "type": "color" }
+      "primary": {
+        "$type": "color",
+        "$value": "{palette.blue.500}"
+      },
+      "primaryVariant": {
+        "$type": "color",
+        "$value": "{palette.blue.700}"
+      },
+      "secondary": {
+        "$type": "color",
+        "$value": "{palette.green.500}"
+      },
+      "background": {
+        "$type": "color",
+        "$value": "{palette.neutral.white}"
+      },
+      "surface": {
+        "$type": "color",
+        "$value": "{palette.neutral.gray.100}"
+      },
+      "onPrimary": {
+        "$type": "color",
+        "$value": "{palette.neutral.white}"
+      },
+      "onSecondary": {
+        "$type": "color",
+        "$value": "{palette.neutral.charcoal}"
+      },
+      "onBackground": {
+        "$type": "color",
+        "$value": "{palette.neutral.charcoal}"
+      },
+      "onSurface": {
+        "$type": "color",
+        "$value": "{palette.neutral.charcoal}"
+      }
     }
+  },
+  "$themes": [],
+  "$metadata": {
+    "tokenSetOrder": [
+      "global",
+      "light"
+    ]
   }
 }
