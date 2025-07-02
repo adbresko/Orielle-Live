@@ -1,12 +1,11 @@
 package com.orielle.ui.features.splash
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,18 +19,34 @@ import com.orielle.ui.theme.OrielleTheme
 fun SplashScreen() {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background // Uses your Orielle background color
+        color = MaterialTheme.colorScheme.primary // Uses the dark Orielle blue
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            // Your Orielle logo, which you have already added to the project
+            Spacer(modifier = Modifier.weight(1f))
+
             Image(
                 painter = painterResource(id = R.drawable.orielle_drop),
                 contentDescription = "Orielle Logo",
-                modifier = Modifier.size(150.dp) // Adjust size as needed
+                modifier = Modifier.size(80.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "ORIELLE",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onPrimary // White text for contrast
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // This is the circular loading spinner
+            CircularProgressIndicator(
+                modifier = Modifier.padding(bottom = 64.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+                strokeWidth = 3.dp
             )
         }
     }
