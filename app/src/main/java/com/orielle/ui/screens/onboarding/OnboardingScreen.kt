@@ -7,10 +7,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -18,14 +19,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.orielle.R
-import com.orielle.ui.components.OnboardingTextContent
 import com.orielle.ui.theme.OrielleTheme
 import kotlinx.coroutines.launch
 
@@ -36,10 +42,34 @@ private data class OnboardingPage(
     val description: String
 )
 
+/**
+ * A custom shape that creates the curved top for the onboarding card.
+ * It draws a path with a quadratic Bezier curve to create the dip effect.
+ */
+private class CustomOnboardingShape : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val path = Path().apply {
+            moveTo(0f, size.height) // Bottom-left
+            lineTo(0f, size.height * 0.2f) // Move up on the left side
+            quadraticBezierTo(
+                x1 = size.width / 2, y1 = -size.height * 0.1f, // Control point is above the shape, causing the dip
+                x2 = size.width, y2 = size.height * 0.2f // End point on the right side
+            )
+            lineTo(size.width, size.height) // Bottom-right
+            close()
+        }
+        return Outline.Generic(path)
+    }
+}
+
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen(onNavigateToAuth: () -> Unit) {
-    // Define the content for all three pages
     val pages = listOf(
         OnboardingPage(
             imageResId = R.drawable.onboarding_preview_home,
@@ -61,119 +91,180 @@ fun OnboardingScreen(onNavigateToAuth: () -> Unit) {
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val coroutineScope = rememberCoroutineScope()
 
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+    // UPDATED: Wrapped the entire screen in a Scaffold to handle system insets
+    Scaffold { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                // Apply the padding provided by Scaffold to respect system bars
+                .padding(innerPadding)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            // The top part of the screen, weighted to take up most of the space
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                // Pager for the image content
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxWidth()
-                ) { pageIndex ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        // This Box overlays the screenshot on the phone frame
-                        Box(
+            // --- BACKGROUND ---
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                userScrollEnabled = false
+            ) { pageIndex ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 50.dp),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                            .aspectRatio(345f / 700f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.onboarding_phone_frame),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Image(
+                            painter = painterResource(id = pages[pageIndex].imageResId),
+                            contentDescription = null,
                             modifier = Modifier
-                                .padding(horizontal = 32.dp)
-                                .aspectRatio(0.5f), // Approximate aspect ratio of a phone
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.onboarding_phone_frame),
-                                contentDescription = null, // Decorative
-                                modifier = Modifier.fillMaxSize()
-                            )
-                            Image(
-                                painter = painterResource(id = pages[pageIndex].imageResId),
-                                contentDescription = null, // Decorative
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(14.dp), // Adjust padding to fit screenshot in frame
-                                contentScale = ContentScale.FillBounds
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(48.dp))
-
-                        // Text content that changes with the pager
-                        OnboardingTextContent(
-                            title = pages[pageIndex].title,
-                            description = pages[pageIndex].description
+                                .fillMaxSize()
+                                .padding(all = 15.dp)
+                                .clip(RoundedCornerShape(45.dp)),
+                            contentScale = ContentScale.Fit
                         )
                     }
                 }
             }
 
-            // The bottom part of the screen for controls
-            Column(
+            // --- FOREGROUND CARD ---
+            Box(
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxHeight(0.55f)
+                    .clip(CustomOnboardingShape())
+                    .background(MaterialTheme.colorScheme.surface)
             ) {
-                // Pager Indicator
-                Row(
-                    Modifier.height(24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    repeat(pages.size) { iteration ->
-                        val color = if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-                        Box(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .size(8.dp)
-                                .background(color) // <-- CORRECTED THIS LINE
-                        )
-                    }
-                }
+                    Spacer(modifier = Modifier.height(80.dp))
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    OnboardingTextContent(
+                        title = pages[pagerState.currentPage].title,
+                        description = pages[pagerState.currentPage].description
+                    )
 
-                // Continue Button
-                Button(
-                    onClick = {
-                        if (pagerState.currentPage < pages.size - 1) {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                            }
-                        } else {
-                            onNavigateToAuth()
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Row(
+                        Modifier.height(24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        repeat(pages.size) { iteration ->
+                            val color = if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .size(8.dp)
+                                    .background(color)
+                            )
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .padding(horizontal = 24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text(text = "Continue")
-                }
+                    }
 
-                // Skip Button
-                TextButton(
-                    onClick = onNavigateToAuth,
-                    modifier = Modifier.height(48.dp)
-                ) {
-                    Text(text = "Skip", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        TextButton(
+                            onClick = onNavigateToAuth,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp)
+                        ) {
+                            Text(
+                                text = "Skip",
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                if (pagerState.currentPage < pages.size - 1) {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                    }
+                                } else {
+                                    onNavigateToAuth()
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            shape = CircleShape,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text(text = "Continue")
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
             }
         }
     }
 }
 
+@Composable
+private fun OnboardingTextContent(
+    modifier: Modifier = Modifier,
+    title: String,
+    description: String
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineLarge.copy(
+                textAlign = TextAlign.Center,
+                lineHeight = 44.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 28.sp,
+            ),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        )
+    }
+}
+
+
 @Preview(showBackground = true)
 @Composable
-private fun OnboardingScreenPreview() {
-    OrielleTheme {
+private fun OnboardingScreenLightPreview() {
+    OrielleTheme(darkTheme = false) {
+        OnboardingScreen(onNavigateToAuth = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun OnboardingScreenDarkPreview() {
+    OrielleTheme(darkTheme = true) {
         OnboardingScreen(onNavigateToAuth = {})
     }
 }
