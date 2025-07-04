@@ -105,7 +105,6 @@ fun WelcomeScreen(
             Divider()
             Spacer(Modifier.height(24.dp))
 
-            // Use our new custom branded button
             OriellePrimaryButton(
                 onClick = onNavigateToEmailSignUp,
                 modifier = Modifier.fillMaxWidth()
@@ -113,16 +112,18 @@ fun WelcomeScreen(
                 Text("Continue with Email")
             }
             TextButton(onClick = onNavigateToSignIn) {
+                // Explicitly set text color for high contrast
                 Text(
-                    text = "Already have an account? Sign In",
-                    color = MaterialTheme.colorScheme.onBackground // Use high-contrast color
+                    "Already have an account? Sign In",
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onNavigateToSanctuary) {
+                // Explicitly set text color for high contrast
                 Text(
-                    text = "Just Explore",
-                    color = MaterialTheme.colorScheme.onBackground // Use high-contrast color
+                    "Just Explore",
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
             Spacer(Modifier.height(16.dp))
@@ -153,7 +154,6 @@ fun WelcomeScreen(
 
 @Composable
 private fun SocialLoginButton(text: String, iconResId: Int, onClick: () -> Unit) {
-    // Use our new custom branded button
     OrielleOutlinedButton(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth()
@@ -164,9 +164,11 @@ private fun SocialLoginButton(text: String, iconResId: Int, onClick: () -> Unit)
             modifier = Modifier.size(24.dp),
             tint = Color.Unspecified
         )
+        // Explicitly set text color for high contrast
         Text(
             text = text,
-            modifier = Modifier.padding(start = 16.dp)
+            modifier = Modifier.padding(start = 16.dp),
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }

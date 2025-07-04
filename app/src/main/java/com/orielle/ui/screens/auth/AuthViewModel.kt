@@ -2,6 +2,7 @@ package com.orielle.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.orielle.domain.model.Response
 import com.orielle.domain.use_case.SignInUseCase
 import com.orielle.domain.use_case.SignInWithAppleUseCase
@@ -18,10 +19,14 @@ class AuthViewModel @Inject constructor(
     private val signUpUseCase: SignUpUseCase,
     private val signInUseCase: SignInUseCase,
     private val signInWithGoogleUseCase: SignInWithGoogleUseCase,
-    private val signInWithAppleUseCase: SignInWithAppleUseCase
+    private val signInWithAppleUseCase: SignInWithAppleUseCase,
+    private val auth: FirebaseAuth // Inject FirebaseAuth to check current user
 ) : ViewModel() {
 
     // --- UI State ---
+    private val _isUserAuthenticated = MutableStateFlow<Boolean?>(null)
+    val isUserAuthenticated = _isUserAuthenticated.asStateFlow()
+
     private val _displayName = MutableStateFlow("")
     val displayName = _displayName.asStateFlow()
 
@@ -37,7 +42,15 @@ class AuthViewModel @Inject constructor(
     private val _authResponse = MutableStateFlow<Response<Boolean>?>(null)
     val authResponse = _authResponse.asStateFlow()
 
-    // --- Event Handlers ---
+    init {
+        // This function will now correctly reference the 'auth' property of the class.
+        checkUserAuthentication()
+    }
+
+    private fun checkUserAuthentication() {
+        _isUserAuthenticated.value = auth.currentUser != null
+    }
+
     fun onDisplayNameChange(newName: String) {
         _displayName.value = newName
     }
@@ -54,7 +67,6 @@ class AuthViewModel @Inject constructor(
         _hasAgreedToTerms.value = isAgreed
     }
 
-    // --- Actions ---
     fun signUp() {
         viewModelScope.launch {
             signUpUseCase(displayName.value, email.value, password.value).collect { response ->
