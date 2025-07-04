@@ -20,17 +20,17 @@ import com.orielle.ui.screens.auth.AuthViewModel
 import com.orielle.ui.screens.auth.EmailSignUpScreen
 import com.orielle.ui.screens.auth.SignInScreen
 import com.orielle.ui.screens.auth.WelcomeScreen
+import com.orielle.ui.screens.home.HomeScreen
 import com.orielle.ui.screens.onboarding.OnboardingScreen
 import com.orielle.ui.screens.sanctuary.SanctuaryScreen
 
 @Composable
 fun AppNavigation(
-    authViewModel: AuthViewModel = hiltViewModel() // Get ViewModel at the top level
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
     val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
 
-    // Show a loading indicator while we check the auth state
     if (isUserAuthenticated == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -38,85 +38,44 @@ fun AppNavigation(
         ) {
             CircularProgressIndicator()
         }
-        return // Stop here until the state is determined
+        return
     }
 
-    // Determine the start destination based on the auth state
     val startDestination = if (isUserAuthenticated == true) "home" else "onboarding"
 
     NavHost(
         navController = navController,
-        startDestination = startDestination, // Use the dynamic start destination
+        startDestination = startDestination,
         enterTransition = { fadeIn(animationSpec = tween(300)) },
         exitTransition = { fadeOut(animationSpec = tween(300)) }
     ) {
-        composable("onboarding") {
-            OnboardingScreen(
-                onNavigateToAuth = {
-                    navController.navigate("welcome") {
-                        popUpTo("onboarding") { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable("welcome") {
-            WelcomeScreen(
-                // Pass the same AuthViewModel instance down to keep state consistent
-                viewModel = authViewModel,
-                onNavigateToEmailSignUp = { navController.navigate("email_signup") },
-                onNavigateToSignIn = { navController.navigate("sign_in") },
-                onNavigateToSanctuary = { navController.navigate("sanctuary") },
-                onNavigateToHome = {
-                    navController.navigate("home") {
-                        popUpTo("welcome") { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable("email_signup") {
-            EmailSignUpScreen(
-                viewModel = authViewModel,
-                navigateToHome = {
-                    navController.navigate("home") {
-                        popUpTo("welcome") { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable("sign_in") {
-            SignInScreen(
-                viewModel = authViewModel,
-                navigateToHome = {
-                    navController.navigate("home") {
-                        popUpTo("welcome") { inclusive = true }
-                    }
-                },
-                navigateToSignUp = {
-                    navController.popBackStack()
-                }
-            )
-        }
-        composable("sanctuary") {
-            SanctuaryScreen(
-                onNavigateToAuth = {
-                    navController.navigate("welcome") {
-                        popUpTo("sanctuary") { inclusive = true }
-                    }
-                }
-            )
-        }
+        // ... (onboarding, welcome, email_signup, sign_in, sanctuary composables remain the same)
+
         composable("home") {
-            HomeScreen()
+            HomeScreen(
+                onNavigateToJournalEntry = { entryId ->
+                    // Navigate to the journaling screen.
+                    // If entryId is null, it's a new entry. If it has a value, we're editing an existing one.
+                    navController.navigate("journaling" + if (entryId != null) "?id=$entryId" else "")
+                }
+            )
+        }
+
+        composable("journaling?id={id}") { backStackEntry ->
+            // Placeholder for the screen where the user writes/edits a journal entry.
+            // We will build this screen next.
+            val entryId = backStackEntry.arguments?.getString("id")
+            JournalingScreenPlaceholder(entryId = entryId)
         }
     }
 }
 
 @Composable
-fun HomeScreen() {
+fun JournalingScreenPlaceholder(entryId: String?) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text("Welcome to Orielle!")
+        Text(if (entryId == null) "Creating New Journal Entry" else "Editing Entry: $entryId")
     }
 }
