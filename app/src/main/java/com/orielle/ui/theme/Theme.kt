@@ -7,13 +7,12 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = StillwaterTeal, // Use Stillwater Teal for primary actions in dark mode
+    primary = StillwaterTeal,
     onPrimary = White,
     secondary = AuroraGold,
     onSecondary = Charcoal,
@@ -26,16 +25,16 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = StillwaterTeal,      // Use Stillwater Teal for high-contrast primary actions
-    onPrimary = White,            // Text on top of Stillwater Teal should be white
-    primaryContainer = WaterBlue, // Use the original, lighter blue for container backgrounds
+    primary = StillwaterTeal,      // For filled buttons and major interactive elements
+    onPrimary = White,            // Text on top of StillwaterTeal buttons
+    primaryContainer = WaterBlue,
     onPrimaryContainer = Charcoal,
     secondary = AuroraGold,
     onSecondary = Charcoal,
     background = SoftSand,
-    onBackground = Charcoal,
+    onBackground = Charcoal,      // Default text color on background is high-contrast
     surface = White,
-    onSurface = Charcoal,
+    onSurface = Charcoal,         // Default text color on cards/surfaces is high-contrast
     error = ErrorRed,
     onError = White
 )

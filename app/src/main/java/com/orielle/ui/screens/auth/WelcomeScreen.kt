@@ -113,11 +113,17 @@ fun WelcomeScreen(
                 Text("Continue with Email")
             }
             TextButton(onClick = onNavigateToSignIn) {
-                Text("Already have an account? Sign In")
+                Text(
+                    text = "Already have an account? Sign In",
+                    color = MaterialTheme.colorScheme.onBackground // Use high-contrast color
+                )
             }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onNavigateToSanctuary) {
-                Text("Just Explore")
+                Text(
+                    text = "Just Explore",
+                    color = MaterialTheme.colorScheme.onBackground // Use high-contrast color
+                )
             }
             Spacer(Modifier.height(16.dp))
         }
