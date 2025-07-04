@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.orielle.domain.model.Response
 import com.orielle.domain.use_case.SignInUseCase
+import com.orielle.domain.use_case.SignInWithAppleUseCase
 import com.orielle.domain.use_case.SignInWithGoogleUseCase
 import com.orielle.domain.use_case.SignUpUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +17,8 @@ import javax.inject.Inject
 class AuthViewModel @Inject constructor(
     private val signUpUseCase: SignUpUseCase,
     private val signInUseCase: SignInUseCase,
-    private val signInWithGoogleUseCase: SignInWithGoogleUseCase // Inject the new use case
+    private val signInWithGoogleUseCase: SignInWithGoogleUseCase,
+    private val signInWithAppleUseCase: SignInWithAppleUseCase
 ) : ViewModel() {
 
     // --- UI State ---
@@ -28,6 +30,9 @@ class AuthViewModel @Inject constructor(
 
     private val _password = MutableStateFlow("")
     val password = _password.asStateFlow()
+
+    private val _hasAgreedToTerms = MutableStateFlow(false)
+    val hasAgreedToTerms = _hasAgreedToTerms.asStateFlow()
 
     private val _authResponse = MutableStateFlow<Response<Boolean>?>(null)
     val authResponse = _authResponse.asStateFlow()
@@ -45,6 +50,11 @@ class AuthViewModel @Inject constructor(
         _password.value = newPassword
     }
 
+    fun onTermsAgreementChange(isAgreed: Boolean) {
+        _hasAgreedToTerms.value = isAgreed
+    }
+
+    // --- Actions ---
     fun signUp() {
         viewModelScope.launch {
             signUpUseCase(displayName.value, email.value, password.value).collect { response ->
@@ -61,14 +71,17 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Triggers the Google sign-in process by launching a coroutine
-     * and calling the SignInWithGoogleUseCase.
-     * @param idToken The ID token received from the Google Sign-In activity result.
-     */
     fun signInWithGoogle(idToken: String) {
         viewModelScope.launch {
             signInWithGoogleUseCase(idToken).collect { response ->
+                _authResponse.value = response
+            }
+        }
+    }
+
+    fun signInWithApple(idToken: String) {
+        viewModelScope.launch {
+            signInWithAppleUseCase(idToken).collect { response ->
                 _authResponse.value = response
             }
         }

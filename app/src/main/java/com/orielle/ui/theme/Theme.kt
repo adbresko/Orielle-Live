@@ -12,14 +12,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Define a new, darker blue for high-contrast primary actions
-private val DeepWaterBlue = Color(0xFF006599)
-
 private val DarkColorScheme = darkColorScheme(
-    primary = WaterBlue, // Keep the lighter blue as the primary accent in dark mode
-    onPrimary = Charcoal,
+    primary = StillwaterTeal, // Use Stillwater Teal for primary actions in dark mode
+    onPrimary = White,
     secondary = AuroraGold,
-    onSecondary = OnAuroraGold,
+    onSecondary = Charcoal,
     background = DarkGray,
     onBackground = White,
     surface = DarkGray,
@@ -29,12 +26,12 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = DeepWaterBlue, // Use the high-contrast blue for primary actions (buttons, links)
-    onPrimary = White,       // Text on top of DeepWaterBlue should be white
+    primary = StillwaterTeal,      // Use Stillwater Teal for high-contrast primary actions
+    onPrimary = White,            // Text on top of Stillwater Teal should be white
     primaryContainer = WaterBlue, // Use the original, lighter blue for container backgrounds
     onPrimaryContainer = Charcoal,
     secondary = AuroraGold,
-    onSecondary = OnAuroraGold,
+    onSecondary = Charcoal,
     background = SoftSand,
     onBackground = Charcoal,
     surface = White,
@@ -54,7 +51,6 @@ fun OrielleTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // Use the background color for the status bar for a more seamless look
             window.statusBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
@@ -63,7 +59,7 @@ fun OrielleTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        shapes = OrielleShapes, // Integrate custom shapes
+        shapes = OrielleShapes,
         content = content
     )
 }

@@ -26,6 +26,8 @@ import com.google.android.gms.common.api.ApiException
 import com.orielle.R
 import com.orielle.domain.model.Response
 import com.orielle.ui.components.OrielleLogo
+import com.orielle.ui.components.OrielleOutlinedButton
+import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.theme.OrielleTheme
 
 @Composable
@@ -102,7 +104,12 @@ fun WelcomeScreen(
             Spacer(Modifier.height(24.dp))
             Divider()
             Spacer(Modifier.height(24.dp))
-            Button(onClick = onNavigateToEmailSignUp, modifier = Modifier.fillMaxWidth()) {
+
+            // Use our new custom branded button
+            OriellePrimaryButton(
+                onClick = onNavigateToEmailSignUp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text("Continue with Email")
             }
             TextButton(onClick = onNavigateToSignIn) {
@@ -115,7 +122,7 @@ fun WelcomeScreen(
             Spacer(Modifier.height(16.dp))
         }
 
-        // Handle the auth response for Google Sign-In
+        // Handle the auth response from the ViewModel
         when (val response = authResponse) {
             is Response.Loading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -140,7 +147,8 @@ fun WelcomeScreen(
 
 @Composable
 private fun SocialLoginButton(text: String, iconResId: Int, onClick: () -> Unit) {
-    OutlinedButton(
+    // Use our new custom branded button
+    OrielleOutlinedButton(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth()
     ) {

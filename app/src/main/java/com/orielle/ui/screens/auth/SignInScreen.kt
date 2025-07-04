@@ -14,13 +14,15 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.orielle.domain.model.Response
 import com.orielle.ui.components.OrielleLogo
+import com.orielle.ui.components.OriellePrimaryButton
+import com.orielle.ui.components.SocialLoginOptions
 import com.orielle.ui.theme.OrielleTheme
 
 @Composable
 fun SignInScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     navigateToHome: () -> Unit,
-    navigateToSignUp: () -> Unit // Add navigation callback to go back
+    navigateToSignUp: () -> Unit
 ) {
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
@@ -42,13 +44,13 @@ fun SignInScreen(
             Spacer(Modifier.height(24.dp))
 
             AuthFormFields(
-                displayName = "", // Not used for sign-in
-                onDisplayNameChange = {}, // Not used for sign-in
+                displayName = "",
+                onDisplayNameChange = {},
                 email = email,
                 onEmailChange = viewModel::onEmailChange,
                 password = password,
                 onPasswordChange = viewModel::onPasswordChange,
-                isSignUp = false // Explicitly state this is not the sign-up form
+                isSignUp = false
             )
 
             TextButton(
@@ -60,22 +62,27 @@ fun SignInScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            Button(
+            OriellePrimaryButton(
                 onClick = { viewModel.signIn() },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Sign In")
             }
 
+            Spacer(Modifier.height(24.dp))
+
+            SocialLoginOptions(
+                onGoogleSignInClick = { /* TODO */ },
+                onAppleSignInClick = { /* TODO */ }
+            )
+
             Spacer(Modifier.height(8.dp))
 
-            // Add a link to go back to the sign-up flow
             TextButton(onClick = navigateToSignUp) {
                 Text("Don't have an account? Sign Up")
             }
         }
 
-        // Handle the response from the ViewModel with improved error messages
         when (val response = authResponse) {
             is Response.Loading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -84,14 +91,11 @@ fun SignInScreen(
             }
 
             is Response.Success -> {
-                LaunchedEffect(Unit) {
-                    navigateToHome()
-                }
+                LaunchedEffect(Unit) { navigateToHome() }
             }
 
             is Response.Failure -> {
                 val context = LocalContext.current
-                // Provide human-readable error messages based on the exception type
                 val message = when (response.exception) {
                     is FirebaseAuthInvalidUserException -> "No account found with this email."
                     is FirebaseAuthInvalidCredentialsException -> "Incorrect password. Please try again."
@@ -102,9 +106,7 @@ fun SignInScreen(
                 }
             }
 
-            null -> {
-                // Initial state
-            }
+            null -> {}
         }
     }
 }
