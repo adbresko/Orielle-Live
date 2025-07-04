@@ -2,9 +2,11 @@
 # Android Gradle Plugin & Kotlin
 # Using the latest stable AGP and the corresponding Kotlin & KSP versions for compatibility.
 androidGradlePlugin = "8.10.1"
+firebaseBomVersion = "33.16.0"
 kotlin = "1.9.24"
 ksp = "1.9.24-1.0.20"
 hiltNavigationCompose = "1.2.0"
+googleServices = "4.4.2"
 
 # Jetpack & AndroidX
 activityCompose = "1.9.0"
@@ -30,6 +32,8 @@ junit = "4.13.2"
 
 [libraries]
 # AndroidX & Core
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-bom-v33160 = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBomVersion" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -77,3 +81,4 @@ android-application = { id = "com.android.application", version.ref = "androidGr
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 hilt-android-plugin = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

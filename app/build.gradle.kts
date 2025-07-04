@@ -4,6 +4,7 @@ plugins {
     id("kotlin-kapt")
     alias(libs.plugins.hilt.android.plugin)
     alias(libs.plugins.ksp) // Apply the KSP plugin using its alias
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -82,6 +83,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.google.services.auth)
+    implementation(libs.firebase.analytics)
 
     // Media - For Video Playback
     implementation(libs.androidx.media3.exoplayer)

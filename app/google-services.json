@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "217018999526",
+    "project_id": "orielle-8926b",
+    "storage_bucket": "orielle-8926b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:217018999526:android:52a5eb83d33f68dc401127",
+        "android_client_info": {
+          "package_name": "com.orielle"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "217018999526-5f091iissnddgn04g42ra6qvb2hmu8ue.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.orielle",
+            "certificate_hash": "d7493b3f84430432831e28197311e008a75c0a50"
+          }
+        },
+        {
+          "client_id": "217018999526-qgtf71gnmvo1ob66pbfsjhh4t29rj9f8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBN-E1yVuVeOfMsFnjCi_Sup_wZAx9Eg6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "217018999526-j23lm2aee7bo0pvdtbjh79nm08hfvi87.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

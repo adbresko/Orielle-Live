@@ -1,5 +1,8 @@
 package com.orielle.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -9,38 +12,73 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.orielle.ui.screens.auth.AuthScreen
+import com.orielle.ui.screens.auth.EmailSignUpScreen
+import com.orielle.ui.screens.auth.SignInScreen
+import com.orielle.ui.screens.auth.WelcomeScreen
 import com.orielle.ui.screens.onboarding.OnboardingScreen
+import com.orielle.ui.screens.sanctuary.SanctuaryScreen
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = "onboarding"
+        startDestination = "onboarding",
+        enterTransition = { fadeIn(animationSpec = tween(300)) },
+        exitTransition = { fadeOut(animationSpec = tween(300)) }
     ) {
         composable("onboarding") {
             OnboardingScreen(
                 onNavigateToAuth = {
-                    navController.navigate("auth") {
-                        // Prevent going back to onboarding from auth
+                    navController.navigate("welcome") {
                         popUpTo("onboarding") { inclusive = true }
                     }
                 }
             )
         }
-        composable("auth") {
-            AuthScreen(
+        composable("welcome") {
+            WelcomeScreen(
+                onNavigateToEmailSignUp = { navController.navigate("email_signup") },
+                onNavigateToSignIn = { navController.navigate("sign_in") },
+                onNavigateToSanctuary = { navController.navigate("sanctuary") },
+                onNavigateToHome = {
+                    navController.navigate("home") {
+                        popUpTo("welcome") { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable("email_signup") {
+            EmailSignUpScreen(
                 navigateToHome = {
                     navController.navigate("home") {
-                        // Clear the auth screen from the back stack
-                        popUpTo("auth") { inclusive = true }
+                        popUpTo("welcome") { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable("sign_in") {
+            SignInScreen(
+                navigateToHome = {
+                    navController.navigate("home") {
+                        popUpTo("welcome") { inclusive = true }
+                    }
+                },
+                navigateToSignUp = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable("sanctuary") {
+            SanctuaryScreen(
+                onNavigateToAuth = {
+                    navController.navigate("welcome") {
+                        popUpTo("sanctuary") { inclusive = true }
                     }
                 }
             )
         }
         composable("home") {
-            // Placeholder for the main screen after login
             HomeScreen()
         }
     }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.orielle.domain.model.Response
 import com.orielle.domain.use_case.SignInUseCase
+import com.orielle.domain.use_case.SignInWithGoogleUseCase
 import com.orielle.domain.use_case.SignUpUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,19 +15,27 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val signUpUseCase: SignUpUseCase,
-    private val signInUseCase: SignInUseCase
+    private val signInUseCase: SignInUseCase,
+    private val signInWithGoogleUseCase: SignInWithGoogleUseCase // Inject the new use case
 ) : ViewModel() {
 
-    // UI State for the input fields
+    // --- UI State ---
+    private val _displayName = MutableStateFlow("")
+    val displayName = _displayName.asStateFlow()
+
     private val _email = MutableStateFlow("")
     val email = _email.asStateFlow()
 
     private val _password = MutableStateFlow("")
     val password = _password.asStateFlow()
 
-    // UI State for the authentication response (Loading, Success, Failure)
     private val _authResponse = MutableStateFlow<Response<Boolean>?>(null)
     val authResponse = _authResponse.asStateFlow()
+
+    // --- Event Handlers ---
+    fun onDisplayNameChange(newName: String) {
+        _displayName.value = newName
+    }
 
     fun onEmailChange(newEmail: String) {
         _email.value = newEmail
@@ -36,25 +45,30 @@ class AuthViewModel @Inject constructor(
         _password.value = newPassword
     }
 
-    /**
-     * Triggers the sign-up process by launching a coroutine
-     * and calling the SignUpUseCase.
-     */
     fun signUp() {
         viewModelScope.launch {
-            signUpUseCase(email.value, password.value).collect { response ->
+            signUpUseCase(displayName.value, email.value, password.value).collect { response ->
+                _authResponse.value = response
+            }
+        }
+    }
+
+    fun signIn() {
+        viewModelScope.launch {
+            signInUseCase(email.value, password.value).collect { response ->
                 _authResponse.value = response
             }
         }
     }
 
     /**
-     * Triggers the sign-in process by launching a coroutine
-     * and calling the SignInUseCase.
+     * Triggers the Google sign-in process by launching a coroutine
+     * and calling the SignInWithGoogleUseCase.
+     * @param idToken The ID token received from the Google Sign-In activity result.
      */
-    fun signIn() {
+    fun signInWithGoogle(idToken: String) {
         viewModelScope.launch {
-            signInUseCase(email.value, password.value).collect { response ->
+            signInWithGoogleUseCase(idToken).collect { response ->
                 _authResponse.value = response
             }
         }
