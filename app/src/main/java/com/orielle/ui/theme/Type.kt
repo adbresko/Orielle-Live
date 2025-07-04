@@ -2,34 +2,51 @@ package com.orielle.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Per the Brand & UI/UX Foundation Document, Noto Sans is the primary UI font.
-// We will create a default Typography set based on this.
-// Specific instances of Lora for the wordmark will be applied directly as needed.
-
+// Defines the typography for the Orielle Theme, using the custom Lora and NotoSans fonts.
 val Typography = Typography(
-    bodyLarge = TextStyle(
-        fontFamily = FontFamily.Default, // Will default to Noto Sans once fonts are added
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
+    // For large, emotionally resonant titles (e.g., "Welcome to Orielle")
+    displayLarge = TextStyle(
+        fontFamily = Lora,
+        fontWeight = FontWeight.Bold,
+        fontSize = 32.sp,
+        lineHeight = 40.sp
     ),
+    // For standard page titles
+    headlineLarge = TextStyle(
+        fontFamily = Lora,
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 36.sp
+    ),
+    // For section titles
     titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
+        fontFamily = NotoSans,
         fontWeight = FontWeight.Bold,
         fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
+        lineHeight = 28.sp
     ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
+    // For primary body text, reflections, and prompts
+    bodyLarge = TextStyle(
+        fontFamily = NotoSans,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp, // 1.5x line height for readability
         letterSpacing = 0.5.sp
+    ),
+    // For interactive elements like buttons
+    labelLarge = TextStyle(
+        fontFamily = NotoSans,
+        fontWeight = FontWeight.Medium,
+        fontSize = 16.sp
+    ),
+    // For secondary text, captions, etc.
+    bodyMedium = TextStyle(
+        fontFamily = NotoSans,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+        lineHeight = 20.sp
     )
 )
