@@ -1,8 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("kotlin-kapt") // Add this line for annotation processing
-    alias(libs.plugins.hilt.android.plugin) // Add this line to apply Hilt
+    id("kotlin-kapt")
+    alias(libs.plugins.hilt.android.plugin)
+    alias(libs.plugins.ksp) // Apply the KSP plugin using its alias
 }
 
 android {
@@ -42,7 +43,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14" // Updated for Kotlin 1.9.24
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
     packaging {
         resources {
@@ -70,6 +71,22 @@ dependencies {
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
 
+    // Room - Local Database
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom)) // Import the BOM
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.google.services.auth)
+
+    // Media - For Video Playback
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.core.splashscreen)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -78,11 +95,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
-    // Media - For Video Playback
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.ui)
-    implementation(libs.androidx.core.splashscreen)
 }
 
 // Allow references to generated code
