@@ -4,21 +4,26 @@ import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -29,6 +34,29 @@ import com.orielle.ui.components.OrielleLogo
 import com.orielle.ui.components.OrielleOutlinedButton
 import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.theme.OrielleTheme
+import com.orielle.ui.theme.WaterRippleTheme
+
+// A custom shape that creates the curved top for the card.
+private class HalfMoonShape : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline {
+        val path = Path().apply {
+            moveTo(0f, size.height * 0.15f)
+            quadraticBezierTo(
+                x1 = size.width / 2, y1 = -size.height * 0.1f,
+                x2 = size.width, y2 = size.height * 0.15f
+            )
+            lineTo(size.width, size.height)
+            lineTo(0f, size.height)
+            close()
+        }
+        return Outline.Generic(path)
+    }
+}
+
 
 @Composable
 fun WelcomeScreen(
@@ -36,12 +64,12 @@ fun WelcomeScreen(
     onNavigateToEmailSignUp: () -> Unit,
     onNavigateToSignIn: () -> Unit,
     onNavigateToSanctuary: () -> Unit,
-    onNavigateToHome: () -> Unit
+    onNavigateToHome: () -> Unit,
 ) {
     val context = LocalContext.current
     val authResponse by viewModel.authResponse.collectAsState()
 
-    // --- Google Sign-In Logic ---
+    // Google Sign-In Logic remains the same...
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(context.getString(R.string.default_web_client_id))
@@ -68,114 +96,120 @@ fun WelcomeScreen(
             }
         }
     }
-    // --- End Google Sign-In Logic ---
 
-
-    Scaffold { paddingValues ->
-        Column(
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.weight(1f))
-            OrielleLogo()
-            Spacer(Modifier.height(16.dp))
-            Text("Let's Get Started!", style = MaterialTheme.typography.headlineLarge)
-            Text(
-                "Let's dive in to your account",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(32.dp))
-
-            SocialLoginButton(
-                text = "Continue with Google",
-                iconResId = R.drawable.ic_google,
-                onClick = { googleSignInLauncher.launch(googleSignInClient.signInIntent) }
-            )
-            Spacer(Modifier.height(16.dp))
-            SocialLoginButton(
-                text = "Continue with Apple",
-                iconResId = R.drawable.ic_apple,
-                onClick = { /* TODO: Implement Apple Sign-In */ }
-            )
-            Spacer(Modifier.height(24.dp))
-            Divider()
-            Spacer(Modifier.height(24.dp))
-
-            OriellePrimaryButton(
-                onClick = onNavigateToEmailSignUp,
-                modifier = Modifier.fillMaxWidth()
+            // Top Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(top = 80.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Continue with Email")
+                OrielleLogo()
             }
-            TextButton(onClick = onNavigateToSignIn) {
-                // Explicitly set text color for high contrast
-                Text(
-                    "Already have an account? Sign In",
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onNavigateToSanctuary) {
-                // Explicitly set text color for high contrast
-                Text(
-                    "Just Explore",
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
-            Spacer(Modifier.height(16.dp))
-        }
 
-        // Handle the auth response from the ViewModel
-        when (val response = authResponse) {
-            is Response.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+            // Bottom Card with Half-Moon Shape
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.70f)
+                    .clip(HalfMoonShape())
+                    .background(MaterialTheme.colorScheme.surface)
+            ) {
+                // Apply our custom ripple theme to all buttons within this container
+                CompositionLocalProvider(LocalRippleTheme provides WaterRippleTheme) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 100.dp, start = 24.dp, end = 24.dp, bottom = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Top
+                    ) {
+                        Text(
+                            "How do you want to begin?",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(Modifier.height(32.dp))
+
+                        // 1. SIGN UP (Primary Action)
+                        OriellePrimaryButton(
+                            onClick = onNavigateToEmailSignUp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Create a Free Account")
+                        }
+                        Spacer(Modifier.height(16.dp))
+
+                        // 2. SIGN IN (Secondary Action)
+                        OrielleOutlinedButton(
+                            onClick = onNavigateToSignIn,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "Sign In",
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        // Spacer to push the last option to the bottom of the card
+                        Spacer(Modifier.weight(1f))
+
+                        // 3. JUST EXPLORE (Tertiary Action)
+                        TextButton(onClick = onNavigateToSanctuary) {
+                            Text(
+                                text = "Just Explore for Now",
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
-
-            is Response.Success -> {
-                LaunchedEffect(Unit) { onNavigateToHome() }
-            }
-
-            is Response.Failure -> {
-                LaunchedEffect(response) {
-                    Toast.makeText(context, "Authentication failed.", Toast.LENGTH_LONG).show()
-                }
-            }
-
-            null -> {}
         }
+    }
+
+    // Handle Auth Response (no changes here)
+    when (val response = authResponse) {
+        is Response.Loading -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+        is Response.Success -> {
+            LaunchedEffect(Unit) { onNavigateToHome() }
+        }
+
+        is Response.Failure -> {
+            LaunchedEffect(response) {
+                val errorMessage = response.exception?.message ?: "An unknown error occurred."
+                Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+            }
+        }
+
+        null -> {}
     }
 }
 
-@Composable
-private fun SocialLoginButton(text: String, iconResId: Int, onClick: () -> Unit) {
-    OrielleOutlinedButton(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Icon(
-            imageVector = ImageVector.vectorResource(id = iconResId),
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = Color.Unspecified
-        )
-        // Explicitly set text color for high contrast
-        Text(
-            text = text,
-            modifier = Modifier.padding(start = 16.dp),
-            color = MaterialTheme.colorScheme.onBackground
-        )
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
-private fun WelcomeScreenPreview() {
+private fun WelcomeScreenRefactoredPreview() {
     OrielleTheme {
         WelcomeScreen(
             onNavigateToEmailSignUp = {},

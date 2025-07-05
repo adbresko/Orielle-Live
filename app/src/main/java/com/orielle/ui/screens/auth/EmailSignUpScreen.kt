@@ -1,12 +1,14 @@
 package com.orielle.ui.screens.auth
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -15,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.orielle.domain.model.Response
+import com.orielle.ui.components.HalfMoonShape
 import com.orielle.ui.components.OrielleLogo
 import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.components.SocialLoginOptions
@@ -33,72 +36,91 @@ fun EmailSignUpScreen(
     val context = LocalContext.current
 
     Scaffold { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            OrielleLogo()
-            Spacer(Modifier.height(32.dp))
-            Text("Create your account", style = MaterialTheme.typography.headlineLarge)
-            Spacer(Modifier.height(24.dp))
-
-            AuthFormFields(
-                displayName = displayName,
-                onDisplayNameChange = viewModel::onDisplayNameChange,
-                email = email,
-                onEmailChange = viewModel::onEmailChange,
-                password = password,
-                onPasswordChange = viewModel::onPasswordChange,
-                isSignUp = true
+            // Background with the Half-Moon Shape
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.95f) // Adjust height as needed
+                    .clip(HalfMoonShape())
+                    .background(MaterialTheme.colorScheme.surface)
             )
-            Spacer(Modifier.height(16.dp))
 
-            TermsAndConditionsCheckbox(
-                checked = hasAgreedToTerms,
-                onCheckedChange = viewModel::onTermsAgreementChange
-            )
-            Spacer(Modifier.height(16.dp))
-
-            OriellePrimaryButton(
-                onClick = { viewModel.signUp() },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = displayName.isNotBlank() && email.isNotBlank() && password.isNotBlank() && hasAgreedToTerms
+            // Foreground Content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text("Create Account")
-            }
-            Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.weight(0.5f))
+                OrielleLogo()
+                Spacer(Modifier.height(32.dp))
+                Text("Create your account", style = MaterialTheme.typography.headlineLarge)
+                Spacer(Modifier.height(24.dp))
 
-            SocialLoginOptions(
-                onGoogleSignInClick = { /* TODO */ },
-                onAppleSignInClick = { /* TODO */ }
-            )
-        }
+                AuthFormFields(
+                    displayName = displayName,
+                    onDisplayNameChange = viewModel::onDisplayNameChange,
+                    email = email,
+                    onEmailChange = viewModel::onEmailChange,
+                    password = password,
+                    onPasswordChange = viewModel::onPasswordChange,
+                    isSignUp = true
+                )
+                Spacer(Modifier.height(16.dp))
 
-        when (val response = authResponse) {
-            is Response.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                TermsAndConditionsCheckbox(
+                    checked = hasAgreedToTerms,
+                    onCheckedChange = viewModel::onTermsAgreementChange
+                )
+                Spacer(Modifier.height(16.dp))
+
+                OriellePrimaryButton(
+                    onClick = { viewModel.signUp() },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = displayName.isNotBlank() && email.isNotBlank() && password.isNotBlank() && hasAgreedToTerms
+                ) {
+                    Text("Create Account")
                 }
+                Spacer(Modifier.height(24.dp))
+
+                SocialLoginOptions(
+                    onGoogleSignInClick = { /* TODO */ },
+                    onAppleSignInClick = { /* TODO */ }
+                )
+                Spacer(Modifier.weight(1f))
             }
 
-            is Response.Success -> {
-                if (response.data) {
-                    LaunchedEffect(Unit) { navigateToHome() }
+            when (val response = authResponse) {
+                is Response.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
 
-            is Response.Failure -> {
-                val errorMessage = response.exception?.message ?: "An unknown error occurred."
-                LaunchedEffect(errorMessage) {
-                    Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+                is Response.Success -> {
+                    if (response.data) {
+                        LaunchedEffect(Unit) { navigateToHome() }
+                    }
                 }
-            }
 
-            null -> {}
+                is Response.Failure -> {
+                    val errorMessage = response.exception?.message ?: "An unknown error occurred."
+                    LaunchedEffect(errorMessage) {
+                        Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+                    }
+                }
+
+                null -> {}
+            }
         }
     }
 }
@@ -106,7 +128,7 @@ fun EmailSignUpScreen(
 @Composable
 private fun TermsAndConditionsCheckbox(
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,

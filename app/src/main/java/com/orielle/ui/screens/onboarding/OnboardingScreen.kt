@@ -39,27 +39,27 @@ import kotlinx.coroutines.launch
 private data class OnboardingPage(
     val imageResId: Int,
     val title: String,
-    val description: String
+    val description: String,
 )
 
 /**
- * A custom shape that creates the curved top for the onboarding card.
- * It draws a path with a quadratic Bezier curve to create the dip effect.
+ * A custom shape that creates the curved top for the card.
+ * This is now identical to the shape used on the WelcomeScreen for consistency.
  */
-private class CustomOnboardingShape : Shape {
+private class HalfMoonShape : Shape {
     override fun createOutline(
         size: Size,
         layoutDirection: LayoutDirection,
-        density: Density
+        density: Density,
     ): Outline {
         val path = Path().apply {
-            moveTo(0f, size.height) // Bottom-left
-            lineTo(0f, size.height * 0.2f) // Move up on the left side
+            moveTo(0f, size.height * 0.15f)
             quadraticBezierTo(
-                x1 = size.width / 2, y1 = -size.height * 0.1f, // Control point is above the shape, causing the dip
-                x2 = size.width, y2 = size.height * 0.2f // End point on the right side
+                x1 = size.width / 2, y1 = -size.height * 0.1f,
+                x2 = size.width, y2 = size.height * 0.15f
             )
-            lineTo(size.width, size.height) // Bottom-right
+            lineTo(size.width, size.height)
+            lineTo(0f, size.height)
             close()
         }
         return Outline.Generic(path)
@@ -91,12 +91,10 @@ fun OnboardingScreen(onNavigateToAuth: () -> Unit) {
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val coroutineScope = rememberCoroutineScope()
 
-    // UPDATED: Wrapped the entire screen in a Scaffold to handle system insets
     Scaffold { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // Apply the padding provided by Scaffold to respect system bars
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
@@ -142,7 +140,7 @@ fun OnboardingScreen(onNavigateToAuth: () -> Unit) {
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .fillMaxHeight(0.55f)
-                    .clip(CustomOnboardingShape())
+                    .clip(HalfMoonShape()) // Updated to use the consistent shape
                     .background(MaterialTheme.colorScheme.surface)
             ) {
                 Column(
@@ -164,7 +162,10 @@ fun OnboardingScreen(onNavigateToAuth: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         repeat(pages.size) { iteration ->
-                            val color = if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                            val color =
+                                if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.2f
+                                )
                             Box(
                                 modifier = Modifier
                                     .clip(CircleShape)
@@ -223,7 +224,7 @@ fun OnboardingScreen(onNavigateToAuth: () -> Unit) {
 private fun OnboardingTextContent(
     modifier: Modifier = Modifier,
     title: String,
-    description: String
+    description: String,
 ) {
     Column(
         modifier = modifier

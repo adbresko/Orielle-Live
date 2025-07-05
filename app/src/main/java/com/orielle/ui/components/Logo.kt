@@ -27,7 +27,7 @@ fun OrielleLogo(modifier: Modifier = Modifier) {
         Icon(
             painter = painterResource(id = R.drawable.ic_orielle_drop),
             contentDescription = "Orielle Logo",
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(60.dp),
             tint = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(16.dp))

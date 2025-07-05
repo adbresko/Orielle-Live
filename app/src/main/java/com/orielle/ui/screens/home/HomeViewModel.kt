@@ -20,7 +20,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getJournalEntriesUseCase: GetJournalEntriesUseCase
+    private val getJournalEntriesUseCase: GetJournalEntriesUseCase,
 ) : ViewModel() {
 
     // --- UI State ---
