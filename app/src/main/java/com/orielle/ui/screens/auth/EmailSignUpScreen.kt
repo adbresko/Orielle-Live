@@ -30,6 +30,7 @@ fun EmailSignUpScreen(
     val password by viewModel.password.collectAsState()
     val hasAgreedToTerms by viewModel.hasAgreedToTerms.collectAsState()
     val authResponse by viewModel.authResponse.collectAsState()
+    val context = LocalContext.current
 
     Scaffold { paddingValues ->
         Column(
@@ -85,14 +86,15 @@ fun EmailSignUpScreen(
             }
 
             is Response.Success -> {
-                LaunchedEffect(Unit) { navigateToHome() }
+                if (response.data) {
+                    LaunchedEffect(Unit) { navigateToHome() }
+                }
             }
 
             is Response.Failure -> {
-                val context = LocalContext.current
-                LaunchedEffect(response) {
-                    Toast.makeText(context, "Sign-up failed. Please try again.", Toast.LENGTH_LONG)
-                        .show()
+                val errorMessage = response.exception?.message ?: "An unknown error occurred."
+                LaunchedEffect(errorMessage) {
+                    Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
                 }
             }
 
