@@ -30,7 +30,7 @@ import com.orielle.ui.screens.sanctuary.SanctuaryScreen
 
 @Composable
 fun AppNavigation(
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     val navController = rememberNavController()
     val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
@@ -54,32 +54,27 @@ fun AppNavigation(
 
         // The main part of the app after login
         composable("home_graph") {
-            HomeScreen(
-                onNavigateToJournalEntry = { entryId ->
-                    // TODO: Navigate to journaling screen
-                }
-            )
+            // CORRECTED: The HomeScreen call no longer takes any parameters.
+            HomeScreen()
         }
     }
 }
 
+// SplashScreenRouter remains the same
 @Composable
 fun SplashScreenRouter(
     isUserAuthenticated: Boolean?,
-    navController: NavController
+    navController: NavController,
 ) {
-    // This effect will run once when the auth state is determined
     LaunchedEffect(isUserAuthenticated) {
         if (isUserAuthenticated != null) {
             val destination = if (isUserAuthenticated) "home_graph" else "auth_graph"
             navController.navigate(destination) {
-                // Clear the splash router from the back stack
                 popUpTo("splash_router") { inclusive = true }
             }
         }
     }
 
-    // Show a loading indicator while we wait for the auth state
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -88,7 +83,7 @@ fun SplashScreenRouter(
     }
 }
 
-// Defines the nested navigation graph for the entire authentication flow
+// authGraph remains the same
 fun NavGraphBuilder.authGraph(navController: NavController, authViewModel: AuthViewModel) {
     navigation(startDestination = "onboarding", route = "auth_graph") {
         composable("onboarding") {
@@ -105,7 +100,12 @@ fun NavGraphBuilder.authGraph(navController: NavController, authViewModel: AuthV
                 viewModel = authViewModel,
                 onNavigateToEmailSignUp = { navController.navigate("email_signup") },
                 onNavigateToSignIn = { navController.navigate("sign_in") },
-                onNavigateToSanctuary = { navController.navigate("sanctuary") },
+                onNavigateToSanctuary = {
+                    // This is where we will eventually start the guest session
+                    navController.navigate("home_graph") {
+                        popUpTo("auth_graph") { inclusive = true }
+                    }
+                },
                 onNavigateToHome = {
                     navController.navigate("home_graph") {
                         popUpTo("auth_graph") { inclusive = true }
@@ -134,14 +134,10 @@ fun NavGraphBuilder.authGraph(navController: NavController, authViewModel: AuthV
                 navigateToSignUp = { navController.popBackStack() }
             )
         }
+        // This route is now implicitly handled by navigating to home_graph
+        // but we can keep it for explicit navigation if needed later.
         composable("sanctuary") {
-            SanctuaryScreen(
-                onNavigateToAuth = {
-                    navController.navigate("welcome") {
-                        popUpTo("sanctuary") { inclusive = true }
-                    }
-                }
-            )
+            HomeScreen() // A guest user will see the HomeScreen's guest state.
         }
     }
 }

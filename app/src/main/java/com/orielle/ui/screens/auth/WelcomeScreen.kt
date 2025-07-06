@@ -30,33 +30,12 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.orielle.R
 import com.orielle.domain.model.Response
+import com.orielle.ui.components.HalfMoonShape
 import com.orielle.ui.components.OrielleLogo
 import com.orielle.ui.components.OrielleOutlinedButton
 import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.theme.OrielleTheme
 import com.orielle.ui.theme.WaterRippleTheme
-
-// A custom shape that creates the curved top for the card.
-private class HalfMoonShape : Shape {
-    override fun createOutline(
-        size: Size,
-        layoutDirection: LayoutDirection,
-        density: Density,
-    ): Outline {
-        val path = Path().apply {
-            moveTo(0f, size.height * 0.15f)
-            quadraticBezierTo(
-                x1 = size.width / 2, y1 = -size.height * 0.1f,
-                x2 = size.width, y2 = size.height * 0.15f
-            )
-            lineTo(size.width, size.height)
-            lineTo(0f, size.height)
-            close()
-        }
-        return Outline.Generic(path)
-    }
-}
-
 
 @Composable
 fun WelcomeScreen(
@@ -121,8 +100,8 @@ fun WelcomeScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .fillMaxHeight(0.70f)
-                    .clip(HalfMoonShape())
+                    .fillMaxHeight(0.70f) // The correct height for the card
+                    .clip(HalfMoonShape()) // Using the standardized shape
                     .background(MaterialTheme.colorScheme.surface)
             ) {
                 // Apply our custom ripple theme to all buttons within this container
@@ -132,7 +111,7 @@ fun WelcomeScreen(
                             .fillMaxSize()
                             .padding(top = 100.dp, start = 24.dp, end = 24.dp, bottom = 32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Top
+                        verticalArrangement = Arrangement.Top // Key change: Content starts from the top
                     ) {
                         Text(
                             "How do you want to begin?",
@@ -141,7 +120,6 @@ fun WelcomeScreen(
                         )
                         Spacer(Modifier.height(32.dp))
 
-                        // 1. SIGN UP (Primary Action)
                         OriellePrimaryButton(
                             onClick = onNavigateToEmailSignUp,
                             modifier = Modifier.fillMaxWidth()
@@ -150,7 +128,6 @@ fun WelcomeScreen(
                         }
                         Spacer(Modifier.height(16.dp))
 
-                        // 2. SIGN IN (Secondary Action)
                         OrielleOutlinedButton(
                             onClick = onNavigateToSignIn,
                             modifier = Modifier.fillMaxWidth()
@@ -161,10 +138,8 @@ fun WelcomeScreen(
                             )
                         }
 
-                        // Spacer to push the last option to the bottom of the card
                         Spacer(Modifier.weight(1f))
 
-                        // 3. JUST EXPLORE (Tertiary Action)
                         TextButton(onClick = onNavigateToSanctuary) {
                             Text(
                                 text = "Just Explore for Now",

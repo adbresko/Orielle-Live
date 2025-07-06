@@ -38,83 +38,87 @@ fun SignInScreen(
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Background with the Half-Moon Shape
+            // Top Logo Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(top = 60.dp), // Slightly reduced top padding for the logo
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                OrielleLogo()
+            }
+
+            // Bottom Card with Half-Moon Shape
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .fillMaxHeight(0.95f) // Adjust height as needed
+                    .fillMaxHeight(0.70f) // CORRECTED: Standardized to match WelcomeScreen
                     .clip(HalfMoonShape())
                     .background(MaterialTheme.colorScheme.surface)
-            )
-
-            // Foreground Content
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
             ) {
-                Spacer(Modifier.weight(0.5f))
-                OrielleLogo()
-                Spacer(Modifier.height(32.dp))
-
-                Text("Welcome Back", style = MaterialTheme.typography.headlineLarge)
-                Spacer(Modifier.height(24.dp))
-
-                AuthFormFields(
-                    displayName = "",
-                    onDisplayNameChange = {},
-                    email = email,
-                    onEmailChange = viewModel::onEmailChange,
-                    password = password,
-                    onPasswordChange = viewModel::onPasswordChange,
-                    isSignUp = false
-                )
-
-                TextButton(
-                    onClick = { /* TODO: Navigate to Forgot Password screen */ },
-                    modifier = Modifier.align(Alignment.End)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 80.dp, start = 24.dp, end = 24.dp, bottom = 24.dp), // CORRECTED: Adjusted padding
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top
                 ) {
-                    Text("Forgot Password?")
+                    Text("Welcome Back", style = MaterialTheme.typography.headlineLarge)
+                    Spacer(Modifier.height(16.dp))
+
+                    AuthFormFields(
+                        displayName = "",
+                        onDisplayNameChange = {},
+                        email = email,
+                        onEmailChange = viewModel::onEmailChange,
+                        password = password,
+                        onPasswordChange = viewModel::onPasswordChange,
+                        isSignUp = false
+                    )
+
+                    TextButton(
+                        onClick = { /* TODO: Navigate to Forgot Password screen */ },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Forgot Password?")
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    OriellePrimaryButton(
+                        onClick = { viewModel.signIn() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Sign In")
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    SocialLoginOptions(
+                        onGoogleSignInClick = { /* TODO */ },
+                        onAppleSignInClick = { /* TODO */ }
+                    )
+
+                    Spacer(Modifier.weight(1f))
+
+                    TextButton(onClick = navigateToSignUp) {
+                        Text("Don't have an account? Sign Up")
+                    }
                 }
-
-                Spacer(Modifier.height(16.dp))
-
-                OriellePrimaryButton(
-                    onClick = { viewModel.signIn() },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Sign In")
-                }
-
-                Spacer(Modifier.height(24.dp))
-
-                SocialLoginOptions(
-                    onGoogleSignInClick = { /* TODO */ },
-                    onAppleSignInClick = { /* TODO */ }
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                TextButton(onClick = navigateToSignUp) {
-                    Text("Don't have an account? Sign Up")
-                }
-                Spacer(Modifier.weight(1f))
             }
 
+            // Auth Response handling...
             when (val response = authResponse) {
                 is Response.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
-
                 is Response.Success -> {
                     LaunchedEffect(Unit) { navigateToHome() }
                 }
-
                 is Response.Failure -> {
                     val context = LocalContext.current
                     val message = when (response.exception) {
@@ -126,13 +130,13 @@ fun SignInScreen(
                         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                     }
                 }
-
                 null -> {}
             }
         }
     }
 }
 
+// Preview remains unchanged...
 @Preview(showBackground = true)
 @Composable
 private fun SignInScreenPreview() {

@@ -2,6 +2,7 @@
 # Android Gradle Plugin & Kotlin
 # Using the latest stable AGP and the corresponding Kotlin & KSP versions for compatibility.
 androidGradlePlugin = "8.10.1"
+datastorePreferences = "1.1.1"
 firebaseBomVersion = "33.16.0"
 kotlin = "1.9.24"
 ksp = "1.9.24-1.0.20"
@@ -28,10 +29,12 @@ googleServicesAuth = "21.3.0"
 
 # Testing
 junit = "4.13.2"
+datastoreCoreAndroid = "1.1.7"
 
 
 [libraries]
 # AndroidX & Core
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-bom-v33160 = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBomVersion" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
@@ -75,6 +78,7 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-datastore-core-android = { group = "androidx.datastore", name = "datastore-core-android", version.ref = "datastoreCoreAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

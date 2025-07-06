@@ -1,33 +1,42 @@
 package com.orielle.di
 
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.orielle.data.local.dao.JournalDao
 import com.orielle.data.repository.AuthRepository
 import com.orielle.data.repository.AuthRepositoryImpl
 import com.orielle.data.repository.JournalRepository
 import com.orielle.data.repository.JournalRepositoryImpl
-import dagger.Binds
+import com.orielle.domain.manager.SessionManager
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class RepositoryModule {
+object RepositoryModule {
 
-    @Binds
+    @Provides
     @Singleton
-    abstract fun bindAuthRepository(
-        authRepositoryImpl: AuthRepositoryImpl
-    ): AuthRepository
+    fun provideAuthRepository(
+        auth: FirebaseAuth,
+        db: FirebaseFirestore
+    ): AuthRepository = AuthRepositoryImpl(auth, db)
 
-    /**
-     * Binds the JournalRepositoryImpl to the JournalRepository interface.
-     * This tells Hilt that whenever a JournalRepository is requested,
-     * it should provide an instance of JournalRepositoryImpl.
-     */
-    @Binds
+    // CORRECTED: This provider now includes all necessary dependencies.
+    @Provides
     @Singleton
-    abstract fun bindJournalRepository(
-        journalRepositoryImpl: JournalRepositoryImpl
-    ): JournalRepository
+    fun provideJournalRepository(
+        auth: FirebaseAuth,
+        firestore: FirebaseFirestore,
+        journalDao: JournalDao, // The previously missing DAO
+        sessionManager: SessionManager // The new session manager
+    ): JournalRepository = JournalRepositoryImpl(
+        auth = auth,
+        firestore = firestore,
+        journalDao = journalDao,
+        sessionManager = sessionManager
+    )
 }

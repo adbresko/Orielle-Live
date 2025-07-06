@@ -26,7 +26,7 @@ import com.orielle.ui.theme.OrielleTheme
 @Composable
 fun EmailSignUpScreen(
     viewModel: AuthViewModel = hiltViewModel(),
-    navigateToHome: () -> Unit
+    navigateToHome: () -> Unit,
 ) {
     val displayName by viewModel.displayName.collectAsState()
     val email by viewModel.email.collectAsState()
@@ -42,63 +42,78 @@ fun EmailSignUpScreen(
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Background with the Half-Moon Shape
+            // Top Logo Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(top = 60.dp), // Slightly reduced top padding for the logo
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                OrielleLogo()
+            }
+
+            // Bottom Card with Half-Moon Shape
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .fillMaxHeight(0.95f) // Adjust height as needed
+                    .fillMaxHeight(0.70f) // CORRECTED: Standardized to match WelcomeScreen
                     .clip(HalfMoonShape())
                     .background(MaterialTheme.colorScheme.surface)
-            )
-
-            // Foreground Content
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
             ) {
-                Spacer(Modifier.weight(0.5f))
-                OrielleLogo()
-                Spacer(Modifier.height(32.dp))
-                Text("Create your account", style = MaterialTheme.typography.headlineLarge)
-                Spacer(Modifier.height(24.dp))
-
-                AuthFormFields(
-                    displayName = displayName,
-                    onDisplayNameChange = viewModel::onDisplayNameChange,
-                    email = email,
-                    onEmailChange = viewModel::onEmailChange,
-                    password = password,
-                    onPasswordChange = viewModel::onPasswordChange,
-                    isSignUp = true
-                )
-                Spacer(Modifier.height(16.dp))
-
-                TermsAndConditionsCheckbox(
-                    checked = hasAgreedToTerms,
-                    onCheckedChange = viewModel::onTermsAgreementChange
-                )
-                Spacer(Modifier.height(16.dp))
-
-                OriellePrimaryButton(
-                    onClick = { viewModel.signUp() },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = displayName.isNotBlank() && email.isNotBlank() && password.isNotBlank() && hasAgreedToTerms
+                // Content Column
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(
+                            top = 80.dp,
+                            start = 24.dp,
+                            end = 24.dp,
+                            bottom = 24.dp
+                        ), // CORRECTED: Adjusted padding
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top
                 ) {
-                    Text("Create Account")
-                }
-                Spacer(Modifier.height(24.dp))
+                    Text("Create your account", style = MaterialTheme.typography.headlineLarge)
+                    Spacer(Modifier.height(16.dp))
 
-                SocialLoginOptions(
-                    onGoogleSignInClick = { /* TODO */ },
-                    onAppleSignInClick = { /* TODO */ }
-                )
-                Spacer(Modifier.weight(1f))
+                    AuthFormFields(
+                        displayName = displayName,
+                        onDisplayNameChange = viewModel::onDisplayNameChange,
+                        email = email,
+                        onEmailChange = viewModel::onEmailChange,
+                        password = password,
+                        onPasswordChange = viewModel::onPasswordChange,
+                        isSignUp = true
+                    )
+                    Spacer(Modifier.height(16.dp))
+
+                    TermsAndConditionsCheckbox(
+                        checked = hasAgreedToTerms,
+                        onCheckedChange = viewModel::onTermsAgreementChange
+                    )
+                    Spacer(Modifier.height(16.dp))
+
+                    OriellePrimaryButton(
+                        onClick = { viewModel.signUp() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = displayName.isNotBlank() && email.isNotBlank() && password.isNotBlank() && hasAgreedToTerms
+                    ) {
+                        Text("Create Account")
+                    }
+
+                    // Spacer to push social options towards the bottom if there's extra space
+                    Spacer(Modifier.weight(1f))
+
+                    SocialLoginOptions(
+                        onGoogleSignInClick = { /* TODO */ },
+                        onAppleSignInClick = { /* TODO */ }
+                    )
+                }
             }
 
+            // Auth Response handling...
             when (val response = authResponse) {
                 is Response.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -125,6 +140,7 @@ fun EmailSignUpScreen(
     }
 }
 
+// TermsAndConditionsCheckbox and Preview remain unchanged...
 @Composable
 private fun TermsAndConditionsCheckbox(
     checked: Boolean,

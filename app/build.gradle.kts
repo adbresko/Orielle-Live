@@ -60,6 +60,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
+    //Session Management
+    implementation(libs.androidx.datastore.preferences)
+
     // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
@@ -70,6 +73,7 @@ dependencies {
 
     // Hilt - Dependency Injection
     implementation(libs.hilt.android)
+    implementation(libs.androidx.datastore.core.android)
     kapt(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
