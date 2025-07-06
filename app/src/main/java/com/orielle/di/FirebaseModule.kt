@@ -27,12 +27,4 @@ object FirebaseModule {
     fun provideFirebaseFirestore(): FirebaseFirestore {
         return FirebaseFirestore.getInstance()
     }
-
-    // This should be the ONLY place that provides the SessionManager
-    @Provides
-    @Singleton
-    fun provideSessionManager(
-        @ApplicationContext context: Context,
-        auth: FirebaseAuth
-    ): SessionManager = SessionManagerImpl(context, auth)
 }

@@ -1,6 +1,6 @@
 package com.orielle.domain.use_case
 
-import com.orielle.data.repository.AuthRepository
+import com.orielle.domain.repository.AuthRepository
 import javax.inject.Inject
 
 /**

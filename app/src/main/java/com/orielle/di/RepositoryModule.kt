@@ -3,10 +3,10 @@ package com.orielle.di
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.orielle.data.local.dao.JournalDao
-import com.orielle.data.repository.AuthRepository
+import com.orielle.domain.repository.AuthRepository
 import com.orielle.data.repository.AuthRepositoryImpl
-import com.orielle.data.repository.JournalRepository
-import com.orielle.data.repository.JournalRepositoryImpl
+import com.orielle.domain.repository.JournalRepository
+import com.orielle.domain.repository.JournalRepositoryImpl
 import com.orielle.domain.manager.SessionManager
 import dagger.Module
 import dagger.Provides

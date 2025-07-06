@@ -89,7 +89,7 @@ fun WelcomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
-                    .padding(top = 80.dp),
+                    .padding(top = 60.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 OrielleLogo()
@@ -100,7 +100,7 @@ fun WelcomeScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .fillMaxHeight(0.70f) // The correct height for the card
+                    .fillMaxHeight(0.77f) // The correct height for the card
                     .clip(HalfMoonShape()) // Using the standardized shape
                     .background(MaterialTheme.colorScheme.surface)
             ) {
@@ -115,7 +115,7 @@ fun WelcomeScreen(
                     ) {
                         Text(
                             "How do you want to begin?",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.headlineLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(Modifier.height(32.dp))

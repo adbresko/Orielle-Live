@@ -21,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.orielle.ui.screens.auth.AuthViewModel
+import com.orielle.ui.screens.auth.DataTransparencyScreen
 import com.orielle.ui.screens.auth.EmailSignUpScreen
 import com.orielle.ui.screens.auth.SignInScreen
 import com.orielle.ui.screens.auth.WelcomeScreen
@@ -101,7 +102,6 @@ fun NavGraphBuilder.authGraph(navController: NavController, authViewModel: AuthV
                 onNavigateToEmailSignUp = { navController.navigate("email_signup") },
                 onNavigateToSignIn = { navController.navigate("sign_in") },
                 onNavigateToSanctuary = {
-                    // This is where we will eventually start the guest session
                     navController.navigate("home_graph") {
                         popUpTo("auth_graph") { inclusive = true }
                     }
@@ -113,14 +113,12 @@ fun NavGraphBuilder.authGraph(navController: NavController, authViewModel: AuthV
                 }
             )
         }
+        // --- THIS IS THE FIX FOR ERROR #1 ---
         composable("email_signup") {
             EmailSignUpScreen(
                 viewModel = authViewModel,
-                navigateToHome = {
-                    navController.navigate("home_graph") {
-                        popUpTo("auth_graph") { inclusive = true }
-                    }
-                }
+                navController = navController, // Pass the NavController
+                navigateToSignIn = { navController.navigate("sign_in") }
             )
         }
         composable("sign_in") {
@@ -134,10 +132,18 @@ fun NavGraphBuilder.authGraph(navController: NavController, authViewModel: AuthV
                 navigateToSignUp = { navController.popBackStack() }
             )
         }
-        // This route is now implicitly handled by navigating to home_graph
-        // but we can keep it for explicit navigation if needed later.
+        // --- THIS IS THE FIX FOR ERROR #2 ---
+        composable("data_transparency_screen") {
+            DataTransparencyScreen(
+                navigateToHome = {
+                    navController.navigate("home_graph") {
+                        popUpTo("auth_graph") { inclusive = true }
+                    }
+                }
+            )
+        }
         composable("sanctuary") {
-            HomeScreen() // A guest user will see the HomeScreen's guest state.
+            HomeScreen()
         }
     }
 }

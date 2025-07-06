@@ -1,4 +1,4 @@
-package com.orielle.data.repository
+package com.orielle.domain.repository
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore

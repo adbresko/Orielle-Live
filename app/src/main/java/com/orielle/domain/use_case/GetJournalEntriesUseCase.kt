@@ -1,6 +1,6 @@
 package com.orielle.domain.use_case
 
-import com.orielle.data.repository.JournalRepository
+import com.orielle.domain.repository.JournalRepository
 import javax.inject.Inject
 
 /**

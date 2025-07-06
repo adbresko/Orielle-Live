@@ -1,4 +1,4 @@
-package com.orielle.data.repository
+package com.orielle.domain.repository
 
 import com.orielle.domain.model.JournalEntry
 import com.orielle.domain.model.Response
