@@ -28,6 +28,7 @@ import com.orielle.ui.screens.auth.WelcomeScreen
 import com.orielle.ui.screens.home.HomeScreen
 import com.orielle.ui.screens.onboarding.OnboardingScreen
 import com.orielle.ui.screens.sanctuary.SanctuaryScreen
+import com.orielle.ui.screens.security.SecuritySetupScreen
 
 @Composable
 fun AppNavigation(
@@ -135,6 +136,20 @@ fun NavGraphBuilder.authGraph(navController: NavController, authViewModel: AuthV
         // --- THIS IS THE FIX FOR ERROR #2 ---
         composable("data_transparency_screen") {
             DataTransparencyScreen(
+                navigateToHome = {
+                    // --- THIS IS THE CHANGE ---
+                    // Instead of going home, we now go to the security setup screen.
+                    navController.navigate("security_setup_screen") {
+                        // We pop the transparency screen off the back stack so the user can't go back to it.
+                        popUpTo("data_transparency_screen") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // --- NEW SCREEN ADDED TO THE GRAPH ---
+        composable("security_setup_screen") {
+            SecuritySetupScreen(
                 navigateToHome = {
                     navController.navigate("home_graph") {
                         popUpTo("auth_graph") { inclusive = true }

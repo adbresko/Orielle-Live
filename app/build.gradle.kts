@@ -72,7 +72,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.material.icons.extended.android) // Or the latest version
-
+    implementation(libs.androidx.biometric.ktx)
     // Hilt - Dependency Injection
     implementation(libs.hilt.android)
     implementation(libs.androidx.datastore.core.android)
