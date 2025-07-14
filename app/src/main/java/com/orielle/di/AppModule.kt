@@ -1,6 +1,7 @@
 package com.orielle.di
 
 import android.content.Context
+import com.orielle.util.NetworkUtils
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,5 +22,14 @@ object AppModule {
     @Singleton
     fun provideApplicationContext(@ApplicationContext context: Context): Context {
         return context
+    }
+    
+    /**
+     * Provides NetworkUtils for network connectivity checks
+     */
+    @Provides
+    @Singleton
+    fun provideNetworkUtils(@ApplicationContext context: Context): NetworkUtils {
+        return NetworkUtils(context)
     }
 }

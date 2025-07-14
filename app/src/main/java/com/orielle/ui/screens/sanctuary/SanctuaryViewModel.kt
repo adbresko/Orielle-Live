@@ -8,6 +8,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.orielle.domain.model.AppError
+import timber.log.Timber
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 @HiltViewModel
 class SanctuaryViewModel @Inject constructor() : ViewModel() {
@@ -31,19 +36,44 @@ class SanctuaryViewModel @Inject constructor() : ViewModel() {
     private val _showCta = MutableStateFlow(false)
     val showCta = _showCta.asStateFlow()
 
+    private val _eventFlow = MutableSharedFlow<UiEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
+    private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Timber.e(throwable, "Unhandled coroutine exception in SanctuaryViewModel")
+        viewModelScope.launch {
+            _eventFlow.emit(UiEvent.ShowSnackbar(AppError.Unknown.toUserMessage()))
+        }
+    }
+
     // --- Event Handlers ---
     fun onReflectionChange(newText: String) {
         _userReflection.value = newText
     }
 
     fun submitReflection() {
-        // In a real implementation, this would call a Gemini API UseCase.
-        // For now, we simulate a delay and provide a canned, empathetic response.
-        viewModelScope.launch {
-            delay(1500) // Simulate network latency for the AI response
-            _aiResponse.value = "Thank you for sharing that space with me. It's a gift to witness your inner world."
-            delay(1000) // A brief pause before showing the call to action
-            _showCta.value = true
+        viewModelScope.launch(coroutineExceptionHandler) {
+            try {
+                // In a real implementation, this would call a Gemini API UseCase.
+                // For now, we simulate a delay and provide a canned, empathetic response.
+                delay(1500) // Simulate network latency for the AI response
+                _aiResponse.value = "Thank you for sharing that space with me. It's a gift to witness your inner world."
+                delay(1000) // A brief pause before showing the call to action
+                _showCta.value = true
+            } catch (e: Exception) {
+                Timber.e(e, "Error in submitReflection")
+                _eventFlow.emit(UiEvent.ShowSnackbar(AppError.Unknown.toUserMessage()))
+            }
         }
     }
+}
+
+fun AppError.toUserMessage(): String = when (this) {
+    AppError.Network -> "No internet connection."
+    AppError.Auth -> "Authentication failed."
+    AppError.Database -> "A database error occurred."
+    AppError.NotFound -> "Requested resource not found."
+    AppError.Permission -> "You do not have permission to perform this action."
+    is AppError.Custom -> this.message
+    AppError.Unknown -> "An unknown error occurred."
 }

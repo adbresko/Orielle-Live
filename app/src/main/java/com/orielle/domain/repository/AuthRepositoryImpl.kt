@@ -7,6 +7,8 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.orielle.domain.model.AppError
 import com.orielle.domain.model.EmailAlreadyInUseException
 import com.orielle.domain.model.Response
 import com.orielle.domain.model.User
@@ -16,6 +18,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import javax.inject.Inject
+import timber.log.Timber
 
 class AuthRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
@@ -37,44 +40,138 @@ class AuthRepositoryImpl @Inject constructor(
                         )
                         db.collection("users").document(newUser.uid).set(newUser)
                             .addOnSuccessListener {
-                                // On success, we now return the entire FirebaseUser object.
                                 trySend(Response.Success(firebaseUser))
                             }
                             .addOnFailureListener { firestoreException ->
-                                trySend(Response.Failure(firestoreException))
+                                Timber.e(firestoreException, "Firestore error during sign up")
+                                FirebaseCrashlytics.getInstance().recordException(firestoreException)
+                                trySend(Response.Failure(AppError.Database, firestoreException))
                             }
                     } else {
-                        trySend(Response.Failure(Exception("User creation failed.")))
+                        val ex = Exception("User creation failed.")
+                        Timber.e(ex)
+                        FirebaseCrashlytics.getInstance().recordException(ex)
+                        trySend(Response.Failure(AppError.Unknown, ex))
                     }
                 } else {
                     val e = task.exception
                     when (e) {
-                        is FirebaseAuthWeakPasswordException -> trySend(Response.Failure(WeakPasswordException()))
-                        is FirebaseAuthUserCollisionException -> trySend(Response.Failure(EmailAlreadyInUseException()))
-                        else -> trySend(Response.Failure(e ?: Exception("Unknown sign-up error.")))
+                        is FirebaseAuthWeakPasswordException -> trySend(Response.Failure(AppError.Auth, WeakPasswordException()))
+                        is FirebaseAuthUserCollisionException -> trySend(Response.Failure(AppError.Auth, EmailAlreadyInUseException()))
+                        else -> {
+                            Timber.e(e, "Unknown sign up error")
+                            FirebaseCrashlytics.getInstance().recordException(e ?: Exception("Unknown sign-up error."))
+                            trySend(Response.Failure(AppError.Unknown, e ?: Exception("Unknown sign-up error.")))
+                        }
                     }
                 }
             }
         awaitClose { channel.close() }
     }
 
-    override fun signInWithEmail(email: String, password: String): Flow<Response<Boolean>> {
-        // ... this function remains unchanged ...
-        return callbackFlow { /* ... */ }
+    override fun signInWithEmail(email: String, password: String): Flow<Response<Boolean>> = callbackFlow {
+        trySend(Response.Loading)
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    trySend(Response.Success(true))
+                } else {
+                    val e = task.exception
+                    Timber.e(e, "Sign in error")
+                    FirebaseCrashlytics.getInstance().recordException(e ?: Exception("Sign-in failed."))
+                    trySend(Response.Failure(AppError.Auth, e ?: Exception("Sign-in failed.")))
+                }
+            }
+        awaitClose { channel.close() }
     }
 
-    override fun signInWithGoogle(idToken: String): Flow<Response<Boolean>> {
-        // ... this function remains unchanged ...
-        return callbackFlow { /* ... */ }
+    override fun signInWithGoogle(idToken: String): Flow<Response<Boolean>> = callbackFlow {
+        trySend(Response.Loading)
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(credential)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val firebaseUser = task.result?.user
+                    if (firebaseUser != null) {
+                        db.collection("users").document(firebaseUser.uid).get()
+                            .addOnSuccessListener { document ->
+                                if (!document.exists()) {
+                                    val newUser = User(
+                                        uid = firebaseUser.uid,
+                                        email = firebaseUser.email,
+                                        displayName = firebaseUser.displayName,
+                                        hasAgreedToTerms = true
+                                    )
+                                    db.collection("users").document(newUser.uid).set(newUser)
+                                        .addOnSuccessListener {
+                                            trySend(Response.Success(true))
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Timber.e(e, "Firestore error during Google sign in")
+                                            FirebaseCrashlytics.getInstance().recordException(e)
+                                            trySend(Response.Failure(AppError.Database, e))
+                                        }
+                                } else {
+                                    trySend(Response.Success(true))
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                Timber.e(e, "Firestore error during Google sign in")
+                                FirebaseCrashlytics.getInstance().recordException(e)
+                                trySend(Response.Failure(AppError.Database, e))
+                            }
+                    } else {
+                        trySend(Response.Success(true))
+                    }
+                } else {
+                    val e = task.exception
+                    Timber.e(e, "Google sign in error")
+                    FirebaseCrashlytics.getInstance().recordException(e ?: Exception("Google sign-in failed."))
+                    trySend(Response.Failure(AppError.Auth, e ?: Exception("Google sign-in failed.")))
+                }
+            }
+        awaitClose { channel.close() }
     }
 
-    override fun signInWithApple(idToken: String): Flow<Response<Boolean>> {
-        // ... this function remains unchanged ...
-        return callbackFlow { /* ... */ }
+    override fun signInWithApple(idToken: String): Flow<Response<Boolean>> = callbackFlow {
+        trySend(Response.Loading)
+        val provider = OAuthProvider.newBuilder("apple.com")
+        val pendingResultTask = auth.pendingAuthResult
+        if (pendingResultTask != null) {
+            pendingResultTask
+                .addOnSuccessListener { authResult ->
+                    trySend(Response.Success(true))
+                }
+                .addOnFailureListener { e ->
+                    Timber.e(e, "Apple sign in error")
+                    FirebaseCrashlytics.getInstance().recordException(e)
+                    trySend(Response.Failure(AppError.Auth, e))
+                }
+        } else {
+            auth.startActivityForSignInWithProvider(/* activity = */ null, provider.build())
+                .addOnSuccessListener { authResult ->
+                    trySend(Response.Success(true))
+                }
+                .addOnFailureListener { e ->
+                    Timber.e(e, "Apple sign in error")
+                    FirebaseCrashlytics.getInstance().recordException(e)
+                    trySend(Response.Failure(AppError.Auth, e))
+                }
+        }
+        awaitClose { channel.close() }
     }
 
-    override fun addUserToFirestore(user: User): Flow<Response<Boolean>> {
-        // ... this function remains unchanged ...
-        return callbackFlow { /* ... */ }
+    override fun addUserToFirestore(user: User): Flow<Response<Boolean>> = callbackFlow {
+        trySend(Response.Loading)
+        db.collection("users").document(user.uid).set(user)
+            .addOnSuccessListener {
+                trySend(Response.Success(true))
+            }
+            .addOnFailureListener { e ->
+                Timber.e(e, "Firestore error during addUserToFirestore")
+                FirebaseCrashlytics.getInstance().recordException(e)
+                trySend(Response.Failure(AppError.Database, e))
+            }
+        awaitClose { channel.close() }
     }
 }

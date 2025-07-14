@@ -3,6 +3,7 @@ package com.orielle.ui.screens.home
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,6 +15,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.orielle.R
 import com.orielle.ui.theme.OrielleTheme
+import kotlinx.coroutines.flow.collectLatest
+import com.orielle.ui.components.ErrorScreen
+import com.orielle.util.UiEvent
 
 @Composable
 fun HomeScreen(
@@ -21,57 +25,80 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedMood by remember { mutableStateOf<Mood?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Collect error events and show in Snackbar
+    LaunchedEffect(Unit) {
+        viewModel.eventFlow.collectLatest { event ->
+            when (event) {
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+            }
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            contentPadding = PaddingValues(top = 48.dp, bottom = 48.dp)
-        ) {
-            item {
-                val welcomeMessage = if (uiState.isGuest) {
-                    "Your temporary sanctuary"
-                } else {
-                    "Welcome home"
-                }
-                Text(
-                    text = welcomeMessage,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onBackground
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { paddingValues ->
+            if (uiState.error != null) {
+                ErrorScreen(
+                    message = uiState.error ?: "An error occurred.",
+                    onRetry = { viewModel.retryFetch() }
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                        .padding(paddingValues),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    contentPadding = PaddingValues(top = 48.dp, bottom = 48.dp)
+                ) {
+                    item {
+                        val welcomeMessage = if (uiState.isGuest) {
+                            "Your temporary sanctuary"
+                        } else {
+                            "Welcome home"
+                        }
+                        Text(
+                            text = welcomeMessage,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
 
-            // --- The new Mood Arc Gauge Card ---
-            item {
-                MoodArcGaugeCard(moods = allMoods)
-                Spacer(modifier = Modifier.height(24.dp))
-            }
+                    // --- The new Mood Arc Gauge Card ---
+                    item {
+                        MoodArcGaugeCard(moods = allMoods)
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
 
-            // We can keep this for comparison or remove it later
-            item {
-                MoodReflectionCard(
-                    moods = allMoods,
-                    selectedMood = selectedMood,
-                    onMoodSelected = { selectedMood = it }
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-            }
+                    // We can keep this for comparison or remove it later
+                    item {
+                        MoodReflectionCard(
+                            moods = allMoods,
+                            selectedMood = selectedMood,
+                            onMoodSelected = { selectedMood = it }
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
 
-            item {
-                ReflectionCenterCard()
-                Spacer(modifier = Modifier.height(24.dp))
-            }
+                    item {
+                        ReflectionCenterCard()
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
 
-            if (!uiState.isGuest) {
-                item {
-                    GardenCard()
-                    Spacer(modifier = Modifier.height(24.dp))
+                    if (!uiState.isGuest) {
+                        item {
+                            GardenCard()
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
+                    }
                 }
             }
         }

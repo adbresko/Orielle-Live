@@ -23,9 +23,24 @@ sealed class Response<out T> {
 
     /**
      * Represents a failed operation.
+     * @param error The structured error type.
      * @param exception The exception that occurred during the operation.
      */
     data class Failure(
-        val exception: Exception
+        val error: AppError,
+        val exception: Exception? = null
     ) : Response<Nothing>()
+}
+
+/**
+ * Structured error types for the app.
+ */
+sealed class AppError {
+    object Network : AppError()
+    object Auth : AppError()
+    object Database : AppError()
+    object NotFound : AppError()
+    object Permission : AppError()
+    data class Custom(val message: String) : AppError()
+    object Unknown : AppError()
 }

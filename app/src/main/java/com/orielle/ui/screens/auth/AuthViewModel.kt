@@ -18,6 +18,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.orielle.domain.model.AppError
+import timber.log.Timber
+import kotlinx.coroutines.CoroutineExceptionHandler
 
 
 sealed class PasswordStrength {
@@ -79,6 +82,13 @@ class AuthViewModel @Inject constructor(
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
+    private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Timber.e(throwable, "Unhandled coroutine exception in AuthViewModel")
+        viewModelScope.launch {
+            _eventFlow.emit(UiEvent.ShowSnackbar("Unexpected error: ${throwable.localizedMessage ?: "Unknown error"}"))
+        }
+    }
+
     init {
         checkUserAuthentication()
     }
@@ -128,20 +138,15 @@ class AuthViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.launch {
+        viewModelScope.launch(coroutineExceptionHandler) {
             _authResponse.value = Response.Loading
-            // The use case now returns a Response<FirebaseUser>
             signUpUseCase(email.value, password.value).collect { response ->
                 if (response is Response.Success) {
-                    // --- THIS IS THE KEY NEW LOGIC ---
-                    // On successful sign-up, check the user's metadata.
                     val user = response.data
                     val metadata = user.metadata
                     if (metadata != null) {
                         val creationTime = metadata.creationTimestamp
                         val lastSignInTime = metadata.lastSignInTimestamp
-                        // If the account was created within the last 15 seconds,
-                        // we can be very sure this is their first session.
                         if ((lastSignInTime - creationTime) < 15000) {
                             _isNewUserAfterSignUp.value = true
                         }
@@ -155,7 +160,7 @@ class AuthViewModel @Inject constructor(
                             _passwordError.value = AuthFieldError.SimpleError(exception.message ?: "Password is too weak.")
                         }
                         else -> {
-                            _eventFlow.emit(UiEvent.ShowSnackbar(exception.message ?: "An unknown error occurred."))
+                            _eventFlow.emit(UiEvent.ShowSnackbar(response.error.toUserMessage()))
                         }
                     }
                 }
@@ -165,20 +170,37 @@ class AuthViewModel @Inject constructor(
     }
 
     fun signIn() {
-        viewModelScope.launch {
+        viewModelScope.launch(coroutineExceptionHandler) {
             _authResponse.value = Response.Loading
             signInUseCase(email.value, password.value).collect { response ->
+                if (response is Response.Failure) {
+                    _eventFlow.emit(UiEvent.ShowSnackbar(response.error.toUserMessage()))
+                }
                 _authResponse.value = response
             }
         }
     }
 
     fun signInWithGoogle(idToken: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(coroutineExceptionHandler) {
             _authResponse.value = Response.Loading
             signInWithGoogleUseCase(idToken).collect { response ->
+                if (response is Response.Failure) {
+                    _eventFlow.emit(UiEvent.ShowSnackbar(response.error.toUserMessage()))
+                }
                 _authResponse.value = response
             }
         }
     }
+}
+
+// Extension function to map AppError to user-friendly messages
+fun AppError.toUserMessage(): String = when (this) {
+    AppError.Network -> "No internet connection."
+    AppError.Auth -> "Authentication failed."
+    AppError.Database -> "A database error occurred."
+    AppError.NotFound -> "Requested resource not found."
+    AppError.Permission -> "You do not have permission to perform this action."
+    is AppError.Custom -> this.message
+    AppError.Unknown -> "An unknown error occurred."
 }

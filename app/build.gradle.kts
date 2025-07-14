@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.hilt.android.plugin)
     alias(libs.plugins.ksp) // Apply the KSP plugin using its alias
     alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -26,30 +27,48 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
+            //applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
     }
+    
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+    
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
+    
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+    
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
+    
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+    
+    // Enable parallel builds for faster compilation
+    kotlin {
+        jvmToolchain(17)
     }
 }
 
@@ -90,6 +109,8 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.google.services.auth)
     implementation(libs.firebase.analytics)
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
+    implementation("com.google.firebase:firebase-analytics-ktx")
 
     // Media - For Video Playback
     implementation(libs.androidx.media3.exoplayer)
@@ -104,9 +125,12 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation("com.jakewharton.timber:timber:5.0.1")
 }
 
 // Allow references to generated code
 kapt {
     correctErrorTypes = true
 }
+
+apply(plugin = "com.google.firebase.crashlytics")
