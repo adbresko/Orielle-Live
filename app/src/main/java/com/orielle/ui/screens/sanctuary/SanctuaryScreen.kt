@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -12,6 +13,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.orielle.ui.theme.OrielleTheme
+import kotlinx.coroutines.flow.collectLatest
+import com.orielle.ui.components.ErrorScreen
 
 @Composable
 fun SanctuaryScreen(
@@ -22,41 +25,69 @@ fun SanctuaryScreen(
     val userReflection by viewModel.userReflection.collectAsState()
     val aiResponse by viewModel.aiResponse.collectAsState()
     val showCta by viewModel.showCta.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val errorState = remember { mutableStateOf<String?>(null) }
 
-    Scaffold { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // The UI will transition between the prompt and the response
-            AnimatedContent(
-                targetState = aiResponse == null,
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(1000)) togetherWith fadeOut(
-                        animationSpec = tween(
-                            1000
+    // Collect error events and show in Snackbar, and set errorState for critical errors
+    LaunchedEffect(Unit) {
+        viewModel.eventFlow.collectLatest { event ->
+            when (event) {
+                is UiEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(event.message)
+                    if (event.message.contains("unknown error", ignoreCase = true)) {
+                        errorState.value = event.message
+                    }
+                }
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        if (errorState.value != null) {
+            ErrorScreen(
+                message = errorState.value ?: "An error occurred.",
+                onRetry = {
+                    errorState.value = null
+                    viewModel.submitReflection()
+                }
+            )
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // The UI will transition between the prompt and the response
+                AnimatedContent(
+                    targetState = aiResponse == null,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(1000)) togetherWith fadeOut(
+                            animationSpec = tween(
+                                1000
+                            )
                         )
-                    )
-                },
-                label = "SanctuaryContent"
-            ) { isShowingPrompt ->
-                if (isShowingPrompt) {
-                    PromptContent(
-                        prompt = prompt,
-                        userReflection = userReflection,
-                        onReflectionChange = viewModel::onReflectionChange,
-                        onSubmit = { viewModel.submitReflection() }
-                    )
-                } else {
-                    ReflectionContent(
-                        aiResponse = aiResponse ?: "",
-                        showCta = showCta,
-                        onNavigateToAuth = onNavigateToAuth
-                    )
+                    },
+                    label = "SanctuaryContent"
+                ) { isShowingPrompt ->
+                    if (isShowingPrompt) {
+                        PromptContent(
+                            prompt = prompt,
+                            userReflection = userReflection,
+                            onReflectionChange = viewModel::onReflectionChange,
+                            onSubmit = { viewModel.submitReflection() }
+                        )
+                    } else {
+                        ReflectionContent(
+                            aiResponse = aiResponse ?: "",
+                            showCta = showCta,
+                            onNavigateToAuth = onNavigateToAuth
+                        )
+                    }
                 }
             }
         }

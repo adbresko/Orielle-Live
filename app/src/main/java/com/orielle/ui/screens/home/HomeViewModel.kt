@@ -12,6 +12,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.orielle.domain.model.AppError
+import com.orielle.domain.model.Response
+import timber.log.Timber
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 data class HomeUiState(
     val isGuest: Boolean = true,
@@ -29,13 +35,23 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private val _eventFlow = MutableSharedFlow<UiEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
+    private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Timber.e(throwable, "Unhandled coroutine exception in HomeViewModel")
+        viewModelScope.launch {
+            _eventFlow.emit(UiEvent.ShowSnackbar("Unexpected error: ${throwable.localizedMessage ?: "Unknown error"}"))
+        }
+    }
+
     init {
         observeSessionState()
         fetchJournalEntries()
     }
 
     private fun observeSessionState() {
-        viewModelScope.launch {
+        viewModelScope.launch(coroutineExceptionHandler) {
             _uiState.value = _uiState.value.copy(isLoading = true)
             sessionManager.isGuest.collect { isGuest ->
                 _uiState.value = _uiState.value.copy(isGuest = isGuest, isLoading = false)
@@ -44,18 +60,17 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun fetchJournalEntries() {
-        viewModelScope.launch {
-            // The UseCase now returns a simple Flow<List<JournalEntry>>
+        viewModelScope.launch(coroutineExceptionHandler) {
             getJournalEntriesUseCase()
                 .catch { e ->
-                    // Catch errors in the flow itself
+                    Timber.e(e, "Error fetching journal entries")
                     _uiState.value = _uiState.value.copy(
                         error = e.message ?: "An error occurred",
                         isLoading = false
                     )
+                    _eventFlow.emit(UiEvent.ShowSnackbar(AppError.Database.toUserMessage()))
                 }
                 .collect { entries ->
-                    // Directly update the state with the list of entries
                     _uiState.value = _uiState.value.copy(
                         journalEntries = entries,
                         isLoading = false
@@ -63,4 +78,18 @@ class HomeViewModel @Inject constructor(
                 }
         }
     }
+
+    fun retryFetch() {
+        fetchJournalEntries()
+    }
+}
+
+fun AppError.toUserMessage(): String = when (this) {
+    AppError.Network -> "No internet connection."
+    AppError.Auth -> "Authentication failed."
+    AppError.Database -> "A database error occurred."
+    AppError.NotFound -> "Requested resource not found."
+    AppError.Permission -> "You do not have permission to perform this action."
+    is AppError.Custom -> this.message
+    AppError.Unknown -> "An unknown error occurred."
 }

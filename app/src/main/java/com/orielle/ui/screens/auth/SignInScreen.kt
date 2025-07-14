@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +21,7 @@ import com.orielle.ui.components.OrielleLogo
 import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.components.SocialLoginOptions
 import com.orielle.ui.theme.OrielleTheme
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun SignInScreen(
@@ -30,8 +32,20 @@ fun SignInScreen(
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
     val authResponse by viewModel.authResponse.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Scaffold { paddingValues ->
+    // Collect error events and show in Snackbar
+    LaunchedEffect(Unit) {
+        viewModel.eventFlow.collectLatest { event ->
+            when (event) {
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -119,17 +133,7 @@ fun SignInScreen(
                 is Response.Success -> {
                     LaunchedEffect(Unit) { navigateToHome() }
                 }
-                is Response.Failure -> {
-                    val context = LocalContext.current
-                    val message = when (response.exception) {
-                        is FirebaseAuthInvalidUserException -> "No account found with this email."
-                        is FirebaseAuthInvalidCredentialsException -> "Incorrect password. Please try again."
-                        else -> "An unexpected error occurred."
-                    }
-                    LaunchedEffect(response) {
-                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                    }
-                }
+                is Response.Failure -> {}
                 null -> {}
             }
         }

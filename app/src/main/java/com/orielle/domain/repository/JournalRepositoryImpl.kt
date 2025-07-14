@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 import javax.inject.Inject
+import com.orielle.domain.model.AppError
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import timber.log.Timber
 
 class JournalRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
@@ -23,23 +26,27 @@ class JournalRepositoryImpl @Inject constructor(
     private val sessionManager: SessionManager // New dependency
 ) : JournalRepository {
 
-    // getJournalEntries now correctly reads from the DAO based on the current session ID
     override fun getJournalEntries(): Flow<List<JournalEntry>> = flow {
-        val userId = sessionManager.currentUserId.first()
-        if (userId != null) {
-            journalDao.getJournalEntries(userId).map { entities ->
-                entities.map { it.toDomain() }
-            }.collect { emit(it) }
-        } else {
-            emit(emptyList()) // Emit empty list if no session
+        try {
+            val userId = sessionManager.currentUserId.first()
+            if (userId != null) {
+                journalDao.getJournalEntries(userId).map { entities ->
+                    entities.map { it.toDomain() }
+                }.collect { emit(it) }
+            } else {
+                emit(emptyList())
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error fetching journal entries")
+            FirebaseCrashlytics.getInstance().recordException(e)
+            throw e // Let the ViewModel handle via .catch
         }
     }
 
-    // saveJournalEntry now checks if the user is a guest
     override suspend fun saveJournalEntry(entry: JournalEntry): Response<Boolean> {
         return try {
             val userId = sessionManager.currentUserId.first()
-                ?: return Response.Failure(Exception("No user session found."))
+                ?: return Response.Failure(AppError.Auth, Exception("No user session found."))
             val isGuest = sessionManager.isGuest.first()
 
             val entryToSave = entry.copy(
@@ -47,10 +54,8 @@ class JournalRepositoryImpl @Inject constructor(
                 id = if (entry.id.isBlank()) UUID.randomUUID().toString() else entry.id
             )
 
-            // Always save to the local Room cache
             journalDao.upsertJournalEntry(entryToSave.toEntity())
 
-            // Only save to Firestore if the user is NOT a guest
             if (!isGuest) {
                 firestore.collection("users").document(userId)
                     .collection("journal_entries").document(entryToSave.id)
@@ -58,21 +63,20 @@ class JournalRepositoryImpl @Inject constructor(
             }
             Response.Success(true)
         } catch (e: Exception) {
-            Response.Failure(e)
+            Timber.e(e, "Error saving journal entry")
+            FirebaseCrashlytics.getInstance().recordException(e)
+            Response.Failure(AppError.Database, e)
         }
     }
 
-    // deleteJournalEntry now checks if the user is a guest
     override suspend fun deleteJournalEntry(entryId: String): Response<Boolean> {
         return try {
             val userId = sessionManager.currentUserId.first()
-                ?: return Response.Failure(Exception("No user session found."))
+                ?: return Response.Failure(AppError.Auth, Exception("No user session found."))
             val isGuest = sessionManager.isGuest.first()
 
-            // Always delete from the local Room cache
             journalDao.deleteJournalEntry(entryId)
 
-            // Only delete from Firestore if the user is NOT a guest
             if (!isGuest) {
                 firestore.collection("users").document(userId)
                     .collection("journal_entries").document(entryId)
@@ -80,7 +84,9 @@ class JournalRepositoryImpl @Inject constructor(
             }
             Response.Success(true)
         } catch (e: Exception) {
-            Response.Failure(e)
+            Timber.e(e, "Error deleting journal entry")
+            FirebaseCrashlytics.getInstance().recordException(e)
+            Response.Failure(AppError.Database, e)
         }
     }
 }
