@@ -13,6 +13,7 @@ import timber.log.Timber
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import com.orielle.ui.util.UiEvent
 
 @HiltViewModel
 class SanctuaryViewModel @Inject constructor() : ViewModel() {

@@ -18,18 +18,24 @@ import timber.log.Timber
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import com.orielle.ui.util.UiEvent
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.first
 
 data class HomeUiState(
     val isGuest: Boolean = true,
     val isLoading: Boolean = true,
     val journalEntries: List<JournalEntry> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    val userName: String? = null, // Added userName property
+    val isPremium: Boolean = false // Added isPremium property
 )
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getJournalEntriesUseCase: GetJournalEntriesUseCase,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val firestore: FirebaseFirestore // Inject Firestore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -55,6 +61,23 @@ class HomeViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true)
             sessionManager.isGuest.collect { isGuest ->
                 _uiState.value = _uiState.value.copy(isGuest = isGuest, isLoading = false)
+                if (!isGuest) {
+                    // Fetch user name and premium status from Firestore
+                    val userId = sessionManager.currentUserId.first()
+                    if (userId != null) {
+                        firestore.collection("users").document(userId).get()
+                            .addOnSuccessListener { document ->
+                                val displayName = document.getString("displayName")
+                                val isPremium = document.getBoolean("premium") == true
+                                _uiState.value = _uiState.value.copy(userName = displayName, isPremium = isPremium)
+                            }
+                            .addOnFailureListener { e ->
+                                Timber.e(e, "Failed to fetch user profile")
+                            }
+                    }
+                } else {
+                    _uiState.value = _uiState.value.copy(userName = null, isPremium = false)
+                }
             }
         }
     }

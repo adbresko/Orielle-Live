@@ -135,28 +135,60 @@ class AuthRepositoryImpl @Inject constructor(
 
     override fun signInWithApple(idToken: String): Flow<Response<Boolean>> = callbackFlow {
         trySend(Response.Loading)
-        val provider = OAuthProvider.newBuilder("apple.com")
-        val pendingResultTask = auth.pendingAuthResult
-        if (pendingResultTask != null) {
-            pendingResultTask
-                .addOnSuccessListener { authResult ->
-                    trySend(Response.Success(true))
+        // For Apple Sign-In with Firebase, we need to create a credential from the ID token
+        // This approach doesn't require an Activity parameter
+        try {
+            // Create a credential from the Apple ID token
+            val credential = OAuthProvider.newCredentialBuilder("apple.com")
+                .setIdToken(idToken)
+                .build()
+
+            auth.signInWithCredential(credential)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val firebaseUser = task.result?.user
+                        if (firebaseUser != null) {
+                            db.collection("users").document(firebaseUser.uid).get()
+                                .addOnSuccessListener { document ->
+                                    if (!document.exists()) {
+                                        val newUser = User(
+                                            uid = firebaseUser.uid,
+                                            email = firebaseUser.email,
+                                            displayName = firebaseUser.displayName,
+                                            hasAgreedToTerms = true
+                                        )
+                                        db.collection("users").document(newUser.uid).set(newUser)
+                                            .addOnSuccessListener {
+                                                trySend(Response.Success(true))
+                                            }
+                                            .addOnFailureListener { e ->
+                                                Timber.e(e, "Firestore error during Apple sign in")
+                                                FirebaseCrashlytics.getInstance().recordException(e)
+                                                trySend(Response.Failure(AppError.Database, e))
+                                            }
+                                    } else {
+                                        trySend(Response.Success(true))
+                                    }
+                                }
+                                .addOnFailureListener { e ->
+                                    Timber.e(e, "Firestore error during Apple sign in")
+                                    FirebaseCrashlytics.getInstance().recordException(e)
+                                    trySend(Response.Failure(AppError.Database, e))
+                                }
+                        } else {
+                            trySend(Response.Success(true))
+                        }
+                    } else {
+                        val e = task.exception
+                        Timber.e(e, "Apple sign in error")
+                        FirebaseCrashlytics.getInstance().recordException(e ?: Exception("Apple sign-in failed."))
+                        trySend(Response.Failure(AppError.Auth, e ?: Exception("Apple sign-in failed.")))
+                    }
                 }
-                .addOnFailureListener { e ->
-                    Timber.e(e, "Apple sign in error")
-                    FirebaseCrashlytics.getInstance().recordException(e)
-                    trySend(Response.Failure(AppError.Auth, e))
-                }
-        } else {
-            auth.startActivityForSignInWithProvider(/* activity = */ null, provider.build())
-                .addOnSuccessListener { authResult ->
-                    trySend(Response.Success(true))
-                }
-                .addOnFailureListener { e ->
-                    Timber.e(e, "Apple sign in error")
-                    FirebaseCrashlytics.getInstance().recordException(e)
-                    trySend(Response.Failure(AppError.Auth, e))
-                }
+        } catch (e: Exception) {
+            Timber.e(e, "Apple sign in credential creation error")
+            FirebaseCrashlytics.getInstance().recordException(e)
+            trySend(Response.Failure(AppError.Auth, e))
         }
         awaitClose { channel.close() }
     }

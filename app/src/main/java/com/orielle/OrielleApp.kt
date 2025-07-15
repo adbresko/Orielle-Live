@@ -5,6 +5,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
+import com.jakewharton.threetenabp.AndroidThreeTen
 
 @HiltAndroidApp
 class OrielleApp : Application() {
@@ -16,6 +17,8 @@ class OrielleApp : Application() {
 
         // Initialize Timber
         Timber.plant(Timber.DebugTree())
+        // Initialize ThreeTenABP
+        AndroidThreeTen.init(this)
 
         // Global uncaught exception handler
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->

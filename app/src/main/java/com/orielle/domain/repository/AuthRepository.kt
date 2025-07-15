@@ -1,5 +1,6 @@
 package com.orielle.domain.repository
 
+import android.app.Activity
 import com.google.firebase.auth.FirebaseUser
 import com.orielle.domain.model.Response
 import com.orielle.domain.model.User

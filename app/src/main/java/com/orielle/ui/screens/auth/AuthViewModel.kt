@@ -10,7 +10,7 @@ import com.orielle.domain.use_case.SignInUseCase
 import com.orielle.domain.use_case.SignInWithAppleUseCase
 import com.orielle.domain.use_case.SignInWithGoogleUseCase
 import com.orielle.domain.use_case.SignUpUseCase
-import com.orielle.util.UiEvent
+import com.orielle.ui.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

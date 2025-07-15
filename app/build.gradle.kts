@@ -37,35 +37,35 @@ android {
         debug {
             isMinifyEnabled = false
             isShrinkResources = false
-            //applicationIdSuffix = ".debug"
+            applicationIdSuffix = null
             versionNameSuffix = "-debug"
         }
     }
-    
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    
+
     kotlinOptions {
         jvmTarget = "17"
     }
-    
+
     buildFeatures {
         compose = true
         buildConfig = true
     }
-    
+
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
-    
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-    
+
     // Enable parallel builds for faster compilation
     kotlin {
         jvmToolchain(17)
@@ -109,8 +109,8 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.google.services.auth)
     implementation(libs.firebase.analytics)
-    implementation("com.google.firebase:firebase-crashlytics-ktx")
-    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation(libs.google.firebase.crashlytics.ktx)
+    implementation(libs.google.firebase.analytics.ktx)
 
     // Media - For Video Playback
     implementation(libs.androidx.media3.exoplayer)
@@ -118,6 +118,7 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
 
     // Testing
+    implementation(libs.ui)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -125,12 +126,11 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation("com.jakewharton.timber:timber:5.0.1")
+    implementation(libs.timber)
+    implementation(libs.jakewharton.threetenabp)
 }
 
 // Allow references to generated code
 kapt {
     correctErrorTypes = true
 }
-
-apply(plugin = "com.google.firebase.crashlytics")

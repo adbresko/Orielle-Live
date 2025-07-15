@@ -15,6 +15,7 @@ import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.components.ErrorScreen
 import com.orielle.ui.theme.OrielleTheme
 import kotlinx.coroutines.flow.collectLatest
+import com.orielle.ui.util.UiEvent
 
 @Composable
 fun SecuritySetupScreen(
@@ -27,7 +28,7 @@ fun SecuritySetupScreen(
 
     // Collect error events and show in Snackbar, and set errorState for critical errors
     LaunchedEffect(Unit) {
-        viewModel.eventFlow.collectLatest { event ->
+        viewModel.eventFlow.collectLatest { event: UiEvent ->
             when (event) {
                 is UiEvent.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(event.message)
@@ -35,6 +36,9 @@ fun SecuritySetupScreen(
                         errorState.value = event.message
                     }
                 }
+
+                UiEvent.Navigate -> TODO()
+                UiEvent.NavigateUp -> TODO()
             }
         }
     }
