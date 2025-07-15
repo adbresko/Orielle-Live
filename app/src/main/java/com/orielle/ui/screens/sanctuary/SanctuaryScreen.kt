@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.orielle.ui.theme.OrielleTheme
 import kotlinx.coroutines.flow.collectLatest
+import com.orielle.ui.util.UiEvent
 import com.orielle.ui.components.ErrorScreen
 
 @Composable
@@ -30,7 +31,7 @@ fun SanctuaryScreen(
 
     // Collect error events and show in Snackbar, and set errorState for critical errors
     LaunchedEffect(Unit) {
-        viewModel.eventFlow.collectLatest { event ->
+        viewModel.eventFlow.collectLatest { event: UiEvent ->
             when (event) {
                 is UiEvent.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(event.message)

@@ -18,6 +18,7 @@ import timber.log.Timber
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import com.orielle.ui.util.UiEvent
 
 data class HomeUiState(
     val isGuest: Boolean = true,

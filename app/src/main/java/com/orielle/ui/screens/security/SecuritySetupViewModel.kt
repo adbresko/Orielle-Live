@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.orielle.domain.manager.BiometricAuthManager
 import com.orielle.domain.manager.SessionManager // We will use this to save the preference
 import com.orielle.domain.model.AppError
+import com.orielle.ui.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableSharedFlow

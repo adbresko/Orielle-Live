@@ -21,6 +21,7 @@ import com.orielle.ui.components.OrielleLogo
 import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.components.SocialLoginOptions
 import com.orielle.ui.theme.OrielleTheme
+import com.orielle.ui.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -36,9 +37,10 @@ fun SignInScreen(
 
     // Collect error events and show in Snackbar
     LaunchedEffect(Unit) {
-        viewModel.eventFlow.collectLatest { event ->
+        viewModel.eventFlow.collectLatest { event: UiEvent ->
             when (event) {
                 is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+                else -> {}
             }
         }
     }

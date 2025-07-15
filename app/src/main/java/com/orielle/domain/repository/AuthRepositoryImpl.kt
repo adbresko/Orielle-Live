@@ -148,6 +148,8 @@ class AuthRepositoryImpl @Inject constructor(
                     trySend(Response.Failure(AppError.Auth, e))
                 }
         } else {
+            // TODO: Pass a valid Activity instance here. Null is not allowed.
+            // auth.startActivityForSignInWithProvider(/* activity = */ null, provider.build())
             auth.startActivityForSignInWithProvider(/* activity = */ null, provider.build())
                 .addOnSuccessListener { authResult ->
                     trySend(Response.Success(true))
