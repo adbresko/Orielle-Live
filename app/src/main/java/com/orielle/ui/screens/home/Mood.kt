@@ -15,12 +15,12 @@ data class Mood(
 // A predefined list of all moods for easy use in the UI.
 // This uses the colors you have defined in your Color.kt file.
 val allMoods = listOf(
-    Mood("Clear", R.drawable.ic_mood_clear, AuroraGold), // A sunny, golden yellow
-    Mood("Partly Cloudy", R.drawable.ic_mood_partly_cloudy, Color(0xFFB0BEC5)), // A neutral gray
-    Mood("Foggy", R.drawable.ic_mood_foggy, Color(0xFFCFD8DC)), // A lighter gray
-    Mood("Overcast", R.drawable.ic_mood_overcast, Color(0xFF90A4AE)), // A darker gray
-    Mood("Rainy", R.drawable.ic_mood_rainy, WaterBlue), // Your brand's WaterBlue
-    Mood("Stormy", R.drawable.ic_mood_stormy, Color(0xFF42A5F5)), // A deeper blue
-    Mood("Frozen", R.drawable.ic_mood_frozen, Color(0xFF81D4FA)), // An icy blue
-    Mood("Rainbow", R.drawable.ic_mood_rainbow, StillwaterTeal) // Your brand's Teal
+    Mood("Clear", R.drawable.ic_happy, AuroraGold), // A sunny, golden yellow
+    Mood("Partly Cloudy", R.drawable.ic_sad, Color(0xFFB0BEC5)), // A neutral gray
+    Mood("Foggy", R.drawable.ic_frustrated, Color(0xFFCFD8DC)), // A lighter gray
+    Mood("Overcast", R.drawable.ic_shy, Color(0xFF90A4AE)), // A darker gray
+    Mood("Rainy", R.drawable.ic_scared, WaterBlue), // Your brand's WaterBlue
+    Mood("Stormy", R.drawable.ic_sad, Color(0xFF42A5F5)), // A deeper blue
+    Mood("Frozen", R.drawable.ic_surprised, Color(0xFF81D4FA)), // An icy blue
+    Mood("Rainbow", R.drawable.ic_peaceful, StillwaterTeal) // Your brand's Teal
 )
