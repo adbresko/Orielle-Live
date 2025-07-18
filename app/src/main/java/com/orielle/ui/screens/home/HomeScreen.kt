@@ -57,6 +57,8 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.ripple.rememberRipple
 
 @Composable
 fun HomeScreen(
@@ -232,7 +234,7 @@ private fun ReflectionCards() {
                     modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
                 )
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_mood_clear), // Placeholder, use your own
+                    painter = painterResource(id = R.drawable.ic_happy), // Placeholder, use your own
                     contentDescription = "Morning Icon",
                     modifier = Modifier.size(36.dp),
                     tint = MaterialTheme.colorScheme.background
@@ -261,7 +263,7 @@ private fun ReflectionCards() {
                     modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
                 )
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_mood_foggy), // Placeholder, use your own
+                    painter = painterResource(id = R.drawable.ic_playful), // Placeholder, use your own
                     contentDescription = "Evening Icon",
                     modifier = Modifier.size(36.dp),
                     tint = MaterialTheme.colorScheme.onBackground
@@ -278,11 +280,11 @@ private fun MoodCheckInRow(
     onMoodLongPress: (String) -> Unit
 ) {
     val moods = listOf(
-        Triple("Angry", R.drawable.ic_mood_stormy, Color(0xFFE57373)),
-        Triple("Sad", R.drawable.ic_mood_foggy, Color(0xFFFFB74D)),
-        Triple("Okay", R.drawable.ic_mood_partly_cloudy, Color(0xFF64B5F6)),
-        Triple("Good", R.drawable.ic_mood_clear, Color(0xFF81C784)),
-        Triple("Great", R.drawable.ic_mood_rainbow, Color(0xFFBA68C8))
+        Triple("Angry", R.drawable.ic_angry, Color(0xFFE57373)),
+        Triple("Sad", R.drawable.ic_sad, Color(0xFFFFB74D)),
+        Triple("Okay", R.drawable.ic_peaceful, Color(0xFF64B5F6)),
+        Triple("Good", R.drawable.ic_playful, Color(0xFF81C784)),
+        Triple("Great", R.drawable.ic_surprised, Color(0xFFBA68C8))
     )
     Row(
         modifier = Modifier
@@ -293,14 +295,18 @@ private fun MoodCheckInRow(
         moods.forEach { (label, icon, color) ->
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .clickable { onMoodSelected(label) }
-                    .padding(4.dp)
+                modifier = Modifier.padding(4.dp)
             ) {
                 Surface(
                     shape = CircleShape,
                     color = if (selectedMood == label) color.copy(alpha = 0.25f) else color.copy(alpha = 0.12f),
-                    modifier = Modifier.size(54.dp),
+                    modifier = Modifier
+                        .size(54.dp)
+                        .clickable(
+                            onClick = { onMoodSelected(label) },
+                            indication = rememberRipple(bounded = true),
+                            interactionSource = remember { MutableInteractionSource() }
+                        ),
                     tonalElevation = 0.dp
                 ) {
                     Icon(
@@ -478,11 +484,11 @@ private fun MoodTrackerSection() {
             horizontalArrangement = Arrangement.spacedBy(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            MoodIconCircle(icon = R.drawable.ic_mood_stormy, color = Color(0xFFE57373), label = "Angry")
-            MoodIconCircle(icon = R.drawable.ic_mood_foggy, color = Color(0xFFFFB74D), label = "Sad")
-            MoodIconCircle(icon = R.drawable.ic_mood_partly_cloudy, color = Color(0xFF64B5F6), label = "Okay")
-            MoodIconCircle(icon = R.drawable.ic_mood_clear, color = Color(0xFF81C784), label = "Good")
-            MoodIconCircle(icon = R.drawable.ic_mood_rainbow, color = Color(0xFFBA68C8), label = "Great")
+            MoodIconCircle(icon = R.drawable.ic_happy, color = Color(0xFFE57373), label = "Angry")
+            MoodIconCircle(icon = R.drawable.ic_happy, color = Color(0xFFFFB74D), label = "Sad")
+            MoodIconCircle(icon = R.drawable.ic_happy, color = Color(0xFF64B5F6), label = "Okay")
+            MoodIconCircle(icon = R.drawable.ic_happy, color = Color(0xFF81C784), label = "Good")
+            MoodIconCircle(icon = R.drawable.ic_happy, color = Color(0xFFBA68C8), label = "Great")
         }
     }
 }
@@ -493,7 +499,13 @@ private fun MoodIconCircle(icon: Int, color: Color, label: String) {
         Surface(
             shape = CircleShape,
             color = color.copy(alpha = 0.18f),
-            modifier = Modifier.size(54.dp),
+            modifier = Modifier
+                .size(54.dp)
+                .clickable(
+                    onClick = { /* TODO: handle click if needed */ },
+                    indication = rememberRipple(bounded = true),
+                    interactionSource = remember { MutableInteractionSource() }
+                ),
             tonalElevation = 0.dp
         ) {
             Icon(
@@ -741,11 +753,11 @@ private fun CompactHeader(userName: String, primaryColor: Color, onPrimary: Colo
 @Composable
 private fun MoodSelectionRow(bgColor: Color, iconTint: Color) {
     val moods = listOf(
-        "Awesome" to R.drawable.ic_mood_rainbow,
-        "Great" to R.drawable.ic_mood_clear,
-        "Alright" to R.drawable.ic_mood_partly_cloudy,
-        "Not Great" to R.drawable.ic_mood_foggy,
-        "Terrible" to R.drawable.ic_mood_stormy
+        "Awesome" to R.drawable.ic_happy,
+        "Great" to R.drawable.ic_happy,
+        "Alright" to R.drawable.ic_happy,
+        "Not Great" to R.drawable.ic_happy,
+        "Terrible" to R.drawable.ic_happy
     )
     Row(
         modifier = Modifier
@@ -784,12 +796,12 @@ private fun MoodSelectionRow(bgColor: Color, iconTint: Color) {
 @Composable
 private fun MoodCalendarRow(bgColor: Color, textColor: Color) {
     val days = listOf(
-        Triple("Mon", "04", R.drawable.ic_mood_clear),
-        Triple("Tue", "05", R.drawable.ic_mood_clear),
-        Triple("Wed", "06", R.drawable.ic_mood_clear),
-        Triple("Thu", "07", R.drawable.ic_mood_foggy), // highlighted
-        Triple("Fri", "08", R.drawable.ic_mood_partly_cloudy),
-        Triple("Sat", "09", R.drawable.ic_mood_rainbow)
+        Triple("Mon", "04", R.drawable.ic_happy),
+        Triple("Tue", "05", R.drawable.ic_happy),
+        Triple("Wed", "06", R.drawable.ic_happy),
+        Triple("Thu", "07", R.drawable.ic_happy), // highlighted
+        Triple("Fri", "08", R.drawable.ic_happy),
+        Triple("Sat", "09", R.drawable.ic_happy)
     )
     val highlightColor = bgColor
     Row(
@@ -843,7 +855,7 @@ private fun MoodChecklistCard(bgColor: Color, iconTint: Color) {
         ) {
             Spacer(modifier = Modifier.width(14.dp))
             Icon(
-                painter = painterResource(id = R.drawable.ic_mood_rainbow),
+                painter = painterResource(id = R.drawable.ic_happy),
                 contentDescription = "Checklist",
                 tint = iconTint,
                 modifier = Modifier.size(22.dp)
@@ -851,7 +863,7 @@ private fun MoodChecklistCard(bgColor: Color, iconTint: Color) {
             Spacer(modifier = Modifier.width(10.dp))
             Text("Drink 15 oz of water", fontWeight = FontWeight.Medium, fontSize = 16.sp, modifier = Modifier.weight(1f))
             Icon(
-                painter = painterResource(id = R.drawable.ic_mood_clear),
+                painter = painterResource(id = R.drawable.ic_happy),
                 contentDescription = "Checked",
                 tint = iconTint,
                 modifier = Modifier.size(22.dp)

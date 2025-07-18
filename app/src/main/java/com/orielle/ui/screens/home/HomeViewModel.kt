@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.orielle.domain.manager.SessionManager
 import com.orielle.domain.model.JournalEntry
 import com.orielle.domain.use_case.GetJournalEntriesUseCase
+import com.orielle.domain.use_case.HasMoodCheckInForDateUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,12 +29,14 @@ data class HomeUiState(
     val journalEntries: List<JournalEntry> = emptyList(),
     val error: String? = null,
     val userName: String? = null, // Added userName property
-    val isPremium: Boolean = false // Added isPremium property
+    val isPremium: Boolean = false, // Added isPremium property
+    val needsMoodCheckIn: Boolean = false // Added mood check-in status
 )
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getJournalEntriesUseCase: GetJournalEntriesUseCase,
+    private val hasMoodCheckInForDateUseCase: HasMoodCheckInForDateUseCase,
     private val sessionManager: SessionManager,
     private val firestore: FirebaseFirestore // Inject Firestore
 ) : ViewModel() {
@@ -54,6 +57,7 @@ class HomeViewModel @Inject constructor(
     init {
         observeSessionState()
         fetchJournalEntries()
+        checkMoodCheckInStatus()
     }
 
     private fun observeSessionState() {
@@ -104,6 +108,30 @@ class HomeViewModel @Inject constructor(
 
     fun retryFetch() {
         fetchJournalEntries()
+    }
+
+    private fun checkMoodCheckInStatus() {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            try {
+                val userId = sessionManager.currentUserId.first()
+                if (userId != null) {
+                    val today = java.util.Date()
+                    val result = hasMoodCheckInForDateUseCase(userId, today)
+
+                    when (result) {
+                        is com.orielle.domain.model.Response.Success -> {
+                            _uiState.value = _uiState.value.copy(needsMoodCheckIn = !result.data)
+                        }
+                        is com.orielle.domain.model.Response.Failure -> {
+                            Timber.e(result.exception, "Error checking mood check-in status")
+                        }
+                        is com.orielle.domain.model.Response.Loading -> { /* Optionally handle loading */ }
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error checking mood check-in status")
+            }
+        }
     }
 }
 

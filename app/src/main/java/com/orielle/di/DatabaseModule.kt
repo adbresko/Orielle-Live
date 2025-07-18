@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.orielle.data.local.OrielleDatabase
 import com.orielle.data.local.dao.JournalDao
+import com.orielle.data.local.dao.MoodCheckInDao
 import com.orielle.data.local.dao.UserDao
 import dagger.Module
 import dagger.Provides
@@ -44,4 +45,8 @@ object DatabaseModule {
     fun provideJournalDao(database: OrielleDatabase): JournalDao {
         return database.journalDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideMoodCheckInDao(db: OrielleDatabase): MoodCheckInDao = db.moodCheckInDao()
 }

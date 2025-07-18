@@ -26,6 +26,8 @@ import com.orielle.ui.screens.auth.EmailSignUpScreen
 import com.orielle.ui.screens.auth.SignInScreen
 import com.orielle.ui.screens.auth.WelcomeScreen
 import com.orielle.ui.screens.home.HomeScreen
+import com.orielle.ui.screens.mood.MoodCheckInScreen
+import com.orielle.ui.screens.mood.MoodCheckInViewModel
 import com.orielle.ui.screens.onboarding.OnboardingScreen
 import com.orielle.ui.screens.sanctuary.SanctuaryScreen
 import com.orielle.ui.screens.security.SecuritySetupScreen
@@ -59,20 +61,48 @@ fun AppNavigation(
             // CORRECTED: The HomeScreen call no longer takes any parameters.
             HomeScreen()
         }
+
+        // Mood check-in screen
+        composable("mood_check_in") {
+            MoodCheckInScreen(
+                onMoodSelected = { mood ->
+                    // Navigate to home after mood selection
+                    navController.navigate("home_graph") {
+                        popUpTo("mood_check_in") { inclusive = true }
+                    }
+                },
+                onSkip = {
+                    // Navigate to home when skipped
+                    navController.navigate("home_graph") {
+                        popUpTo("mood_check_in") { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }
 
-// SplashScreenRouter remains the same
+// SplashScreenRouter with mood check-in logic
 @Composable
 fun SplashScreenRouter(
     isUserAuthenticated: Boolean?,
     navController: NavController,
 ) {
+    val moodCheckInViewModel: MoodCheckInViewModel = hiltViewModel()
+    val uiState by moodCheckInViewModel.uiState.collectAsState()
+
     LaunchedEffect(isUserAuthenticated) {
         if (isUserAuthenticated != null) {
-            val destination = if (isUserAuthenticated) "home_graph" else "auth_graph"
-            navController.navigate(destination) {
-                popUpTo("splash_router") { inclusive = true }
+            if (isUserAuthenticated) {
+                // For now, we'll always show mood check-in for authenticated users
+                // In a real implementation, you'd check the database here
+                navController.navigate("mood_check_in") {
+                    popUpTo("splash_router") { inclusive = true }
+                }
+            } else {
+                navController.navigate("auth_graph") {
+                    popUpTo("splash_router") { inclusive = true }
+                }
             }
         }
     }
