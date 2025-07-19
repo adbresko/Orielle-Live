@@ -59,10 +59,15 @@ import androidx.compose.ui.input.pointer.pointerInteropFilter
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
+    navController: NavController? = null // Allow navigation if provided
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val userName = uiState.userName ?: "User"
@@ -76,12 +81,24 @@ fun HomeScreen(
     // val snackbarHostState = rememberSnackbarHostState()
     val coroutineScope = rememberCoroutineScope()
     val bg = MaterialTheme.colorScheme.background
-
+    val context = LocalContext.current
+    // Listen for log out event
+    val logOutEvent = viewModel.logOutEvent
+    val currentNavController = navController
+    LaunchedEffect(logOutEvent) {
+        logOutEvent.collect {
+            // Navigate to auth/login screen (replace with your actual route)
+            currentNavController?.navigate("auth_graph") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
     Scaffold(
         topBar = {
             HomeHeader(
                 userName = userName,
-                isPremium = isPremium
+                isPremium = isPremium,
+                onLogOutClick = { viewModel.logOut() }
             )
         },
         bottomBar = {
@@ -131,7 +148,8 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader(userName: String, isPremium: Boolean) {
+private fun HomeHeader(userName: String, isPremium: Boolean, onLogOutClick: () -> Unit) {
+    var menuExpanded by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -166,6 +184,27 @@ private fun HomeHeader(userName: String, isPremium: Boolean) {
                     contentDescription = "Guest User",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(7.dp).size(22.dp)
+                )
+            }
+        }
+        // Overflow menu for log out
+        Box {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Menu")
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Log Out") },
+                    onClick = {
+                        menuExpanded = false
+                        onLogOutClick()
+                    },
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Default.Logout, contentDescription = "Log Out")
+                    }
                 )
             }
         }

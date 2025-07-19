@@ -16,10 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.orielle.R
 import com.orielle.ui.screens.auth.AuthViewModel
 import com.orielle.ui.screens.auth.DataTransparencyScreen
 import com.orielle.ui.screens.auth.EmailSignUpScreen
@@ -28,9 +31,11 @@ import com.orielle.ui.screens.auth.WelcomeScreen
 import com.orielle.ui.screens.home.HomeScreen
 import com.orielle.ui.screens.mood.MoodCheckInScreen
 import com.orielle.ui.screens.mood.MoodCheckInViewModel
+import com.orielle.ui.screens.mood.MoodReflectionScreen
 import com.orielle.ui.screens.onboarding.OnboardingScreen
 import com.orielle.ui.screens.sanctuary.SanctuaryScreen
 import com.orielle.ui.screens.security.SecuritySetupScreen
+import com.orielle.ui.screens.mood.MoodFinalScreen
 
 @Composable
 fun AppNavigation(
@@ -59,23 +64,81 @@ fun AppNavigation(
         // The main part of the app after login
         composable("home_graph") {
             // CORRECTED: The HomeScreen call no longer takes any parameters.
-            HomeScreen()
+            HomeScreen(navController = navController)
         }
 
         // Mood check-in screen
         composable("mood_check_in") {
-            MoodCheckInScreen(
-                onMoodSelected = { mood ->
-                    // Navigate to home after mood selection
-                    navController.navigate("home_graph") {
+            val authViewModel: AuthViewModel = hiltViewModel()
+            val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
+            val navController = navController
+            // Guard: If not authenticated, redirect to auth_graph
+            LaunchedEffect(isUserAuthenticated) {
+                if (isUserAuthenticated == false) {
+                    navController.navigate("auth_graph") {
                         popUpTo("mood_check_in") { inclusive = true }
+                    }
+                }
+            }
+            if (isUserAuthenticated == true) {
+                MoodCheckInScreen(
+                    onMoodSelected = { moodName ->
+                        // Map mood name to icon resource
+                        val moodIconRes = when (moodName) {
+                            "Surprised" -> R.drawable.ic_surprised
+                            "Happy" -> R.drawable.ic_happy
+                            "Sad" -> R.drawable.ic_sad
+                            "Playful" -> R.drawable.ic_playful
+                            "Angry" -> R.drawable.ic_angry
+                            "Shy" -> R.drawable.ic_shy
+                            "Frustrated" -> R.drawable.ic_frustrated
+                            "Scared" -> R.drawable.ic_scared
+                            "Peaceful" -> R.drawable.ic_peaceful
+                            else -> R.drawable.ic_happy
+                        }
+                        navController.navigate("mood_reflection/$moodName/$moodIconRes")
+                    },
+                    onSkip = {
+                        navController.navigate("home_graph") {
+                            popUpTo("mood_check_in") { inclusive = true }
+                        }
+                    }
+                )
+            }
+        }
+        // Mood reflection screen
+        composable(
+            route = "mood_reflection/{moodName}/{moodIconRes}",
+            arguments = listOf(
+                navArgument("moodName") { type = NavType.StringType },
+                navArgument("moodIconRes") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val moodName = backStackEntry.arguments?.getString("moodName") ?: "Happy"
+            val moodIconRes = backStackEntry.arguments?.getInt("moodIconRes") ?: R.drawable.ic_happy
+            MoodReflectionScreen(
+                moodName = moodName,
+                moodIconRes = moodIconRes,
+                onSave = { _, _, _ ->
+                    navController.navigate("mood_final") {
+                        popUpTo("mood_reflection/$moodName/$moodIconRes") { inclusive = true }
                     }
                 },
-                onSkip = {
-                    // Navigate to home when skipped
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        // Final saved for today screen
+        composable("mood_final") {
+            MoodFinalScreen(
+                onDone = {
                     navController.navigate("home_graph") {
-                        popUpTo("mood_check_in") { inclusive = true }
+                        popUpTo("mood_final") { inclusive = true }
                     }
+                },
+                onShare = {
+                    // TODO: Implement share functionality
                 }
             )
         }
@@ -94,8 +157,6 @@ fun SplashScreenRouter(
     LaunchedEffect(isUserAuthenticated) {
         if (isUserAuthenticated != null) {
             if (isUserAuthenticated) {
-                // For now, we'll always show mood check-in for authenticated users
-                // In a real implementation, you'd check the database here
                 navController.navigate("mood_check_in") {
                     popUpTo("splash_router") { inclusive = true }
                 }

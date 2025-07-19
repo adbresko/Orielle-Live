@@ -21,6 +21,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.orielle.R
 import com.orielle.ui.theme.OrielleTheme
+import androidx.compose.foundation.Image
+import com.orielle.ui.components.OrielleScreenHeader
+import com.orielle.ui.components.AccountRequiredModal
+import com.orielle.ui.screens.auth.AuthViewModel
 
 @Composable
 fun MoodCheckInScreen(
@@ -28,6 +32,24 @@ fun MoodCheckInScreen(
     onMoodSelected: (String) -> Unit = {},
     onSkip: () -> Unit = {}
 ) {
+    val authViewModel: AuthViewModel = hiltViewModel()
+    val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
+    val isGuest = isUserAuthenticated == false
+    var showAccountModal by remember { mutableStateOf(false) }
+
+    // Show modal if guest
+    if (showAccountModal) {
+        AccountRequiredModal(
+            onSignUp = { showAccountModal = false /* TODO: Navigate to sign up */ },
+            onCancel = { showAccountModal = false }
+        )
+    }
+
+    if (isGuest) {
+        // Trigger modal if guest
+        LaunchedEffect(Unit) { showAccountModal = true }
+    }
+
     val uiState by viewModel.uiState.collectAsState()
     val userName = uiState.userName ?: "User"
 
@@ -39,14 +61,17 @@ fun MoodCheckInScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Header/Question
+        OrielleScreenHeader(
+            text = "How is your inner weather, $userName?"
+        )
         Text(
-            text = "How is your inner weather, $userName?",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            text = "Tap on the weather that feels most like you.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color(0xFF222222),
             textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Normal,
-            modifier = Modifier.padding(bottom = 48.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp)
         )
 
         // Emotion Selection Grid (3x3)
@@ -77,11 +102,11 @@ private fun EmotionGrid(
 ) {
     val emotions = listOf(
         EmotionData("Surprised", R.drawable.ic_surprised, Color(0xFFE1BEE7)),
-        EmotionData("Happy", R.drawable.ic_happy, Color(0xFFFFF59D)), // Using existing clear icon for happy
-        EmotionData("Sad", R.drawable.ic_sad, Color(0xFF90A4AE)), // Using existing foggy icon for sad
+        EmotionData("Happy", R.drawable.ic_happy, Color(0xFFFFF59D)),
+        EmotionData("Sad", R.drawable.ic_sad, Color(0xFF90A4AE)),
         EmotionData("Playful", R.drawable.ic_playful, Color(0xFFFFF59D)),
         EmotionData("Angry", R.drawable.ic_angry, Color(0xFF90A4AE)),
-        EmotionData("Shy", R.drawable.ic_shy, Color(0xFFE1BEE7)), // Using existing partly cloudy for shy
+        EmotionData("Shy", R.drawable.ic_shy, Color(0xFFE1BEE7)),
         EmotionData("Frustrated", R.drawable.ic_frustrated, Color(0xFFFFAB91)),
         EmotionData("Scared", R.drawable.ic_scared, Color(0xFFB3E5FC)),
         EmotionData("Peaceful", R.drawable.ic_peaceful, Color(0xFFFFF59D))
@@ -102,7 +127,6 @@ private fun EmotionGrid(
                 )
             }
         }
-
         // Row 2
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -114,7 +138,6 @@ private fun EmotionGrid(
                 )
             }
         }
-
         // Row 3
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -138,33 +161,31 @@ private fun EmotionButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(4.dp)
     ) {
-        Surface(
-            shape = CircleShape,
-            color = emotion.color.copy(alpha = 0.2f),
+        Box(
             modifier = Modifier
                 .size(80.dp)
+                .clip(CircleShape)
                 .clickable(
                     onClick = onClick,
                     indication = rememberRipple(bounded = true),
                     interactionSource = remember { MutableInteractionSource() }
                 ),
-            tonalElevation = 0.dp
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
+            Surface(
+                shape = CircleShape,
+                color = emotion.color.copy(alpha = 0.2f),
+                tonalElevation = 0.dp,
                 modifier = Modifier.fillMaxSize()
             ) {
-                Icon(
+                Image(
                     painter = painterResource(id = emotion.iconRes),
                     contentDescription = emotion.name,
-                    modifier = Modifier.size(48.dp),
-                    tint = emotion.color
+                    modifier = Modifier.size(48.dp)
                 )
             }
         }
-
         Spacer(modifier = Modifier.height(8.dp))
-
         Text(
             text = emotion.name,
             style = MaterialTheme.typography.bodyMedium,

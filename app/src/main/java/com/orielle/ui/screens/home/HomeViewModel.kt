@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import com.orielle.ui.util.UiEvent
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.first
+import com.google.firebase.auth.FirebaseAuth
 
 data class HomeUiState(
     val isGuest: Boolean = true,
@@ -38,7 +39,8 @@ class HomeViewModel @Inject constructor(
     private val getJournalEntriesUseCase: GetJournalEntriesUseCase,
     private val hasMoodCheckInForDateUseCase: HasMoodCheckInForDateUseCase,
     private val sessionManager: SessionManager,
-    private val firestore: FirebaseFirestore // Inject Firestore
+    private val firestore: FirebaseFirestore, // Inject Firestore
+    private val auth: FirebaseAuth // Inject FirebaseAuth for log out
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -46,6 +48,10 @@ class HomeViewModel @Inject constructor(
 
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
+
+    // Add a log out event
+    private val _logOutEvent = MutableSharedFlow<Unit>()
+    val logOutEvent = _logOutEvent.asSharedFlow()
 
     private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
         Timber.e(throwable, "Unhandled coroutine exception in HomeViewModel")
@@ -131,6 +137,14 @@ class HomeViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error checking mood check-in status")
             }
+        }
+    }
+
+    fun logOut() {
+        viewModelScope.launch {
+            auth.signOut()
+            sessionManager.endGuestSession()
+            _logOutEvent.emit(Unit)
         }
     }
 }

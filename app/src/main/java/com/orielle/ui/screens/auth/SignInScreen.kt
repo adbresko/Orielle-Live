@@ -23,6 +23,13 @@ import com.orielle.ui.components.SocialLoginOptions
 import com.orielle.ui.theme.OrielleTheme
 import com.orielle.ui.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
+import android.app.Activity
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.orielle.R
 
 @Composable
 fun SignInScreen(
@@ -34,6 +41,28 @@ fun SignInScreen(
     val password by viewModel.password.collectAsState()
     val authResponse by viewModel.authResponse.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    // Google Sign-In Logic
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+    }
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)!!
+                viewModel.signInWithGoogle(account.idToken!!)
+            } catch (e: ApiException) {
+                // Optionally show error
+            }
+        }
+    }
 
     // Collect error events and show in Snackbar
     LaunchedEffect(Unit) {
@@ -113,7 +142,7 @@ fun SignInScreen(
                     Spacer(Modifier.height(24.dp))
 
                     SocialLoginOptions(
-                        onGoogleSignInClick = { /* TODO */ },
+                        onGoogleSignInClick = { googleSignInLauncher.launch(googleSignInClient.signInIntent) },
                         onAppleSignInClick = { /* TODO */ }
                     )
 
