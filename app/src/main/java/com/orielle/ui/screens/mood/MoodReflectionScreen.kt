@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.orielle.R
 import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.alpha
 import com.orielle.ui.components.OrielleScreenHeader
 
 // Data for each mood
@@ -74,6 +75,8 @@ fun MoodReflectionScreen(
     val reflectionUi = moodReflectionData[moodName] ?: moodReflectionData["Happy"]!!
     var selectedOptions by remember { mutableStateOf(listOf<String>()) }
     var notes by remember { mutableStateOf(TextFieldValue("")) }
+    val maxSelection = 3
+    val selectionLimitReached = selectedOptions.size >= maxSelection
 
     Column(
         modifier = Modifier
@@ -107,15 +110,25 @@ fun MoodReflectionScreen(
             color = Color(0xFF666666),
             textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        if (selectionLimitReached) {
+            Text(
+                text = "You can only select up to 3.",
+                color = Color(0xFFB00020),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+            )
+        } else {
+            Spacer(modifier = Modifier.height(12.dp))
+        }
         ReflectionOptionsGrid(
             options = reflectionUi.options,
             selected = selectedOptions,
+            selectionLimitReached = selectionLimitReached,
             onSelect = { option ->
                 selectedOptions = if (selectedOptions.contains(option)) {
                     selectedOptions - option
                 } else {
-                    selectedOptions + option
+                    if (selectedOptions.size < maxSelection) selectedOptions + option else selectedOptions
                 }
             }
         )
@@ -157,6 +170,7 @@ fun MoodReflectionScreen(
 private fun ReflectionOptionsGrid(
     options: List<String>,
     selected: List<String>,
+    selectionLimitReached: Boolean,
     onSelect: (String) -> Unit
 ) {
     Column(
@@ -168,10 +182,13 @@ private fun ReflectionOptionsGrid(
                 modifier = Modifier.padding(vertical = 4.dp)
             ) {
                 rowOptions.forEach { option ->
+                    val isSelected = selected.contains(option)
+                    val isEnabled = isSelected || !selectionLimitReached
                     ReflectionOptionChip(
                         text = option,
-                        selected = selected.contains(option),
-                        onClick = { onSelect(option) }
+                        selected = isSelected,
+                        enabled = isEnabled,
+                        onClick = { if (isEnabled) onSelect(option) }
                     )
                 }
             }
@@ -183,20 +200,32 @@ private fun ReflectionOptionsGrid(
 private fun ReflectionOptionChip(
     text: String,
     selected: Boolean,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
+    val backgroundColor = when {
+        selected -> Color(0xFF8EC6C6)
+        !enabled -> Color(0xFFF0F0F0)
+        else -> Color.White
+    }
+    val contentColor = when {
+        selected -> Color.White
+        !enabled -> Color(0xFFAAAAAA)
+        else -> Color(0xFF444444)
+    }
     Surface(
         shape = RoundedCornerShape(50),
-        color = if (selected) Color(0xFF8EC6C6) else Color.White,
+        color = backgroundColor,
         border = if (selected) null else BorderStroke(1.dp, Color(0xFFE0E0E0)),
         modifier = Modifier
             .padding(horizontal = 2.dp)
-            .clickable { onClick() }
+            .then(if (enabled) Modifier.clickable { onClick() } else Modifier)
+            .alpha(if (enabled) 1f else 0.5f)
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
-            color = if (selected) Color.White else Color(0xFF444444),
+            color = contentColor,
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
         )
     }
