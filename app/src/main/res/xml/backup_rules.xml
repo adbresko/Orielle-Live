@@ -1,13 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
--->
+<?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- Include app preferences but exclude sensitive data -->
+    <include domain="sharedpref" path="orielle_preferences"/>
+    <exclude domain="sharedpref" path="orielle_preferences/guest_uuid"/>
+    <exclude domain="sharedpref" path="orielle_preferences/last_checkin_timestamp"/>
+
+    <!-- Include Room database -->
+    <include domain="database" path="orielle_database"/>
+
+    <!-- Exclude Firebase cache and temporary files -->
+    <exclude domain="file" path="firebase_cache"/>
+    <exclude domain="file" path="temp"/>
 </full-backup-content>

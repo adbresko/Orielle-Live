@@ -8,5 +8,10 @@ data class User(
     val uid: String,
     val email: String? = null,
     val displayName: String? = null,
-    val hasAgreedToTerms: Boolean = false // New field to track TOC agreement
+    val firstName: String? = null, // Added for personalized greetings
+    val lastName: String? = null, // Added for future use
+    val hasAgreedToTerms: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis(),
+    val lastLoginAt: Long = System.currentTimeMillis(),
+    val isPremium: Boolean = false
 )

@@ -19,6 +19,7 @@ import timber.log.Timber
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import com.google.firebase.firestore.FirebaseFirestore
 
 data class MoodCheckInUiState(
     val isLoading: Boolean = false,
@@ -30,7 +31,8 @@ data class MoodCheckInUiState(
 class MoodCheckInViewModel @Inject constructor(
     private val saveMoodCheckInUseCase: SaveMoodCheckInUseCase,
     private val hasMoodCheckInForDateUseCase: HasMoodCheckInForDateUseCase,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MoodCheckInUiState())
@@ -48,13 +50,23 @@ class MoodCheckInViewModel @Inject constructor(
             try {
                 val userId = sessionManager.currentUserId.first()
                 if (userId != null) {
-                    // For now, we'll use a placeholder name
-                    // In a real app, you'd fetch this from your user repository
-                    _uiState.value = _uiState.value.copy(userName = "User")
+                    firestore.collection("users").document(userId).get()
+                        .addOnSuccessListener { document ->
+                            val firstName = document.getString("firstName")
+                            val displayName = document.getString("displayName")
+
+                            // Use firstName for personalized greetings, fallback to displayName, then "User"
+                            val userName = firstName ?: displayName ?: "User"
+                            _uiState.value = _uiState.value.copy(userName = userName)
+                        }
+                        .addOnFailureListener { e ->
+                            Timber.e(e, "Failed to fetch user profile")
+                            _uiState.value = _uiState.value.copy(userName = "User")
+                        }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error loading user data")
-                _uiState.value = _uiState.value.copy(error = "Failed to load user data")
+                _uiState.value = _uiState.value.copy(error = "Failed to load user data", userName = "User")
             }
         }
     }

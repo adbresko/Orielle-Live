@@ -24,6 +24,10 @@
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
 
+# Keep Google Play Billing classes
+-keep class com.android.billingclient.** { *; }
+-keep class com.android.vending.billing.** { *; }
+
 # Keep Room database classes
 -keep class * extends androidx.room.RoomDatabase
 -keep @androidx.room.Entity class *

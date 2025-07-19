@@ -70,6 +70,7 @@ fun AppNavigation(
         // Mood check-in screen
         composable("mood_check_in") {
             val authViewModel: AuthViewModel = hiltViewModel()
+            val homeViewModel: com.orielle.ui.screens.home.HomeViewModel = hiltViewModel()
             val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
             val navController = navController
             // Guard: If not authenticated, redirect to auth_graph
@@ -99,6 +100,8 @@ fun AppNavigation(
                         navController.navigate("mood_reflection/$moodName/$moodIconRes")
                     },
                     onSkip = {
+                        // Update dashboard state and navigate back
+                        homeViewModel.onCheckInCompletedOrSkipped()
                         navController.navigate("home_graph") {
                             popUpTo("mood_check_in") { inclusive = true }
                         }
@@ -131,8 +134,11 @@ fun AppNavigation(
         }
         // Final saved for today screen
         composable("mood_final") {
+            val homeViewModel: com.orielle.ui.screens.home.HomeViewModel = hiltViewModel()
             MoodFinalScreen(
                 onDone = {
+                    // Update dashboard state and navigate back to home
+                    homeViewModel.onCheckInCompletedOrSkipped()
                     navController.navigate("home_graph") {
                         popUpTo("mood_final") { inclusive = true }
                     }

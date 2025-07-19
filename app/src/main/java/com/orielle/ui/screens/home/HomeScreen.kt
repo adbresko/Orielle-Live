@@ -70,6 +70,7 @@ fun HomeScreen(
     navController: NavController? = null // Allow navigation if provided
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val dashboardState by viewModel.dashboardState.collectAsState()
     val userName = uiState.userName ?: "User"
     val isPremium = uiState.isPremium ?: false
     val today = remember { LocalDate.now() }
@@ -93,6 +94,7 @@ fun HomeScreen(
             }
         }
     }
+
     Scaffold(
         topBar = {
             HomeHeader(
@@ -108,41 +110,85 @@ fun HomeScreen(
         // Remove snackbar host for now
         // snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(bg)
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(8.dp))
-            CalendarRow(daysOfWeek, datesOfWeek, selectedDayIndex)
-            Spacer(Modifier.height(18.dp))
-            Text(
-                text = "good morning.",
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-            Spacer(Modifier.height(8.dp))
-            ReflectionCards()
-            Spacer(Modifier.height(24.dp))
-            MoodCheckInRow(
-                selectedMood = selectedMood,
-                onMoodSelected = { mood ->
-                    selectedMood = mood
-                    // Simple feedback for now
-                    coroutineScope.launch {
-                        // TODO: Add proper feedback when snackbar is working
+        when (dashboardState) {
+            is DashboardState.Initial -> {
+                // Minimalist: Only show check-in card
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(bg)
+                        .padding(paddingValues)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(Modifier.height(32.dp))
+                    Text(
+                        text = "How is your inner weather today?",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                    MoodCheckInRow(
+                        selectedMood = selectedMood,
+                        onMoodSelected = { mood ->
+                            selectedMood = mood
+                            // Navigate to mood check-in flow
+                            currentNavController?.navigate("mood_check_in")
+                        },
+                        onMoodLongPress = { /* Optionally handle long press */ }
+                    )
+                    Spacer(Modifier.height(32.dp))
+                    Button(
+                        onClick = {
+                            // Navigate to mood check-in flow
+                            currentNavController?.navigate("mood_check_in")
+                        },
+                        modifier = Modifier.fillMaxWidth(0.7f)
+                    ) {
+                        Text("Check In")
                     }
-                },
-                onMoodLongPress = { mood ->
-                    // TODO: Navigate directly to detailed check-in journey
+                    TextButton(onClick = {
+                        // User skips check-in
+                        viewModel.onCheckInCompletedOrSkipped()
+                    }) {
+                        Text("Skip for now")
+                    }
                 }
-            )
-            Spacer(Modifier.height(32.dp))
-            Spacer(Modifier.height(90.dp))
+            }
+            is DashboardState.Unfolded -> {
+                // Full dashboard as before
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(bg)
+                        .padding(paddingValues)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(Modifier.height(8.dp))
+                    CalendarRow(daysOfWeek, datesOfWeek, selectedDayIndex)
+                    Spacer(Modifier.height(18.dp))
+                    Text(
+                        text = "good morning.",
+                        style = MaterialTheme.typography.displayLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    ReflectionCards()
+                    Spacer(Modifier.height(24.dp))
+                    MoodCheckInRow(
+                        selectedMood = selectedMood,
+                        onMoodSelected = { mood ->
+                            selectedMood = mood
+                            // Optionally allow mood check-in again
+                        },
+                        onMoodLongPress = { /* Optionally handle long press */ }
+                    )
+                    Spacer(Modifier.height(32.dp))
+                    Spacer(Modifier.height(90.dp))
+                }
+            }
         }
     }
 }

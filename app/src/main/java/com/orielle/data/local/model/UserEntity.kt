@@ -8,5 +8,10 @@ data class UserEntity(
     @PrimaryKey val uid: String,
     val email: String?,
     val displayName: String?,
-    val hasAgreedToTerms: Boolean = false // New field for the local cache
+    val firstName: String?, // Added for personalized greetings
+    val lastName: String?, // Added for future use
+    val hasAgreedToTerms: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis(),
+    val lastLoginAt: Long = System.currentTimeMillis(),
+    val isPremium: Boolean = false
 )

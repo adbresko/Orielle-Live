@@ -33,4 +33,19 @@ interface SessionManager {
      * or when they explicitly log out.
      */
     suspend fun endGuestSession()
+
+    /**
+     * Stores the timestamp (in millis) of the last completed or skipped check-in.
+     */
+    suspend fun setLastCheckInTimestamp(timestamp: Long)
+
+    /**
+     * Retrieves the timestamp (in millis) of the last completed or skipped check-in, or null if never set.
+     */
+    suspend fun getLastCheckInTimestamp(): Long?
+
+    /**
+     * Clears the last check-in timestamp (for testing or reset purposes).
+     */
+    suspend fun clearLastCheckInTimestamp()
 }

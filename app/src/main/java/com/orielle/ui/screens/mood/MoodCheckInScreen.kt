@@ -25,6 +25,14 @@ import androidx.compose.foundation.Image
 import com.orielle.ui.components.OrielleScreenHeader
 import com.orielle.ui.components.AccountRequiredModal
 import com.orielle.ui.screens.auth.AuthViewModel
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.ui.platform.LocalContext
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.content.Context
 
 @Composable
 fun MoodCheckInScreen(
@@ -36,6 +44,26 @@ fun MoodCheckInScreen(
     val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
     val isGuest = isUserAuthenticated == false
     var showAccountModal by remember { mutableStateOf(false) }
+    var selectedMood by remember { mutableStateOf<String?>(null) }
+
+    // Color mapping for mood backgrounds
+    val moodColors = mapOf(
+        "Happy" to Color(0xFFFFF9E6),
+        "Sad" to Color(0xFFF2F6F8),
+        "Angry" to Color(0xFFF0F2F5),
+        "Frustrated" to Color(0xFFFFF4F2),
+        "Scared" to Color(0xFFF6F5F9),
+        "Surprised" to Color(0xFFF8F7FC),
+        "Playful" to Color(0xFFFFFCEC),
+        "Shy" to Color(0xFFF9F5F8),
+        "Peaceful" to Color(0xFFFEFBF0)
+    )
+
+    // Animate background color based on selected mood
+    val backgroundColor by animateColorAsState(
+        targetValue = selectedMood?.let { moodColors[it] } ?: MaterialTheme.colorScheme.background,
+        animationSpec = tween(durationMillis = 300), label = "background"
+    )
 
     // Show modal if guest
     if (showAccountModal) {
@@ -56,7 +84,7 @@ fun MoodCheckInScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(backgroundColor)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -77,14 +105,35 @@ fun MoodCheckInScreen(
         // Emotion Selection Grid (3x3)
         EmotionGrid(
             onMoodSelected = { mood ->
+                selectedMood = mood
                 viewModel.saveMoodCheckIn(mood)
-                onMoodSelected(mood)
+                // Remove automatic navigation - only update UI state
             }
         )
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Skip for now option
+        // Show Continue button when mood is selected
+        if (selectedMood != null) {
+            Button(
+                onClick = {
+                    // Only navigate when Continue button is clicked
+                    onMoodSelected(selectedMood!!)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    text = "Continue",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+        // Always show Skip for now option under Continue or in original place
         Text(
             text = "Skip for now",
             style = MaterialTheme.typography.bodyLarge,
@@ -92,6 +141,7 @@ fun MoodCheckInScreen(
             modifier = Modifier
                 .clickable { onSkip() }
                 .padding(8.dp)
+                .align(Alignment.CenterHorizontally)
         )
     }
 }
@@ -100,6 +150,16 @@ fun MoodCheckInScreen(
 private fun EmotionGrid(
     onMoodSelected: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    val vibrator = remember {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+    }
     val emotions = listOf(
         EmotionData("Surprised", R.drawable.ic_surprised, Color(0xFFE1BEE7)),
         EmotionData("Happy", R.drawable.ic_happy, Color(0xFFFFF59D)),
@@ -111,7 +171,7 @@ private fun EmotionGrid(
         EmotionData("Scared", R.drawable.ic_scared, Color(0xFFB3E5FC)),
         EmotionData("Peaceful", R.drawable.ic_peaceful, Color(0xFFFFF59D))
     )
-
+    var selectedMood by remember { mutableStateOf<String?>(null) }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -123,7 +183,19 @@ private fun EmotionGrid(
             emotions.take(3).forEach { emotion ->
                 EmotionButton(
                     emotion = emotion,
-                    onClick = { onMoodSelected(emotion.name) }
+                    selected = selectedMood == emotion.name,
+                    selectedMood = selectedMood,
+                    onClick = {
+                        // Trigger haptic feedback
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            vibrator.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                        } else {
+                            @Suppress("DEPRECATION")
+                            vibrator.vibrate(50)
+                        }
+                        selectedMood = emotion.name
+                        onMoodSelected(emotion.name)
+                    }
                 )
             }
         }
@@ -134,7 +206,19 @@ private fun EmotionGrid(
             emotions.slice(3..5).forEach { emotion ->
                 EmotionButton(
                     emotion = emotion,
-                    onClick = { onMoodSelected(emotion.name) }
+                    selected = selectedMood == emotion.name,
+                    selectedMood = selectedMood,
+                    onClick = {
+                        // Trigger haptic feedback
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            vibrator.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                        } else {
+                            @Suppress("DEPRECATION")
+                            vibrator.vibrate(50)
+                        }
+                        selectedMood = emotion.name
+                        onMoodSelected(emotion.name)
+                    }
                 )
             }
         }
@@ -145,7 +229,19 @@ private fun EmotionGrid(
             emotions.takeLast(3).forEach { emotion ->
                 EmotionButton(
                     emotion = emotion,
-                    onClick = { onMoodSelected(emotion.name) }
+                    selected = selectedMood == emotion.name,
+                    selectedMood = selectedMood,
+                    onClick = {
+                        // Trigger haptic feedback
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            vibrator.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                        } else {
+                            @Suppress("DEPRECATION")
+                            vibrator.vibrate(50)
+                        }
+                        selectedMood = emotion.name
+                        onMoodSelected(emotion.name)
+                    }
                 )
             }
         }
@@ -155,8 +251,21 @@ private fun EmotionGrid(
 @Composable
 private fun EmotionButton(
     emotion: EmotionData,
+    selected: Boolean = false,
+    selectedMood: String?,
     onClick: () -> Unit
 ) {
+    // Pop animation for selected icon
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.15f else 1f,
+        animationSpec = tween(durationMillis = 120), label = "pop"
+    )
+    // Opacity logic: before any selection, all are 1f; after, only selected is 1f, others 0.5f
+    val targetOpacity = if (selectedMood == null) 1f else if (selected) 1f else 0.5f
+    val opacity by animateFloatAsState(
+        targetValue = targetOpacity,
+        animationSpec = tween(durationMillis = 300), label = "fade"
+    )
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(4.dp)
@@ -164,6 +273,11 @@ private fun EmotionButton(
         Box(
             modifier = Modifier
                 .size(80.dp)
+                .graphicsLayer {
+                    scaleX = scale;
+                    scaleY = scale;
+                    alpha = opacity
+                }
                 .clip(CircleShape)
                 .clickable(
                     onClick = onClick,
@@ -189,7 +303,7 @@ private fun EmotionButton(
         Text(
             text = emotion.name,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = opacity),
             fontWeight = FontWeight.Medium
         )
     }

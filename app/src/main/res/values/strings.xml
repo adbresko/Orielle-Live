@@ -1,4 +1,11 @@
 <resources>
     <string name="app_name">Orielle</string>
     <string name="default_web_client_id">217018999526-qgtf71gnmvo1ob66pbfsjhh4t29rj9f8.apps.googleusercontent.com</string>
+
+    <!-- Legal URLs - Update these with your actual URLs before release -->
+    <string name="privacy_policy_url">https://orielle.app/privacy</string>
+    <string name="terms_of_service_url">https://orielle.app/terms</string>
+
+    <!-- App Store URLs -->
+    <string name="play_store_url">https://play.google.com/store/apps/details?id=com.orielle</string>
 </resources>

@@ -1,16 +1,23 @@
 package com.orielle.data.manager
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import com.google.firebase.auth.FirebaseAuth
 import com.orielle.domain.manager.SessionManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+
+// DataStore setup - make it internal so it can be accessed within the same module
+internal val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "orielle_preferences")
 
 @Singleton
 class SessionManagerImpl @Inject constructor(
@@ -20,6 +27,7 @@ class SessionManagerImpl @Inject constructor(
 
     private object PreferencesKeys {
         val GUEST_UUID_KEY = stringPreferencesKey("guest_uuid")
+        val LAST_CHECKIN_TIMESTAMP_KEY = stringPreferencesKey("last_checkin_timestamp")
     }
 
     override val currentUserId: Flow<String?> = context.dataStore.data
@@ -46,6 +54,24 @@ class SessionManagerImpl @Inject constructor(
     override suspend fun endGuestSession() {
         context.dataStore.edit { preferences ->
             preferences.remove(PreferencesKeys.GUEST_UUID_KEY)
+        }
+    }
+
+    override suspend fun setLastCheckInTimestamp(timestamp: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.LAST_CHECKIN_TIMESTAMP_KEY] = timestamp.toString()
+        }
+    }
+
+    override suspend fun getLastCheckInTimestamp(): Long? {
+        val preferences = context.dataStore.data.first()
+        val timestampString = preferences[PreferencesKeys.LAST_CHECKIN_TIMESTAMP_KEY]
+        return timestampString?.toLongOrNull()
+    }
+
+    override suspend fun clearLastCheckInTimestamp() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(PreferencesKeys.LAST_CHECKIN_TIMESTAMP_KEY)
         }
     }
 }
