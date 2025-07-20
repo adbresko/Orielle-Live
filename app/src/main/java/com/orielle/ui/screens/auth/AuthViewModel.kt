@@ -51,6 +51,9 @@ class AuthViewModel @Inject constructor(
     private val _email = MutableStateFlow("")
     val email = _email.asStateFlow()
 
+    private val _firstName = MutableStateFlow("")
+    val firstName = _firstName.asStateFlow()
+
     private val _password = MutableStateFlow("")
     val password = _password.asStateFlow()
 
@@ -103,6 +106,10 @@ class AuthViewModel @Inject constructor(
         if (_emailError.value !is AuthFieldError.None) _emailError.value = AuthFieldError.None
     }
 
+    fun onFirstNameChange(newFirstName: String) {
+        _firstName.value = newFirstName
+    }
+
     fun onPasswordChange(newPassword: String) {
         _password.value = newPassword
         if (_passwordError.value !is AuthFieldError.None) _passwordError.value = AuthFieldError.None
@@ -140,7 +147,7 @@ class AuthViewModel @Inject constructor(
 
         viewModelScope.launch(coroutineExceptionHandler) {
             _authResponse.value = Response.Loading
-            signUpUseCase(email.value, password.value).collect { response ->
+            signUpUseCase(email.value, firstName.value, password.value).collect { response ->
                 if (response is Response.Success) {
                     val user = response.data
                     val metadata = user.metadata

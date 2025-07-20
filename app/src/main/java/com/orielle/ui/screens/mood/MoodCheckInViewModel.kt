@@ -19,7 +19,6 @@ import timber.log.Timber
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import com.google.firebase.firestore.FirebaseFirestore
 
 data class MoodCheckInUiState(
     val isLoading: Boolean = false,
@@ -32,7 +31,7 @@ class MoodCheckInViewModel @Inject constructor(
     private val saveMoodCheckInUseCase: SaveMoodCheckInUseCase,
     private val hasMoodCheckInForDateUseCase: HasMoodCheckInForDateUseCase,
     private val sessionManager: SessionManager,
-    private val firestore: FirebaseFirestore
+    private val firestore: com.google.firebase.firestore.FirebaseFirestore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MoodCheckInUiState())

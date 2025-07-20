@@ -7,11 +7,11 @@ import androidx.room.PrimaryKey
 data class UserEntity(
     @PrimaryKey val uid: String,
     val email: String?,
+    val firstName: String?,
+    val lastName: String?,
     val displayName: String?,
-    val firstName: String?, // Added for personalized greetings
-    val lastName: String?, // Added for future use
     val hasAgreedToTerms: Boolean = false,
+    val premium: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
-    val lastLoginAt: Long = System.currentTimeMillis(),
-    val isPremium: Boolean = false
+    val updatedAt: Long = System.currentTimeMillis()
 )

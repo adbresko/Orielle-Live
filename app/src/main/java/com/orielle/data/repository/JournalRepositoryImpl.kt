@@ -1,4 +1,4 @@
-package com.orielle.domain.repository
+package com.orielle.data.repository
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -17,6 +17,7 @@ import java.util.UUID
 import javax.inject.Inject
 import com.orielle.domain.model.AppError
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.orielle.domain.repository.JournalRepository
 import timber.log.Timber
 
 class JournalRepositoryImpl @Inject constructor(

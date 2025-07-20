@@ -53,6 +53,7 @@ fun EmailSignUpScreen(
     navController: NavController,
 ) {
     val email by viewModel.email.collectAsState()
+    val firstName by viewModel.firstName.collectAsState()
     val password by viewModel.password.collectAsState()
     val confirmPassword by viewModel.confirmPassword.collectAsState()
     val hasAgreedToTerms by viewModel.hasAgreedToTerms.collectAsState()
@@ -156,6 +157,16 @@ fun EmailSignUpScreen(
                     Spacer(Modifier.height(20.dp))
 
                     OutlinedTextField(
+                        value = firstName,
+                        onValueChange = viewModel::onFirstNameChange,
+                        label = { Text("First Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    OutlinedTextField(
                         value = email,
                         onValueChange = viewModel::onEmailChange,
                         label = { Text("Email Address") },
@@ -236,7 +247,7 @@ fun EmailSignUpScreen(
                     OriellePrimaryButton(
                         onClick = viewModel::signUp,
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = email.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank() && hasAgreedToTerms
+                        enabled = firstName.isNotBlank() && email.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank() && hasAgreedToTerms
                     ) {
                         Text("Create Account")
                     }

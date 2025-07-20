@@ -36,6 +36,14 @@ import com.orielle.ui.screens.onboarding.OnboardingScreen
 import com.orielle.ui.screens.sanctuary.SanctuaryScreen
 import com.orielle.ui.screens.security.SecuritySetupScreen
 import com.orielle.ui.screens.mood.MoodFinalScreen
+import com.orielle.domain.manager.SessionManager
+import com.orielle.data.manager.SessionManagerImpl
+import android.content.Context
+import androidx.compose.runtime.remember
+import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.qualifiers.ApplicationContext
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun AppNavigation(
@@ -43,6 +51,15 @@ fun AppNavigation(
 ) {
     val navController = rememberNavController()
     val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
+    val context = LocalContext.current
+    // Use Hilt EntryPoint to get SessionManagerImpl
+    val sessionManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            SessionManagerEntryPoint::class.java
+        ).sessionManagerImpl()
+    }
+    val hasSeenOnboarding by sessionManager.hasSeenOnboarding.collectAsState(initial = false)
 
     NavHost(
         navController = navController,
@@ -54,6 +71,7 @@ fun AppNavigation(
         composable("splash_router") {
             SplashScreenRouter(
                 isUserAuthenticated = isUserAuthenticated,
+                hasSeenOnboarding = hasSeenOnboarding,
                 navController = navController
             )
         }
@@ -63,14 +81,12 @@ fun AppNavigation(
 
         // The main part of the app after login
         composable("home_graph") {
-            // CORRECTED: The HomeScreen call no longer takes any parameters.
             HomeScreen(navController = navController)
         }
 
         // Mood check-in screen
         composable("mood_check_in") {
             val authViewModel: AuthViewModel = hiltViewModel()
-            val homeViewModel: com.orielle.ui.screens.home.HomeViewModel = hiltViewModel()
             val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
             val navController = navController
             // Guard: If not authenticated, redirect to auth_graph
@@ -100,8 +116,6 @@ fun AppNavigation(
                         navController.navigate("mood_reflection/$moodName/$moodIconRes")
                     },
                     onSkip = {
-                        // Update dashboard state and navigate back
-                        homeViewModel.onCheckInCompletedOrSkipped()
                         navController.navigate("home_graph") {
                             popUpTo("mood_check_in") { inclusive = true }
                         }
@@ -134,11 +148,8 @@ fun AppNavigation(
         }
         // Final saved for today screen
         composable("mood_final") {
-            val homeViewModel: com.orielle.ui.screens.home.HomeViewModel = hiltViewModel()
             MoodFinalScreen(
                 onDone = {
-                    // Update dashboard state and navigate back to home
-                    homeViewModel.onCheckInCompletedOrSkipped()
                     navController.navigate("home_graph") {
                         popUpTo("mood_final") { inclusive = true }
                     }
@@ -155,21 +166,21 @@ fun AppNavigation(
 @Composable
 fun SplashScreenRouter(
     isUserAuthenticated: Boolean?,
+    hasSeenOnboarding: Boolean,
     navController: NavController,
 ) {
-    val moodCheckInViewModel: MoodCheckInViewModel = hiltViewModel()
-    val uiState by moodCheckInViewModel.uiState.collectAsState()
-
-    LaunchedEffect(isUserAuthenticated) {
-        if (isUserAuthenticated != null) {
-            if (isUserAuthenticated) {
-                navController.navigate("mood_check_in") {
-                    popUpTo("splash_router") { inclusive = true }
-                }
-            } else {
-                navController.navigate("auth_graph") {
-                    popUpTo("splash_router") { inclusive = true }
-                }
+    LaunchedEffect(isUserAuthenticated, hasSeenOnboarding) {
+        if (isUserAuthenticated == true) {
+            navController.navigate("mood_check_in") {
+                popUpTo("splash_router") { inclusive = true }
+            }
+        } else if (!hasSeenOnboarding) {
+            navController.navigate("auth_graph") {
+                popUpTo("splash_router") { inclusive = true }
+            }
+        } else {
+            navController.navigate("sign_in") {
+                popUpTo("splash_router") { inclusive = true }
             }
         }
     }
@@ -255,7 +266,14 @@ fun NavGraphBuilder.authGraph(navController: NavController, authViewModel: AuthV
             )
         }
         composable("sanctuary") {
-            HomeScreen()
+            HomeScreen(navController = navController)
         }
     }
+}
+
+// Define Hilt EntryPoint for SessionManagerImpl
+@dagger.hilt.EntryPoint
+@dagger.hilt.InstallIn(dagger.hilt.components.SingletonComponent::class)
+interface SessionManagerEntryPoint {
+    fun sessionManagerImpl(): SessionManagerImpl
 }

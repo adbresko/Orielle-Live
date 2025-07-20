@@ -15,8 +15,9 @@ import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.datastore.preferences.core.MutablePreferences
 
-// DataStore setup - make it internal so it can be accessed within the same module
+// DataStore setup - must be at top-level
 internal val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "orielle_preferences")
 
 @Singleton
@@ -28,23 +29,32 @@ class SessionManagerImpl @Inject constructor(
     private object PreferencesKeys {
         val GUEST_UUID_KEY = stringPreferencesKey("guest_uuid")
         val LAST_CHECKIN_TIMESTAMP_KEY = stringPreferencesKey("last_checkin_timestamp")
+        val ONBOARDING_SEEN_KEY = stringPreferencesKey("onboarding_seen")
     }
 
     override val currentUserId: Flow<String?> = context.dataStore.data
         .map { preferences ->
-            // Prioritize Firebase UID. If it's null, check for a guest UUID.
             auth.currentUser?.uid ?: preferences[PreferencesKeys.GUEST_UUID_KEY]
         }
 
     override val isGuest: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
-            // A user is a guest if there's no Firebase user AND a guest UUID exists.
             auth.currentUser == null && preferences[PreferencesKeys.GUEST_UUID_KEY] != null
         }
 
+    override val hasSeenOnboarding: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[PreferencesKeys.ONBOARDING_SEEN_KEY]?.toBoolean() ?: false
+        }
+
+    override suspend fun setHasSeenOnboarding(seen: Boolean) {
+        context.dataStore.edit { preferences: MutablePreferences ->
+            preferences[PreferencesKeys.ONBOARDING_SEEN_KEY] = seen.toString()
+        }
+    }
+
     override suspend fun startGuestSession() {
-        context.dataStore.edit { preferences ->
-            // Only create a new UUID if one doesn't already exist.
+        context.dataStore.edit { preferences: MutablePreferences ->
             if (preferences[PreferencesKeys.GUEST_UUID_KEY] == null) {
                 preferences[PreferencesKeys.GUEST_UUID_KEY] = UUID.randomUUID().toString()
             }
@@ -52,13 +62,13 @@ class SessionManagerImpl @Inject constructor(
     }
 
     override suspend fun endGuestSession() {
-        context.dataStore.edit { preferences ->
+        context.dataStore.edit { preferences: MutablePreferences ->
             preferences.remove(PreferencesKeys.GUEST_UUID_KEY)
         }
     }
 
     override suspend fun setLastCheckInTimestamp(timestamp: Long) {
-        context.dataStore.edit { preferences ->
+        context.dataStore.edit { preferences: MutablePreferences ->
             preferences[PreferencesKeys.LAST_CHECKIN_TIMESTAMP_KEY] = timestamp.toString()
         }
     }
@@ -70,7 +80,7 @@ class SessionManagerImpl @Inject constructor(
     }
 
     override suspend fun clearLastCheckInTimestamp() {
-        context.dataStore.edit { preferences ->
+        context.dataStore.edit { preferences: MutablePreferences ->
             preferences.remove(PreferencesKeys.LAST_CHECKIN_TIMESTAMP_KEY)
         }
     }

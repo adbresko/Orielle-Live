@@ -25,7 +25,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val db: FirebaseFirestore
 ) : AuthRepository {
 
-    override fun signUpWithEmail(email: String, password: String): Flow<Response<FirebaseUser>> = callbackFlow {
+    override fun signUpWithEmail(email: String, firstName: String, password: String): Flow<Response<FirebaseUser>> = callbackFlow {
         trySend(Response.Loading)
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
@@ -35,6 +35,7 @@ class AuthRepositoryImpl @Inject constructor(
                         val newUser = User(
                             uid = firebaseUser.uid,
                             email = firebaseUser.email,
+                            firstName = firstName,
                             displayName = null,
                             hasAgreedToTerms = true
                         )
@@ -99,6 +100,7 @@ class AuthRepositoryImpl @Inject constructor(
                                     val newUser = User(
                                         uid = firebaseUser.uid,
                                         email = firebaseUser.email,
+                                        firstName = firebaseUser.displayName?.split(" ")?.firstOrNull(),
                                         displayName = firebaseUser.displayName,
                                         hasAgreedToTerms = true
                                     )
@@ -154,6 +156,7 @@ class AuthRepositoryImpl @Inject constructor(
                                         val newUser = User(
                                             uid = firebaseUser.uid,
                                             email = firebaseUser.email,
+                                            firstName = firebaseUser.displayName?.split(" ")?.firstOrNull(),
                                             displayName = firebaseUser.displayName,
                                             hasAgreedToTerms = true
                                         )

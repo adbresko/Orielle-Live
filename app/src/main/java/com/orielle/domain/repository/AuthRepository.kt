@@ -12,7 +12,7 @@ interface AuthRepository {
      * Creates a new user with email and password.
      * On success, it now returns the full FirebaseUser object.
      */
-    fun signUpWithEmail(email: String, password: String): Flow<Response<FirebaseUser>>
+    fun signUpWithEmail(email: String, firstName: String, password: String): Flow<Response<FirebaseUser>>
 
     /**
      * Signs in a user with their email and password.

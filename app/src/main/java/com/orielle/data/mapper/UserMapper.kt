@@ -15,13 +15,13 @@ object UserMapper {
         return User(
             uid = this.uid,
             email = this.email,
-            displayName = this.displayName,
             firstName = this.firstName,
             lastName = this.lastName,
+            displayName = this.displayName,
             hasAgreedToTerms = this.hasAgreedToTerms,
+            premium = this.premium,
             createdAt = this.createdAt,
-            lastLoginAt = this.lastLoginAt,
-            isPremium = this.isPremium
+            updatedAt = this.updatedAt
         )
     }
 
@@ -32,13 +32,13 @@ object UserMapper {
         return UserEntity(
             uid = this.uid,
             email = this.email,
-            displayName = this.displayName,
             firstName = this.firstName,
             lastName = this.lastName,
+            displayName = this.displayName,
             hasAgreedToTerms = this.hasAgreedToTerms,
+            premium = this.premium,
             createdAt = this.createdAt,
-            lastLoginAt = this.lastLoginAt,
-            isPremium = this.isPremium
+            updatedAt = this.updatedAt
         )
     }
 }

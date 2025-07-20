@@ -1,4 +1,4 @@
-package com.orielle.domain.repository
+package com.orielle.data.repository
 
 import com.orielle.data.local.dao.MoodCheckInDao
 import com.orielle.data.mapper.toMoodCheckIn
@@ -6,6 +6,7 @@ import com.orielle.data.mapper.toMoodCheckInEntity
 import com.orielle.domain.model.AppError
 import com.orielle.domain.model.MoodCheckIn
 import com.orielle.domain.model.Response
+import com.orielle.domain.repository.MoodCheckInRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.Date

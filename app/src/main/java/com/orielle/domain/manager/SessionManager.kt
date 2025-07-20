@@ -21,6 +21,16 @@ interface SessionManager {
     val isGuest: Flow<Boolean>
 
     /**
+     * A flow that emits whether the current user has seen the onboarding.
+     */
+    val hasSeenOnboarding: Flow<Boolean>
+
+    /**
+     * Sets whether the current user has seen the onboarding.
+     */
+    suspend fun setHasSeenOnboarding(seen: Boolean)
+
+    /**
      * Creates and persists a new, unique ID for a guest session.
      * This should only be called when the user explicitly chooses
      * the "Just Explore" path.
@@ -34,18 +44,7 @@ interface SessionManager {
      */
     suspend fun endGuestSession()
 
-    /**
-     * Stores the timestamp (in millis) of the last completed or skipped check-in.
-     */
-    suspend fun setLastCheckInTimestamp(timestamp: Long)
-
-    /**
-     * Retrieves the timestamp (in millis) of the last completed or skipped check-in, or null if never set.
-     */
     suspend fun getLastCheckInTimestamp(): Long?
-
-    /**
-     * Clears the last check-in timestamp (for testing or reset purposes).
-     */
+    suspend fun setLastCheckInTimestamp(timestamp: Long)
     suspend fun clearLastCheckInTimestamp()
 }

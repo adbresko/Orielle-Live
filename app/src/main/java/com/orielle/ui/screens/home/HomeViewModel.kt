@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.first
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.update
 import java.util.concurrent.TimeUnit
+import androidx.navigation.NavController
 
 data class HomeUiState(
     val isGuest: Boolean = true,
@@ -160,7 +161,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch(coroutineExceptionHandler) {
             val lastCheckIn = sessionManager.getLastCheckInTimestamp()
             val now = System.currentTimeMillis()
-            val isInitial = lastCheckIn == null || (now - lastCheckIn) > TimeUnit.HOURS.toMillis(24)
+            val isInitial = lastCheckIn == null || (now - (lastCheckIn ?: 0L)) > TimeUnit.HOURS.toMillis(24)
             _dashboardState.value = if (isInitial) DashboardState.Initial else DashboardState.Unfolded
         }
     }
@@ -172,11 +173,13 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun logOut() {
+    fun logOut(navController: NavController?) {
         viewModelScope.launch {
             auth.signOut()
             sessionManager.endGuestSession()
-            _logOutEvent.emit(Unit)
+            navController?.navigate("sign_in") {
+                popUpTo("home_graph") { inclusive = true }
+            }
         }
     }
 }

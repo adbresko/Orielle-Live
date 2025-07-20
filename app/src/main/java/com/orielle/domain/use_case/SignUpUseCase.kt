@@ -12,7 +12,7 @@ class SignUpUseCase @Inject constructor(
     /**
      * This use case now expects and returns a Response containing a FirebaseUser object.
      */
-    operator fun invoke(email: String, password: String): Flow<Response<FirebaseUser>> {
-        return repository.signUpWithEmail(email, password)
+    operator fun invoke(email: String, firstName: String, password: String): Flow<Response<FirebaseUser>> {
+        return repository.signUpWithEmail(email, firstName, password)
     }
 }
