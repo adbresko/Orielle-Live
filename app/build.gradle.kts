@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.android) // Kotlin version managed in libs.versions.toml (now 2.1.20)
+    id("kotlin-kapt")
     alias(libs.plugins.hilt.android.plugin)
     alias(libs.plugins.ksp) // Apply the KSP plugin using its alias
     alias(libs.plugins.google.services)
@@ -16,11 +17,28 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0.0"
+        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
+            applicationIdSuffix = null
+            versionNameSuffix = "-debug"
         }
     }
 
@@ -31,6 +49,7 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        // Use the latest stable Kotlin version (2.1.20) for best compatibility and performance
     }
 
     buildFeatures {
@@ -39,7 +58,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     packaging {
@@ -55,15 +74,14 @@ android {
 }
 
 dependencies {
-    implementation(libs.coil.compose)
-    implementation(libs.firebase.storage.ktx)
+
     // Core Android & Jetpack
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
-    // DataStore
+    //Session Management
     implementation(libs.androidx.datastore.preferences)
 
     // Compose
@@ -73,13 +91,12 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.material.icons.extended.android)
+    implementation(libs.androidx.material.icons.extended.android) // Or the latest version
     implementation(libs.androidx.biometric.ktx)
-    implementation(libs.androidx.core.splashscreen)
-
     // Hilt - Dependency Injection
     implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.datastore.core.android)
+    kapt(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
     // Room - Local Database
@@ -88,25 +105,25 @@ dependencies {
     ksp(libs.room.compiler)
 
     // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.google.firebase.auth)
-    implementation(libs.firebase.firestore.ktx)
-    implementation(libs.firebase.analytics.ktx)
-    implementation(libs.firebase.crashlytics.ktx)
+    implementation(platform(libs.firebase.bom)) // Import the BOM for all Firebase libs
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
     implementation(libs.google.services.auth)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics.ktx)
+    implementation(libs.firebase.analytics.ktx)
+    implementation(libs.firebase.storage.ktx)
+
+    // Google Play Billing
+    implementation(libs.billing.ktx)
 
     // Media - For Video Playback
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
-
-    // Google Play Billing
-    implementation(libs.google.play.billing)
-
-    // Utilities
-    implementation(libs.timber)
-    implementation(libs.jakewharton.threetenabp)
+    implementation(libs.androidx.core.splashscreen)
 
     // Testing
+    implementation(libs.ui)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -114,5 +131,12 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation(libs.timber)
+    implementation(libs.jakewharton.threetenabp)
+    implementation(libs.coil.compose)
 }
 
+// Allow references to generated code
+kapt {
+    correctErrorTypes = true
+}
