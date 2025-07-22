@@ -182,6 +182,10 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
+    fun refreshUserProfile() {
+        observeSessionState()
+    }
 }
 
 fun AppError.toUserMessage(): String = when (this) {

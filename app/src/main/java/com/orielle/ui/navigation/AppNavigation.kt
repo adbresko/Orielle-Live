@@ -34,16 +34,19 @@ import com.orielle.ui.screens.mood.MoodCheckInViewModel
 import com.orielle.ui.screens.mood.MoodReflectionScreen
 import com.orielle.ui.screens.onboarding.OnboardingScreen
 import com.orielle.ui.screens.sanctuary.SanctuaryScreen
-import com.orielle.ui.screens.security.SecuritySetupScreen
 import com.orielle.ui.screens.mood.MoodFinalScreen
-import com.orielle.domain.manager.SessionManager
-import com.orielle.data.manager.SessionManagerImpl
 import android.content.Context
-import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import dagger.hilt.android.EntryPointAccessors
+import com.orielle.data.manager.SessionManagerImpl
+import com.orielle.domain.manager.SessionManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import androidx.compose.ui.platform.LocalContext
+import com.orielle.ui.screens.profile.ProfileSettingsScreen
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 @Composable
 fun AppNavigation(
@@ -159,6 +162,24 @@ fun AppNavigation(
                 }
             )
         }
+        composable("profile_settings") {
+            // Get user data from ViewModel or session (replace with your actual data source)
+            val homeViewModel: com.orielle.ui.screens.home.HomeViewModel = hiltViewModel()
+            val uiState by homeViewModel.uiState.collectAsState()
+            val userId = "TODO_USER_ID" // Replace with actual user ID from session/auth
+            ProfileSettingsScreen(
+                navController = navController,
+                userId = userId,
+                userName = uiState.userName,
+                userEmail = null, // Replace with actual email if available
+                profileImageUrl = null, // Replace with actual image URL if available
+                onLogOut = {
+                    // Log out and navigate to sign-in
+                    homeViewModel.logOut(navController)
+                },
+                homeViewModel = homeViewModel // Pass the view model for refresh
+            )
+        }
     }
 }
 
@@ -169,17 +190,55 @@ fun SplashScreenRouter(
     hasSeenOnboarding: Boolean,
     navController: NavController,
 ) {
+    val context = LocalContext.current
+    val sessionManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            SessionManagerEntryPoint::class.java
+        ).sessionManagerImpl()
+    }
+    var needsMoodCheckIn by remember { mutableStateOf(false) }
+    var checkedMood by remember { mutableStateOf(false) }
+
     LaunchedEffect(isUserAuthenticated, hasSeenOnboarding) {
         if (isUserAuthenticated == true) {
-            navController.navigate("mood_check_in") {
-                popUpTo("splash_router") { inclusive = true }
+            // Check if mood check-in is needed
+            val lastCheckIn = sessionManager.getLastCheckInTimestamp()
+            val now = System.currentTimeMillis()
+            needsMoodCheckIn = lastCheckIn == null || (now - lastCheckIn) > 24 * 60 * 60 * 1000L
+            checkedMood = true
+        } else {
+            checkedMood = true
+        }
+    }
+
+    if (!checkedMood) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    LaunchedEffect(isUserAuthenticated, hasSeenOnboarding, needsMoodCheckIn, checkedMood) {
+        if (isUserAuthenticated == true) {
+            if (needsMoodCheckIn) {
+                navController.navigate("mood_check_in") {
+                    popUpTo("splash_router") { inclusive = true }
+                }
+            } else {
+                navController.navigate("home_graph") {
+                    popUpTo("splash_router") { inclusive = true }
+                }
             }
         } else if (!hasSeenOnboarding) {
-            navController.navigate("auth_graph") {
+            navController.navigate("onboarding") {
                 popUpTo("splash_router") { inclusive = true }
             }
         } else {
-            navController.navigate("sign_in") {
+            navController.navigate("welcome") {
                 popUpTo("splash_router") { inclusive = true }
             }
         }
@@ -256,15 +315,6 @@ fun NavGraphBuilder.authGraph(navController: NavController, authViewModel: AuthV
         }
 
         // --- NEW SCREEN ADDED TO THE GRAPH ---
-        composable("security_setup_screen") {
-            SecuritySetupScreen(
-                navigateToHome = {
-                    navController.navigate("home_graph") {
-                        popUpTo("auth_graph") { inclusive = true }
-                    }
-                }
-            )
-        }
         composable("sanctuary") {
             HomeScreen(navController = navController)
         }

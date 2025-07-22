@@ -21,6 +21,11 @@ import com.orielle.ui.theme.DarkGray
 import com.orielle.ui.theme.WaterBlue
 import com.orielle.ui.theme.Typography
 import com.orielle.R
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.ui.tooling.preview.Preview
+import coil.compose.rememberAsyncImagePainter
 
 @Composable
 fun HomeScreen(
@@ -39,54 +44,102 @@ fun HomeScreen(
 fun HomeDashboardScreen(
     userName: String?,
     journalEntries: List<com.orielle.domain.model.JournalEntry>,
-    navController: NavController
+    navController: NavController,
+    profileImageUrl: String? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var showLogoutMenu by remember { mutableStateOf(false) }
     val backgroundColor = DarkGray
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundColor)
-    ) {
-        // Top bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 32.dp, start = 24.dp, end = 24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Orielle logo and text
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(id = R.drawable.home), // Use your drop icon here
-                    contentDescription = "Orielle Logo",
-                    modifier = Modifier.size(28.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "ORIELLE",
-                    style = Typography.bodyLarge.copy(color = Color.White, fontWeight = FontWeight.Normal)
-                )
-            }
-            Spacer(Modifier.weight(1f))
-            // Profile icon
-            Icon(
-                painter = painterResource(id = R.drawable.profile), // Use your profile icon here
-                contentDescription = "Profile",
+    Scaffold(
+        containerColor = backgroundColor,
+        topBar = {
+            Row(
                 modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape),
-                tint = Color.LightGray
-            )
+                    .fillMaxWidth()
+                    .padding(top = 32.dp, start = 24.dp, end = 24.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Orielle logo and text
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.home),
+                        contentDescription = "Orielle Logo",
+                        modifier = Modifier.size(28.dp),
+                        tint = WaterBlue
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "ORIELLE",
+                        style = Typography.bodyLarge.copy(color = Color.White, fontWeight = FontWeight.Normal)
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                // Profile icon
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Profile",
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable { navController.navigate("profile_settings") },
+                    tint = Color.LightGray
+                )
+                Spacer(Modifier.width(16.dp))
+                // Logout menu (three-dot ellipsis)
+                Box {
+                    IconButton(onClick = { showLogoutMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More Options",
+                            tint = Color.LightGray
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showLogoutMenu,
+                        onDismissRequest = { showLogoutMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Log Out") },
+                            onClick = {
+                                showLogoutMenu = false
+                                // Navigate to sign in and clear back stack
+                                navController.navigate("sign_in") {
+                                    popUpTo("home_graph") { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        },
+        bottomBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(backgroundColor)
+                    .padding(bottom = 24.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DashboardNavItem(icon = R.drawable.home, label = "Home", selected = true)
+                    DashboardNavItem(icon = R.drawable.reflect, label = "Reflect", selected = false)
+                    DashboardNavItem(icon = R.drawable.ask, label = "Ask", selected = false)
+                    DashboardNavItem(icon = R.drawable.remember, label = "Remember", selected = false)
+                }
+            }
         }
-        // Main content
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
                 .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(Modifier.height(80.dp))
             if (!expanded) {
                 // Collapsed state
                 Card(
@@ -156,25 +209,6 @@ fun HomeDashboardScreen(
                 }
             }
         }
-        // Bottom navigation bar
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(backgroundColor)
-                .padding(bottom = 24.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                DashboardNavItem(icon = R.drawable.home, label = "Home", selected = true)
-                DashboardNavItem(icon = R.drawable.reflect, label = "Reflect", selected = false)
-                DashboardNavItem(icon = R.drawable.ask, label = "Ask", selected = false)
-                DashboardNavItem(icon = R.drawable.remember, label = "Remember", selected = false)
-            }
-        }
     }
 }
 
@@ -192,4 +226,22 @@ fun DashboardNavItem(icon: Int, label: String, selected: Boolean) {
             style = Typography.bodyMedium.copy(color = if (selected) WaterBlue else Color.LightGray)
         )
     }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF1A1A1A)
+@Composable
+fun HomeDashboardScreenPreview() {
+    val fakeNavController = androidx.navigation.compose.rememberNavController()
+    HomeDashboardScreen(
+        userName = "Mona",
+        journalEntries = listOf(
+            com.orielle.domain.model.JournalEntry(
+                id = "1",
+                userId = "user1",
+                content = "Felt a real sense of growth today after that challenging conversation.",
+                mood = "Reflective"
+            )
+        ),
+        navController = fakeNavController
+    )
 }

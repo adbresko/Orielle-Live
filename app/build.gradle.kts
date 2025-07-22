@@ -55,7 +55,8 @@ android {
 }
 
 dependencies {
-
+    implementation(libs.coil.compose)
+    implementation(libs.firebase.storage.ktx)
     // Core Android & Jetpack
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

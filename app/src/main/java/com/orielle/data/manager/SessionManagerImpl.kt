@@ -16,6 +16,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 
 // DataStore setup - must be at top-level
 internal val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "orielle_preferences")
@@ -30,6 +31,8 @@ class SessionManagerImpl @Inject constructor(
         val GUEST_UUID_KEY = stringPreferencesKey("guest_uuid")
         val LAST_CHECKIN_TIMESTAMP_KEY = stringPreferencesKey("last_checkin_timestamp")
         val ONBOARDING_SEEN_KEY = stringPreferencesKey("onboarding_seen")
+        val BIOMETRICS_ENABLED_KEY = booleanPreferencesKey("biometrics_enabled")
+        val PIN_CODE_KEY = stringPreferencesKey("pin_code")
     }
 
     override val currentUserId: Flow<String?> = context.dataStore.data
@@ -83,5 +86,27 @@ class SessionManagerImpl @Inject constructor(
         context.dataStore.edit { preferences: MutablePreferences ->
             preferences.remove(PreferencesKeys.LAST_CHECKIN_TIMESTAMP_KEY)
         }
+    }
+
+    suspend fun setBiometricsEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.BIOMETRICS_ENABLED_KEY] = enabled
+        }
+    }
+
+    suspend fun isBiometricsEnabled(): Boolean {
+        val preferences = context.dataStore.data.first()
+        return preferences[PreferencesKeys.BIOMETRICS_ENABLED_KEY] ?: false
+    }
+
+    suspend fun setPinCode(pin: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.PIN_CODE_KEY] = pin
+        }
+    }
+
+    suspend fun getPinCode(): String? {
+        val preferences = context.dataStore.data.first()
+        return preferences[PreferencesKeys.PIN_CODE_KEY]
     }
 }

@@ -30,6 +30,14 @@ import com.google.android.gms.common.api.ApiException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.orielle.R
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedButton
+import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.clickable
 
 @Composable
 fun SignInScreen(
@@ -63,6 +71,10 @@ fun SignInScreen(
             }
         }
     }
+
+    var showForgotDialog by remember { mutableStateOf(false) }
+    var forgotEmail by remember { mutableStateOf("") }
+    var forgotStatus by remember { mutableStateOf<String?>(null) }
 
     // Collect error events and show in Snackbar
     LaunchedEffect(Unit) {
@@ -123,11 +135,38 @@ fun SignInScreen(
                         isSignUp = false
                     )
 
-                    TextButton(
-                        onClick = { /* TODO: Navigate to Forgot Password screen */ },
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text("Forgot Password?")
+                    Text(
+                        text = "Forgot My Password?",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .clickable { showForgotDialog = true }
+                    )
+
+                    if (showForgotDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showForgotDialog = false },
+                            title = { Text("Reset Password") },
+                            text = {
+                                Column {
+                                    OutlinedTextField(
+                                        value = forgotEmail,
+                                        onValueChange = { forgotEmail = it },
+                                        label = { Text("Email") }
+                                    )
+                                    if (forgotStatus != null) Text(forgotStatus!!, color = Color.Green)
+                                }
+                            },
+                            confirmButton = {
+                                Button(onClick = {
+                                    FirebaseAuth.getInstance().sendPasswordResetEmail(forgotEmail)
+                                    forgotStatus = "Reset email sent to $forgotEmail"
+                                }) { Text("Send Reset Email") }
+                            },
+                            dismissButton = {
+                                OutlinedButton(onClick = { showForgotDialog = false }) { Text("Cancel") }
+                            }
+                        )
                     }
 
                     Spacer(Modifier.height(16.dp))

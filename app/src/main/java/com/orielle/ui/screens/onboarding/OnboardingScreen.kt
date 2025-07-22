@@ -34,13 +34,6 @@ import androidx.compose.ui.unit.sp
 import com.orielle.R
 import com.orielle.ui.theme.OrielleTheme
 import kotlinx.coroutines.launch
-import com.orielle.data.manager.SessionManagerImpl
-import androidx.compose.ui.platform.LocalContext
-import android.content.Context
-import dagger.hilt.android.EntryPointAccessors
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.remember
 
 // Data class to hold the content for each onboarding page
 private data class OnboardingPage(
@@ -73,25 +66,10 @@ private class HalfMoonShape : Shape {
     }
 }
 
-@dagger.hilt.EntryPoint
-@dagger.hilt.InstallIn(dagger.hilt.components.SingletonComponent::class)
-interface SessionManagerEntryPoint {
-    fun sessionManagerImpl(): SessionManagerImpl
-}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun OnboardingScreen(
-    onNavigateToAuth: () -> Unit,
-) {
-    val context = LocalContext.current
-    val sessionManager = remember {
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            SessionManagerEntryPoint::class.java
-        ).sessionManagerImpl()
-    }
-
+fun OnboardingScreen(onNavigateToAuth: () -> Unit) {
     val pages = listOf(
         OnboardingPage(
             imageResId = R.drawable.onboarding_preview_home,
@@ -112,11 +90,6 @@ fun OnboardingScreen(
 
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val coroutineScope = rememberCoroutineScope()
-
-    // When onboarding is completed:
-    LaunchedEffect(Unit) {
-        sessionManager.setHasSeenOnboarding(true)
-    }
 
     Scaffold { innerPadding ->
         Box(

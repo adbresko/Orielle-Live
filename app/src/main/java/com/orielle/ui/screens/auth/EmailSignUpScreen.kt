@@ -87,12 +87,10 @@ fun EmailSignUpScreen(
     LaunchedEffect(authResponse) {
         if (authResponse is Response.Success) {
             if (isNewUser) {
-                // If it's a new user, go to the transparency card screen
-                navController.navigate("data_transparency_screen") {
+                navController.navigate("profile_settings") {
                     popUpTo("auth_graph") { inclusive = true }
                 }
             } else {
-                // Otherwise, go straight home
                 navController.navigate("home_graph") {
                     popUpTo("auth_graph") { inclusive = true }
                 }
