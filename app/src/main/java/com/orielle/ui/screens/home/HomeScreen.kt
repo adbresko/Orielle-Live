@@ -318,7 +318,7 @@ fun HomeDashboardScreen(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = rememberRipple(bounded = true, color = accentColor),
-                                onClick = { navController.navigate("remember") }
+                                onClick = { navController.navigate("reflect") }
                             ),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = if (isDark) DarkGray else SoftSand),
@@ -352,7 +352,7 @@ fun HomeDashboardScreen(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = rememberRipple(bounded = true, color = accentColor),
-                                onClick = { navController.navigate("remember") }
+                                onClick = { navController.navigate("reflect") }
                             ),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = if (isDark) DarkGray else SoftSand),
