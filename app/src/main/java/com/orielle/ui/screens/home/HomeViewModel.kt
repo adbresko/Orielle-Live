@@ -32,6 +32,7 @@ import androidx.navigation.NavController
 data class HomeUiState(
     val isGuest: Boolean = true,
     val isLoading: Boolean = true,
+    val isInitializing: Boolean = true, // Add specific initialization state
     val journalEntries: List<JournalEntry> = emptyList(),
     val error: String? = null,
     val userName: String? = null, // Added userName property
@@ -77,11 +78,38 @@ class HomeViewModel @Inject constructor(
     }
 
     init {
-        observeSessionState()
-        fetchJournalEntries()
-        checkMoodCheckInStatus() // Check mood status for dashboard state
-        checkDashboardState()
-        fetchWeeklyMoodView()
+        // Start with loading state
+        _uiState.value = _uiState.value.copy(isInitializing = true)
+
+        // Perform initial data loading in parallel
+        initializeData()
+    }
+
+    private fun initializeData() {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            try {
+                Timber.d("🚀 HomeViewModel: Starting parallel data initialization")
+
+                // Start all data loading operations in parallel
+                val sessionJob = launch { observeSessionState() }
+                val journalJob = launch { fetchJournalEntries() }
+                val moodCheckJob = launch { checkMoodCheckInStatus() }
+                val dashboardJob = launch { checkDashboardState() }
+                val weeklyMoodJob = launch { fetchWeeklyMoodView() }
+
+                // Wait for critical data (mood check status and dashboard state) to complete
+                moodCheckJob.join()
+                dashboardJob.join()
+
+                // Mark initialization as complete
+                _uiState.value = _uiState.value.copy(isInitializing = false)
+                Timber.d("✅ HomeViewModel: Initial data loading complete")
+
+            } catch (e: Exception) {
+                Timber.e(e, "❌ HomeViewModel: Error during initialization")
+                _uiState.value = _uiState.value.copy(isInitializing = false)
+            }
+        }
     }
 
     private fun observeSessionState() {
@@ -209,9 +237,17 @@ class HomeViewModel @Inject constructor(
 
     fun refreshHomeData() {
         println("HomeViewModel: Refreshing home data after screen return")
-        checkDashboardState()
-        fetchWeeklyMoodView()
-        checkMoodCheckInStatus()
+        viewModelScope.launch(coroutineExceptionHandler) {
+            // Do critical refreshes in parallel for faster loading
+            val dashboardJob = launch { checkDashboardState() }
+            val moodViewJob = launch { fetchWeeklyMoodView() }
+            val moodCheckJob = launch { checkMoodCheckInStatus() }
+
+            // Wait for all critical data to complete
+            dashboardJob.join()
+            moodViewJob.join()
+            moodCheckJob.join()
+        }
     }
 
     fun logOut(navController: NavController?) {

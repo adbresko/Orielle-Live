@@ -88,17 +88,37 @@ fun HomeScreen(
         viewModel.refreshHomeData()
     }
 
-    HomeDashboardScreen(
-        userName = uiState.userName,
-        journalEntries = uiState.journalEntries,
-        weeklyMoodView = uiState.weeklyMoodView,
-        navController = navController,
-        dashboardState = dashboardState,
-        onCheckInTap = {
-            // Navigate to mood check-in screen instead of just changing state
-            navController.navigate("mood_check_in")
+    // Show loading indicator during initialization to prevent flicker
+    if (uiState.isInitializing) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator(
+                    color = WaterBlue,
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Loading your dashboard...",
+                    style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground)
+                )
+            }
         }
-    )
+    } else {
+        HomeDashboardScreen(
+            userName = uiState.userName,
+            journalEntries = uiState.journalEntries,
+            weeklyMoodView = uiState.weeklyMoodView,
+            navController = navController,
+            dashboardState = dashboardState,
+            onCheckInTap = {
+                // Navigate to mood check-in screen instead of just changing state
+                navController.navigate("mood_check_in")
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)

@@ -98,12 +98,14 @@ class ProfileSettingsViewModel @Inject constructor(
                     profileImageUrl = profileImageUrl,
                     twoFactorEnabled = doc.getBoolean("twoFactorEnabled") ?: false,
                     notificationsEnabled = doc.getBoolean("notificationsEnabled") ?: true,
-                    biometricsEnabled = biometricsEnabled
+                    biometricsEnabled = biometricsEnabled,
+                    isLoading = false // Mark loading as complete
                 )
 
                 Timber.d("✅ Profile preferences loaded successfully")
             } catch (e: Exception) {
                 Timber.e(e, "❌ Failed to load user preferences")
+                _uiState.value = _uiState.value.copy(isLoading = false) // Stop loading on error
                 showMessage("Failed to load preferences: ${e.message}", isError = true)
             }
         }
@@ -455,6 +457,7 @@ data class ProfileSettingsUiState(
     val notificationsEnabled: Boolean = true,
 
     // UI state
+    val isLoading: Boolean = true, // Add loading state
     val message: String? = null,
     val isError: Boolean = false
 )

@@ -46,6 +46,27 @@ fun ProfileSettingsScreen(
         viewModel.initializeUserData(userId, userName, userEmail, profileImageUrl)
     }
 
+    // Show loading indicator while data loads
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator(
+                    color = WaterBlue,
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Loading your settings...",
+                    style = Typography.bodyMedium.copy(color = textColor)
+                )
+            }
+        }
+        return
+    }
+
     Scaffold(
         containerColor = backgroundColor,
         topBar = {
