@@ -109,4 +109,10 @@ class SessionManagerImpl @Inject constructor(
         val preferences = context.dataStore.data.first()
         return preferences[PreferencesKeys.PIN_CODE_KEY]
     }
+
+    override suspend fun clearSession() {
+        context.dataStore.edit { preferences ->
+            preferences.clear()
+        }
+    }
 }

@@ -9,6 +9,7 @@ import java.util.Date
  * @param id Unique identifier for the mood check-in.
  * @param userId ID of the user who created this check-in.
  * @param mood The selected mood/emotion.
+ * @param tags Optional reflection tags/options selected during check-in.
  * @param timestamp When the check-in was created.
  * @param notes Optional notes associated with the mood check-in.
  */
@@ -16,6 +17,7 @@ data class MoodCheckIn(
     val id: String,
     val userId: String,
     val mood: String,
+    val tags: List<String> = emptyList(),
     val timestamp: Date,
     val notes: String? = null
 )

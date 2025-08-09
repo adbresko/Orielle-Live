@@ -144,10 +144,20 @@ fun AppNavigation(
         ) { backStackEntry ->
             val moodName = backStackEntry.arguments?.getString("moodName") ?: "Happy"
             val moodIconRes = backStackEntry.arguments?.getInt("moodIconRes") ?: R.drawable.ic_happy
+            val moodCheckInViewModel: com.orielle.ui.screens.mood.MoodCheckInViewModel = hiltViewModel()
+
             MoodReflectionScreen(
                 moodName = moodName,
                 moodIconRes = moodIconRes,
-                onSave = { _, _, _ ->
+                onSave = { mood, selectedOptions, notes ->
+                    // Save the mood check-in with selected data
+                    moodCheckInViewModel.saveMoodCheckIn(
+                        mood = mood,
+                        tags = selectedOptions,
+                        notes = if (notes.isBlank()) null else notes
+                    )
+
+                    // Navigate to final screen
                     navController.navigate("mood_final") {
                         popUpTo("mood_reflection/$moodName/$moodIconRes") { inclusive = true }
                     }

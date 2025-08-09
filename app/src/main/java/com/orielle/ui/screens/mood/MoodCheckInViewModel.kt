@@ -70,7 +70,7 @@ class MoodCheckInViewModel @Inject constructor(
         }
     }
 
-    fun saveMoodCheckIn(mood: String) {
+    fun saveMoodCheckIn(mood: String, tags: List<String> = emptyList(), notes: String? = null) {
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
@@ -85,12 +85,18 @@ class MoodCheckInViewModel @Inject constructor(
                     id = UUID.randomUUID().toString(),
                     userId = userId,
                     mood = mood,
-                    timestamp = Date()
+                    tags = tags,
+                    timestamp = Date(),
+                    notes = notes
                 )
 
+                println("🔥 MoodCheckInViewModel: Saving mood check-in: $moodCheckIn")
+                Timber.d("Saving mood check-in: $moodCheckIn")
                 val result = saveMoodCheckInUseCase(moodCheckIn)
                 when (result) {
                     is com.orielle.domain.model.Response.Success -> {
+                        println("✅ MoodCheckInViewModel: Mood check-in saved successfully!")
+                        Timber.d("Mood check-in saved successfully")
                         _eventFlow.emit(UiEvent.ShowSnackbar("Mood check-in saved!"))
                     }
                     is com.orielle.domain.model.Response.Failure -> {

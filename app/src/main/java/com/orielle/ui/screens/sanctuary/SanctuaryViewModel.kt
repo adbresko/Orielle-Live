@@ -13,10 +13,20 @@ import timber.log.Timber
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import com.orielle.ui.util.UiEvent
+import com.orielle.domain.repository.ChatRepository
+import com.orielle.domain.manager.SessionManager
+import com.orielle.domain.model.ChatConversation
+import com.orielle.domain.model.ChatMessage
+import java.util.Date
+import java.util.UUID
 
 @HiltViewModel
-class SanctuaryViewModel @Inject constructor() : ViewModel() {
+class SanctuaryViewModel @Inject constructor(
+    private val chatRepository: ChatRepository,
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
     private val prompts = listOf(
         "What energy are you bringing into this moment?",
@@ -40,6 +50,8 @@ class SanctuaryViewModel @Inject constructor() : ViewModel() {
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
+    private var currentConversationId: String? = null
+
     private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
         Timber.e(throwable, "Unhandled coroutine exception in SanctuaryViewModel")
         viewModelScope.launch {
@@ -55,12 +67,99 @@ class SanctuaryViewModel @Inject constructor() : ViewModel() {
     fun submitReflection() {
         viewModelScope.launch(coroutineExceptionHandler) {
             try {
-                // In a real implementation, this would call a Gemini API UseCase.
-                // For now, we simulate a delay and provide a canned, empathetic response.
+                val userId = sessionManager.currentUserId.first()
+                if (userId == null) {
+                    _eventFlow.emit(UiEvent.ShowSnackbar("User not authenticated"))
+                    return@launch
+                }
+
+                val userMessage = _userReflection.value.trim()
+                if (userMessage.isBlank()) {
+                    _eventFlow.emit(UiEvent.ShowSnackbar("Please enter a reflection"))
+                    return@launch
+                }
+
+                // Create a conversation if this is the first message
+                if (currentConversationId == null) {
+                    val conversation = ChatConversation(
+                        id = UUID.randomUUID().toString(),
+                        userId = userId,
+                        title = "Sanctuary Reflection",
+                        createdAt = Date(),
+                        updatedAt = Date(),
+                        tags = listOf("sanctuary"),
+                        messageCount = 0,
+                        lastMessagePreview = userMessage.take(50)
+                    )
+
+                    val saveConversationResult = chatRepository.saveConversation(conversation)
+                    when (saveConversationResult) {
+                        is com.orielle.domain.model.Response.Success -> {
+                            currentConversationId = conversation.id
+                            Timber.d("Created new conversation: ${conversation.id}")
+                        }
+                        is com.orielle.domain.model.Response.Failure -> {
+                            Timber.e(saveConversationResult.exception, "Failed to create conversation")
+                            _eventFlow.emit(UiEvent.ShowSnackbar("Failed to save conversation"))
+                            return@launch
+                        }
+                        else -> return@launch
+                    }
+                }
+
+                // Save user message
+                val userChatMessage = ChatMessage(
+                    id = UUID.randomUUID().toString(),
+                    conversationId = currentConversationId!!,
+                    content = userMessage,
+                    isFromUser = true,
+                    timestamp = Date(),
+                    messageType = "text"
+                )
+
+                val saveUserMessageResult = chatRepository.saveMessage(userChatMessage)
+                when (saveUserMessageResult) {
+                    is com.orielle.domain.model.Response.Success -> {
+                        Timber.d("Saved user message: ${userChatMessage.id}")
+                    }
+                    is com.orielle.domain.model.Response.Failure -> {
+                        Timber.e(saveUserMessageResult.exception, "Failed to save user message")
+                        _eventFlow.emit(UiEvent.ShowSnackbar("Failed to save message"))
+                        return@launch
+                    }
+                    else -> return@launch
+                }
+
+                // Simulate AI response with delay
                 delay(1500) // Simulate network latency for the AI response
-                _aiResponse.value = "Thank you for sharing that space with me. It's a gift to witness your inner world."
+                val aiResponseText = "Thank you for sharing that space with me. It's a gift to witness your inner world."
+                _aiResponse.value = aiResponseText
+
+                // Save AI response message
+                val aiChatMessage = ChatMessage(
+                    id = UUID.randomUUID().toString(),
+                    conversationId = currentConversationId!!,
+                    content = aiResponseText,
+                    isFromUser = false,
+                    timestamp = Date(),
+                    messageType = "text"
+                )
+
+                val saveAiMessageResult = chatRepository.saveMessage(aiChatMessage)
+                when (saveAiMessageResult) {
+                    is com.orielle.domain.model.Response.Success -> {
+                        Timber.d("Saved AI message: ${aiChatMessage.id}")
+                    }
+                    is com.orielle.domain.model.Response.Failure -> {
+                        Timber.e(saveAiMessageResult.exception, "Failed to save AI message")
+                        // Don't return here, still show the UI response
+                    }
+                    else -> { /* Continue */ }
+                }
+
                 delay(1000) // A brief pause before showing the call to action
                 _showCta.value = true
+
             } catch (e: Exception) {
                 Timber.e(e, "Error in submitReflection")
                 _eventFlow.emit(UiEvent.ShowSnackbar(AppError.Unknown.toUserMessage()))

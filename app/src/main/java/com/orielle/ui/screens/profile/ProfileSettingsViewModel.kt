@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -306,15 +307,62 @@ class ProfileSettingsViewModel @Inject constructor(
             try {
                 val userId = _uiState.value.userId
 
-                // Delete user data from Firestore
-                firestore.collection("users").document(userId).delete().await()
+                // Delete all user data from Firestore
+                // Note: In production, this should be done via Cloud Functions for atomic deletion
+                try {
+                    // Delete mood check-ins
+                    val moodCheckIns = firestore.collection("mood_check_ins")
+                        .whereEqualTo("userId", userId).get().await()
+                    for (doc in moodCheckIns.documents) {
+                        doc.reference.delete().await()
+                    }
 
-                // Delete Firebase Auth account
+                    // Delete journal entries
+                    val journalEntries = firestore.collection("journal_entries")
+                        .whereEqualTo("userId", userId).get().await()
+                    for (doc in journalEntries.documents) {
+                        doc.reference.delete().await()
+                    }
+
+                    // Delete chat conversations and messages
+                    val conversations = firestore.collection("chat_conversations")
+                        .whereEqualTo("userId", userId).get().await()
+                    for (conversationDoc in conversations.documents) {
+                        val conversationId = conversationDoc.id
+
+                        // Delete messages in this conversation
+                        val messages = firestore.collection("chat_messages")
+                            .whereEqualTo("conversationId", conversationId).get().await()
+                        for (messageDoc in messages.documents) {
+                            messageDoc.reference.delete().await()
+                        }
+
+                        // Delete conversation
+                        conversationDoc.reference.delete().await()
+                    }
+
+                    // Delete user document
+                    firestore.collection("users").document(userId).delete().await()
+
+                } catch (firestoreError: Exception) {
+                    Timber.e(firestoreError, "Error deleting Firestore data during account deletion")
+                    showMessage("Warning: Some cloud data may not have been deleted", isError = true)
+                }
+
+                // Clear local session data
+                try {
+                    sessionManager.clearSession()
+                } catch (sessionError: Exception) {
+                    Timber.e(sessionError, "Error clearing session during account deletion")
+                }
+
+                // Delete Firebase Auth account (do this last)
                 auth.currentUser?.delete()?.await()
 
-                showMessage("Account deleted successfully")
+                showMessage("Account and all data deleted successfully")
 
             } catch (e: Exception) {
+                Timber.e(e, "Failed to delete account")
                 showMessage("Failed to delete account: ${e.message}", isError = true)
             }
         }

@@ -27,7 +27,7 @@ import com.orielle.data.local.model.ConversationTagCrossRef
         TagEntity::class,
         ConversationTagCrossRef::class
     ],
-    version = 6, // Increment for enhanced journal entries
+    version = 7, // Increment for mood check-in tags field
     exportSchema = false
 )
 @TypeConverters(Converters::class) // Add this to handle the Date type
@@ -129,6 +129,13 @@ abstract class OrielleDatabase : RoomDatabase() {
                 // Create indices for better performance
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_journal_entries_timestamp ON journal_entries(timestamp)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_journal_entries_entryType ON journal_entries(entryType)")
+            }
+        }
+
+        val MIGRATION_6_7 = object : androidx.room.migration.Migration(6, 7) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // Add tags column to mood_check_ins table
+                database.execSQL("ALTER TABLE mood_check_ins ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
             }
         }
     }

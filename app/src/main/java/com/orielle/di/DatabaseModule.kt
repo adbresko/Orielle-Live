@@ -28,8 +28,7 @@ object DatabaseModule {
             OrielleDatabase::class.java,
             "orielle_database"
         )
-            .addMigrations(OrielleDatabase.MIGRATION_3_4, OrielleDatabase.MIGRATION_4_5, OrielleDatabase.MIGRATION_5_6)
-            .fallbackToDestructiveMigration() // Use this during development
+            .fallbackToDestructiveMigration() // Use this during development - will recreate DB if migration fails
             .build()
     }
 

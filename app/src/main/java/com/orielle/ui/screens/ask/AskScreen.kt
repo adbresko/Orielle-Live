@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
@@ -36,14 +37,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.orielle.R
 import com.orielle.ui.theme.*
+import com.orielle.domain.model.ChatMessage
 import kotlinx.coroutines.delay
-
-data class ChatMessage(
-    val id: String,
-    val text: String,
-    val isFromUser: Boolean,
-    val timestamp: Long = System.currentTimeMillis()
-)
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,7 +89,7 @@ fun AskScreen(
                         }
                     }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = textColor
                         )
@@ -220,7 +217,7 @@ fun ChatBubble(
             )
         ) {
             Text(
-                text = message.text,
+                text = message.content,
                 modifier = Modifier.padding(16.dp),
                 style = Typography.bodyLarge,
                 color = if (message.isFromUser) {
@@ -522,8 +519,10 @@ fun Preview_ChatBubble_User_Light() {
         ChatBubble(
             message = ChatMessage(
                 id = "1",
-                text = "I feel so scattered and anxious today.",
-                isFromUser = true
+                conversationId = "preview",
+                content = "I feel so scattered and anxious today.",
+                isFromUser = true,
+                timestamp = java.util.Date()
             ),
             isDark = false
         )
@@ -537,8 +536,10 @@ fun Preview_ChatBubble_Orielle_Light() {
         ChatBubble(
             message = ChatMessage(
                 id = "2",
-                text = "I hear you. Can you tell me more about what you're feeling right now?",
-                isFromUser = false
+                conversationId = "preview",
+                content = "I hear you. Can you tell me more about what you're feeling right now?",
+                isFromUser = false,
+                timestamp = java.util.Date()
             ),
             isDark = false
         )
@@ -552,8 +553,10 @@ fun Preview_ChatBubble_User_Dark() {
         ChatBubble(
             message = ChatMessage(
                 id = "1",
-                text = "I feel so scattered and anxious today.",
-                isFromUser = true
+                conversationId = "preview",
+                content = "I feel so scattered and anxious today.",
+                isFromUser = true,
+                timestamp = java.util.Date()
             ),
             isDark = true
         )
@@ -567,8 +570,10 @@ fun Preview_ChatBubble_Orielle_Dark() {
         ChatBubble(
             message = ChatMessage(
                 id = "2",
-                text = "I hear you. Can you tell me more about what you're feeling right now?",
-                isFromUser = false
+                conversationId = "preview",
+                content = "I hear you. Can you tell me more about what you're feeling right now?",
+                isFromUser = false,
+                timestamp = java.util.Date()
             ),
             isDark = true
         )

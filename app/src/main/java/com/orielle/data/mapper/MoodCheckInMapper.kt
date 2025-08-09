@@ -11,6 +11,7 @@ fun MoodCheckInEntity.toMoodCheckIn(): MoodCheckIn {
         id = id,
         userId = userId,
         mood = mood,
+        tags = tags,
         timestamp = timestamp,
         notes = notes
     )
@@ -21,6 +22,7 @@ fun MoodCheckIn.toMoodCheckInEntity(): MoodCheckInEntity {
         id = id,
         userId = userId,
         mood = mood,
+        tags = tags,
         timestamp = timestamp,
         notes = notes
     )

@@ -47,4 +47,10 @@ interface SessionManager {
     suspend fun getLastCheckInTimestamp(): Long?
     suspend fun setLastCheckInTimestamp(timestamp: Long)
     suspend fun clearLastCheckInTimestamp()
+
+    /**
+     * Clears all session data including guest sessions, preferences, and check-in timestamps.
+     * Used for account deletion and logout scenarios.
+     */
+    suspend fun clearSession()
 }
