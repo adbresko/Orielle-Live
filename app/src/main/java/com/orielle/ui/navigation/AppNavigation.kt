@@ -43,6 +43,8 @@ import com.orielle.domain.manager.SessionManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import androidx.compose.ui.platform.LocalContext
 import com.orielle.ui.screens.profile.ProfileSettingsScreen
+import com.orielle.ui.screens.ask.AskScreen
+import com.orielle.ui.screens.ask.AskTaggingScreen
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -179,6 +181,15 @@ fun AppNavigation(
                 },
                 homeViewModel = homeViewModel // Pass the view model for refresh
             )
+        }
+
+        // Ask feature screens
+        composable("ask") {
+            AskScreen(navController = navController)
+        }
+
+        composable("ask_tagging") {
+            AskTaggingScreen(navController = navController)
         }
     }
 }
