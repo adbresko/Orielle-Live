@@ -104,6 +104,9 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
 
+    // JSON Serialization for Room TypeConverters
+    implementation(libs.gson)
+
     // Firebase
     implementation(platform(libs.firebase.bom)) // Import the BOM for all Firebase libs
     implementation(libs.firebase.auth)

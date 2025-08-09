@@ -3,32 +3,37 @@ package com.orielle.data.local.dao
 import androidx.room.*
 import com.orielle.data.local.model.ChatMessageEntity
 import kotlinx.coroutines.flow.Flow
-import java.util.Date
 
+/**
+ * Data Access Object for chat messages.
+ */
 @Dao
 interface ChatMessageDao {
 
-    @Query("SELECT * FROM chat_messages WHERE userId = :userId ORDER BY timestamp DESC")
-    fun getChatMessagesForUser(userId: String): Flow<List<ChatMessageEntity>>
+    @Upsert
+    suspend fun upsertMessage(message: ChatMessageEntity)
 
-    @Query("SELECT * FROM chat_messages WHERE userId = :userId AND conversationId = :conversationId ORDER BY timestamp ASC")
-    fun getMessagesForConversation(userId: String, conversationId: String): Flow<List<ChatMessageEntity>>
+    @Insert
+    suspend fun insertMessages(messages: List<ChatMessageEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertChatMessage(chatMessage: ChatMessageEntity)
+    @Query("SELECT * FROM chat_messages WHERE conversationId = :conversationId ORDER BY timestamp ASC")
+    fun getMessagesForConversation(conversationId: String): Flow<List<ChatMessageEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertChatMessages(chatMessages: List<ChatMessageEntity>)
+    @Query("SELECT * FROM chat_messages WHERE id = :messageId")
+    suspend fun getMessageById(messageId: String): ChatMessageEntity?
 
-    @Delete
-    suspend fun deleteChatMessage(chatMessage: ChatMessageEntity)
+    @Query("DELETE FROM chat_messages WHERE id = :messageId")
+    suspend fun deleteMessage(messageId: String)
 
-    @Query("DELETE FROM chat_messages WHERE userId = :userId AND conversationId = :conversationId")
-    suspend fun deleteConversation(userId: String, conversationId: String)
+    @Query("DELETE FROM chat_messages WHERE conversationId = :conversationId")
+    suspend fun deleteAllMessagesInConversation(conversationId: String)
 
-    @Query("SELECT DISTINCT conversationId FROM chat_messages WHERE userId = :userId ORDER BY timestamp DESC")
-    fun getConversationIds(userId: String): Flow<List<String>>
+    @Query("SELECT COUNT(*) FROM chat_messages WHERE conversationId = :conversationId")
+    suspend fun getMessageCount(conversationId: String): Int
 
-    @Query("SELECT * FROM chat_messages WHERE userId = :userId AND timestamp >= :since ORDER BY timestamp DESC")
-    fun getRecentMessages(userId: String, since: Date): Flow<List<ChatMessageEntity>>
+    @Query("SELECT * FROM chat_messages WHERE conversationId = :conversationId ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLatestMessage(conversationId: String): ChatMessageEntity?
+
+    @Query("SELECT content FROM chat_messages WHERE conversationId = :conversationId AND isFromUser = 1 ORDER BY timestamp ASC LIMIT 1")
+    suspend fun getFirstUserMessage(conversationId: String): String?
 }

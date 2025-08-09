@@ -4,12 +4,19 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.orielle.data.local.dao.JournalDao
 import com.orielle.data.local.dao.MoodCheckInDao
+import com.orielle.data.local.dao.ChatConversationDao
+import com.orielle.data.local.dao.ChatMessageDao
+import com.orielle.data.local.dao.TagDao
 import com.orielle.domain.repository.AuthRepository
 import com.orielle.data.repository.AuthRepositoryImpl
 import com.orielle.domain.repository.JournalRepository
 import com.orielle.data.repository.JournalRepositoryImpl
 import com.orielle.domain.repository.MoodCheckInRepository
 import com.orielle.data.repository.MoodCheckInRepositoryImpl
+import com.orielle.domain.repository.ChatRepository
+import com.orielle.data.repository.ChatRepositoryImpl
+import com.orielle.domain.repository.TagRepository
+import com.orielle.data.repository.TagRepositoryImpl
 import com.orielle.domain.manager.SessionManager
 import dagger.Module
 import dagger.Provides
@@ -46,6 +53,38 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideMoodCheckInRepository(
-        moodCheckInDao: MoodCheckInDao
-    ): MoodCheckInRepository = MoodCheckInRepositoryImpl(moodCheckInDao)
+        moodCheckInDao: MoodCheckInDao,
+        firestore: FirebaseFirestore,
+        sessionManager: SessionManager
+    ): MoodCheckInRepository = MoodCheckInRepositoryImpl(
+        moodCheckInDao = moodCheckInDao,
+        firestore = firestore,
+        sessionManager = sessionManager
+    )
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(
+        conversationDao: ChatConversationDao,
+        messageDao: ChatMessageDao,
+        firestore: FirebaseFirestore,
+        sessionManager: SessionManager
+    ): ChatRepository = ChatRepositoryImpl(
+        conversationDao = conversationDao,
+        messageDao = messageDao,
+        firestore = firestore,
+        sessionManager = sessionManager
+    )
+
+    @Provides
+    @Singleton
+    fun provideTagRepository(
+        tagDao: TagDao,
+        firestore: FirebaseFirestore,
+        sessionManager: SessionManager
+    ): TagRepository = TagRepositoryImpl(
+        tagDao = tagDao,
+        firestore = firestore,
+        sessionManager = sessionManager
+    )
 }

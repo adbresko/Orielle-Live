@@ -82,6 +82,7 @@ fun HomeScreen(
     HomeDashboardScreen(
         userName = uiState.userName,
         journalEntries = uiState.journalEntries,
+        weeklyMoodView = uiState.weeklyMoodView,
         navController = navController,
         dashboardState = dashboardState,
         onCheckInTap = { viewModel.onCheckInCompletedOrSkipped() }
@@ -93,6 +94,7 @@ fun HomeScreen(
 fun HomeDashboardScreen(
     userName: String?,
     journalEntries: List<com.orielle.domain.model.JournalEntry>,
+    weeklyMoodView: com.orielle.domain.model.WeeklyMoodView,
     navController: NavController,
     dashboardState: DashboardState,
     onCheckInTap: () -> Unit,
@@ -104,13 +106,6 @@ fun HomeDashboardScreen(
     val accentColor = WaterBlue
     val today = remember { Date() }
     val dateFormat = remember { SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()) }
-    val dayOfWeek = remember { SimpleDateFormat("E", Locale.getDefault()) }
-    val calendar = Calendar.getInstance()
-    val weekDays = listOf("M", "T", "W", "T", "F", "S", "S")
-    val weatherIcons = listOf(
-        R.drawable.ic_happy, R.drawable.ic_frustrated, R.drawable.ic_playful, R.drawable.ic_angry, R.drawable.ic_peaceful, R.drawable.ic_sad, R.drawable.ic_surprised
-    )
-    val activeDayIndex = calendar.get(Calendar.DAY_OF_WEEK) - 2 // 0-based, Monday start
     val breathingTransition = rememberInfiniteTransition(label = "breathing")
     val breathingScale by breathingTransition.animateFloat(
         initialValue = 1f,
@@ -126,7 +121,7 @@ fun HomeDashboardScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 32.dp, start = 24.dp, end = 24.dp, bottom = 8.dp),
+                    .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Orielle logo and text
@@ -308,49 +303,10 @@ fun HomeDashboardScreen(
                             modifier = Modifier.padding(vertical = 24.dp, horizontal = 8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                text = "YOUR INNER WEATHER",
-                                style = Typography.bodyMedium.copy(color = if (isDark) SoftSand else Charcoal),
-                                textAlign = TextAlign.Center
+                            WeeklyMoodView(
+                                weeklyView = weeklyMoodView,
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            Spacer(Modifier.height(16.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                weekDays.forEachIndexed { i, day ->
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = day,
-                                            style = Typography.bodyMedium.copy(color = if (isDark) SoftSand else Charcoal)
-                                        )
-                                        Spacer(Modifier.height(4.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .size(40.dp)
-                                                .scale(if (i == activeDayIndex) breathingScale else 1f),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            if (i == activeDayIndex) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(40.dp)
-                                                        .background(
-                                                            color = accentColor.copy(alpha = 0.25f),
-                                                            shape = CircleShape
-                                                        )
-                                                )
-                                            }
-                                            Image(
-                                                painter = painterResource(id = weatherIcons[i % weatherIcons.size]),
-                                                contentDescription = "Weather Icon",
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                     Spacer(Modifier.height(24.dp))
@@ -448,6 +404,7 @@ fun Preview_HomeDashboard_Initial_Light() {
                     mood = "Reflective"
                 )
             ),
+            weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Initial,
             onCheckInTap = {},
@@ -471,6 +428,7 @@ fun Preview_HomeDashboard_Initial_Dark() {
                     mood = "Reflective"
                 )
             ),
+            weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Initial,
             onCheckInTap = {},
@@ -494,6 +452,7 @@ fun Preview_HomeDashboard_Unfolded_Light() {
                     mood = "Reflective"
                 )
             ),
+            weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Unfolded,
             onCheckInTap = {},
@@ -517,6 +476,7 @@ fun Preview_HomeDashboard_Unfolded_Dark() {
                     mood = "Reflective"
                 )
             ),
+            weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Unfolded,
             onCheckInTap = {},

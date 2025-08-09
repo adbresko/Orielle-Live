@@ -41,6 +41,12 @@
             android:label="@string/app_name"
             android:theme="@style/Theme.Orielle" />
 
+        <!-- Auto-sync service for offline-first behavior -->
+        <service
+            android:name=".data.service.AutoSyncService"
+            android:enabled="true"
+            android:exported="false" />
+
     </application>
 
 </manifest>

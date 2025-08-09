@@ -1,0 +1,159 @@
+package com.orielle.ui.screens.home
+
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.orielle.R
+import com.orielle.domain.model.DayMoodData
+import com.orielle.domain.model.MoodType
+import com.orielle.domain.model.WeeklyMoodView
+import com.orielle.ui.theme.*
+
+@Composable
+fun WeeklyMoodView(
+    weeklyView: WeeklyMoodView,
+    modifier: Modifier = Modifier
+) {
+    val isDark = MaterialTheme.colorScheme.background == DarkGray
+    val accentColor = WaterBlue
+
+    // Breathing animation for today's indicator
+    val breathingTransition = rememberInfiniteTransition(label = "breathing")
+    val breathingScale by breathingTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000),
+            repeatMode = RepeatMode.Reverse
+        ), label = "breathingScale"
+    )
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "YOUR INNER WEATHER",
+            style = Typography.bodyMedium.copy(color = if (isDark) SoftSand else Charcoal),
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            weeklyView.days.forEachIndexed { index, dayData ->
+                WeeklyMoodDayItem(
+                    dayData = dayData,
+                    isToday = dayData.isToday,
+                    breathingScale = if (dayData.isToday) breathingScale else 1f,
+                    accentColor = accentColor,
+                    isDark = isDark
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeeklyMoodDayItem(
+    dayData: DayMoodData,
+    isToday: Boolean,
+    breathingScale: Float,
+    accentColor: Color,
+    isDark: Boolean
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = dayData.dayLabel,
+            style = Typography.bodyMedium.copy(color = if (isDark) SoftSand else Charcoal)
+        )
+        Spacer(Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .scale(breathingScale),
+            contentAlignment = Alignment.Center
+        ) {
+            // Background circle for today
+            if (isToday) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            color = accentColor.copy(alpha = 0.25f),
+                            shape = CircleShape
+                        )
+                )
+            }
+
+            // Mood icon or empty state
+            if (dayData.moodCheckIn != null) {
+                // Show the actual mood icon
+                val moodType = MoodType.fromString(dayData.moodCheckIn.mood)
+                val iconRes = moodType?.iconResId ?: R.drawable.ic_peaceful // fallback
+
+                Image(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = "Mood: ${dayData.moodCheckIn.mood}",
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                // Show empty state indicator
+                EmptyDayIndicator(
+                    isToday = isToday,
+                    isDark = isDark
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyDayIndicator(
+    isToday: Boolean,
+    isDark: Boolean
+) {
+    // Show a subtle indicator for days without check-ins
+    Box(
+        modifier = Modifier
+            .size(20.dp)
+            .background(
+                color = if (isToday) {
+                    // For today, show a more prominent empty state
+                    if (isDark) Color.White.copy(alpha = 0.4f) else Charcoal.copy(alpha = 0.4f)
+                } else {
+                    // For other days, show a very subtle indicator
+                    if (isDark) Color.White.copy(alpha = 0.2f) else Charcoal.copy(alpha = 0.2f)
+                },
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        // Small dot or dash to indicate missing data
+        Box(
+            modifier = Modifier
+                .size(if (isToday) 8.dp else 6.dp)
+                .background(
+                    color = if (isToday) {
+                        if (isDark) Color.White.copy(alpha = 0.6f) else Charcoal.copy(alpha = 0.6f)
+                    } else {
+                        if (isDark) Color.White.copy(alpha = 0.3f) else Charcoal.copy(alpha = 0.3f)
+                    },
+                    shape = CircleShape
+                )
+        )
+    }
+}

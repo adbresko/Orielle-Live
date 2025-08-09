@@ -52,6 +52,7 @@ import androidx.compose.runtime.setValue
 
 @Composable
 fun AppNavigation(
+    modifier: Modifier = Modifier,
     authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     val navController = rememberNavController()
@@ -69,6 +70,7 @@ fun AppNavigation(
     NavHost(
         navController = navController,
         startDestination = "splash_router", // Use a static start destination
+        modifier = modifier,
         enterTransition = { fadeIn(animationSpec = tween(300)) },
         exitTransition = { fadeOut(animationSpec = tween(300)) }
     ) {

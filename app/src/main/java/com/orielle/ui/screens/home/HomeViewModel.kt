@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.orielle.domain.manager.SessionManager
 import com.orielle.domain.model.JournalEntry
+import com.orielle.domain.model.WeeklyMoodView
 import com.orielle.domain.use_case.GetJournalEntriesUseCase
 import com.orielle.domain.use_case.HasMoodCheckInForDateUseCase
+import com.orielle.domain.use_case.GetWeeklyMoodViewUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +36,8 @@ data class HomeUiState(
     val error: String? = null,
     val userName: String? = null, // Added userName property
     val isPremium: Boolean = false, // Added isPremium property
-    val needsMoodCheckIn: Boolean = false // Added mood check-in status
+    val needsMoodCheckIn: Boolean = false, // Added mood check-in status
+    val weeklyMoodView: WeeklyMoodView = WeeklyMoodView(emptyList(), 0) // Added weekly mood view
 )
 
 // Dashboard state for UI
@@ -47,6 +50,7 @@ sealed class DashboardState {
 class HomeViewModel @Inject constructor(
     private val getJournalEntriesUseCase: GetJournalEntriesUseCase,
     private val hasMoodCheckInForDateUseCase: HasMoodCheckInForDateUseCase,
+    private val getWeeklyMoodViewUseCase: GetWeeklyMoodViewUseCase,
     private val sessionManager: SessionManager,
     private val firestore: FirebaseFirestore, // Inject Firestore
     private val auth: FirebaseAuth // Inject FirebaseAuth for log out
@@ -76,6 +80,7 @@ class HomeViewModel @Inject constructor(
         observeSessionState()
         fetchJournalEntries()
         checkDashboardState()
+        fetchWeeklyMoodView()
     }
 
     private fun observeSessionState() {
@@ -185,6 +190,14 @@ class HomeViewModel @Inject constructor(
 
     fun refreshUserProfile() {
         observeSessionState()
+    }
+
+    private fun fetchWeeklyMoodView() {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            getWeeklyMoodViewUseCase().collect { weeklyView ->
+                _uiState.value = _uiState.value.copy(weeklyMoodView = weeklyView)
+            }
+        }
     }
 }
 

@@ -6,6 +6,9 @@ import com.orielle.data.local.OrielleDatabase
 import com.orielle.data.local.dao.JournalDao
 import com.orielle.data.local.dao.MoodCheckInDao
 import com.orielle.data.local.dao.UserDao
+import com.orielle.data.local.dao.ChatConversationDao
+import com.orielle.data.local.dao.ChatMessageDao
+import com.orielle.data.local.dao.TagDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,7 +28,7 @@ object DatabaseModule {
             OrielleDatabase::class.java,
             "orielle_database"
         )
-            .addMigrations(OrielleDatabase.MIGRATION_3_4)
+            .addMigrations(OrielleDatabase.MIGRATION_3_4, OrielleDatabase.MIGRATION_4_5)
             .fallbackToDestructiveMigration() // Use this during development
             .build()
     }
@@ -50,4 +53,22 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideMoodCheckInDao(db: OrielleDatabase): MoodCheckInDao = db.moodCheckInDao()
+
+    @Provides
+    @Singleton
+    fun provideChatConversationDao(database: OrielleDatabase): ChatConversationDao {
+        return database.chatConversationDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatMessageDao(database: OrielleDatabase): ChatMessageDao {
+        return database.chatMessageDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTagDao(database: OrielleDatabase): TagDao {
+        return database.tagDao()
+    }
 }
