@@ -44,18 +44,22 @@ class MoodCheckInRepositoryImpl @Inject constructor(
             moodCheckInDao.insertMoodCheckIn(moodToSave.toMoodCheckInEntity())
 
             // Try to sync to Firebase if not a guest user
+            Timber.d("🔍 Mood sync check - isGuest: $isGuest, userId: $userId")
             if (!isGuest) {
                 try {
+                    Timber.d("🚀 Attempting Firebase sync for mood check-in: ${moodToSave.id}")
                     firestore.collection("users").document(userId)
                         .collection("mood_check_ins").document(moodToSave.id)
                         .set(moodToSave).await()
-                    Timber.d("Mood check-in synced to Firebase successfully")
+                    Timber.d("✅ Mood check-in synced to Firebase successfully")
                 } catch (firebaseError: Exception) {
                     // Firebase sync failed, but local save succeeded
-                    Timber.w(firebaseError, "Failed to sync mood check-in to Firebase, saved locally")
+                    Timber.w(firebaseError, "❌ Failed to sync mood check-in to Firebase, saved locally")
                     FirebaseCrashlytics.getInstance().recordException(firebaseError)
                     // Don't fail the operation - data is saved locally and will sync later
                 }
+            } else {
+                Timber.d("⏭️ Skipping Firebase sync - user is guest")
             }
 
             Response.Success(Unit)
