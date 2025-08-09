@@ -27,7 +27,7 @@ import com.orielle.data.local.model.ConversationTagCrossRef
         TagEntity::class,
         ConversationTagCrossRef::class
     ],
-    version = 5, // Increment for Ask feature entities
+    version = 6, // Increment for enhanced journal entries
     exportSchema = false
 )
 @TypeConverters(Converters::class) // Add this to handle the Date type
@@ -113,6 +113,22 @@ abstract class OrielleDatabase : RoomDatabase() {
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_chat_messages_timestamp ON chat_messages(timestamp)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_conversation_tag_cross_ref_conversationId ON conversation_tag_cross_ref(conversationId)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_conversation_tag_cross_ref_tagId ON conversation_tag_cross_ref(tagId)")
+            }
+        }
+
+        val MIGRATION_5_6 = object : androidx.room.migration.Migration(5, 6) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // Add new columns to journal_entries table
+                database.execSQL("ALTER TABLE journal_entries ADD COLUMN title TEXT")
+                database.execSQL("ALTER TABLE journal_entries ADD COLUMN location TEXT")
+                database.execSQL("ALTER TABLE journal_entries ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
+                database.execSQL("ALTER TABLE journal_entries ADD COLUMN photoUrl TEXT")
+                database.execSQL("ALTER TABLE journal_entries ADD COLUMN promptText TEXT")
+                database.execSQL("ALTER TABLE journal_entries ADD COLUMN entryType TEXT NOT NULL DEFAULT 'FREE_WRITE'")
+
+                // Create indices for better performance
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_journal_entries_timestamp ON journal_entries(timestamp)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_journal_entries_entryType ON journal_entries(entryType)")
             }
         }
     }

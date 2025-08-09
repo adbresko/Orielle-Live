@@ -45,6 +45,10 @@ import androidx.compose.ui.platform.LocalContext
 import com.orielle.ui.screens.profile.ProfileSettingsScreen
 import com.orielle.ui.screens.ask.AskScreen
 import com.orielle.ui.screens.ask.AskTaggingScreen
+import com.orielle.ui.screens.reflect.ReflectScreen
+import com.orielle.ui.screens.reflect.JournalEditorScreen
+import com.orielle.ui.screens.reflect.JournalLogScreen
+import com.orielle.ui.screens.reflect.JournalDetailScreen
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -191,6 +195,66 @@ fun AppNavigation(
         }
 
         composable("ask_tagging") {
+            AskTaggingScreen(navController = navController)
+        }
+
+        // Reflect/Journal screens
+        composable("reflect") {
+            ReflectScreen(navController = navController)
+        }
+
+        composable(
+            "journal_editor?promptText={promptText}&isQuickEntry={isQuickEntry}&entryId={entryId}",
+            arguments = listOf(
+                navArgument("promptText") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("isQuickEntry") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument("entryId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val promptText = backStackEntry.arguments?.getString("promptText")
+            val isQuickEntry = backStackEntry.arguments?.getBoolean("isQuickEntry") ?: false
+            val entryId = backStackEntry.arguments?.getString("entryId")
+
+            JournalEditorScreen(
+                navController = navController,
+                promptText = promptText,
+                isQuickEntry = isQuickEntry,
+                entryId = entryId
+            )
+        }
+
+        composable("journal_log") {
+            JournalLogScreen(navController = navController)
+        }
+
+        composable(
+            "journal_detail/{entryId}",
+            arguments = listOf(navArgument("entryId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val entryId = backStackEntry.arguments?.getString("entryId") ?: ""
+            JournalDetailScreen(
+                navController = navController,
+                entryId = entryId
+            )
+        }
+
+        composable(
+            "journal_tagging/{tempEntryId}",
+            arguments = listOf(navArgument("tempEntryId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val tempEntryId = backStackEntry.arguments?.getString("tempEntryId") ?: ""
+            // Reuse the Ask tagging screen for journal entries
             AskTaggingScreen(navController = navController)
         }
     }

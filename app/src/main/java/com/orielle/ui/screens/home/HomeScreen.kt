@@ -172,7 +172,7 @@ fun HomeDashboardScreen(
                         icon = R.drawable.reflect,
                         label = "Reflect",
                         selected = false,
-                        onClick = { /* TODO: Navigate to reflect */ }
+                        onClick = { navController.navigate("reflect") }
                     )
                     DashboardNavItem(
                         icon = R.drawable.ask,
