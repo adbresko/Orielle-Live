@@ -112,9 +112,9 @@ fun ProfileSettingsScreen(
                         )
                     )
 
-                    if (uiState.userEmail != null) {
+                    uiState.userEmail?.let { userEmail ->
                         Text(
-                            text = uiState.userEmail!!,
+                            text = userEmail,
                             style = Typography.bodyMedium.copy(
                                 color = textColor.copy(alpha = 0.7f)
                             )

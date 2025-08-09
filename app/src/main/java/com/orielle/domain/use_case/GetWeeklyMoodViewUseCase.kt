@@ -18,14 +18,28 @@ class GetWeeklyMoodViewUseCase @Inject constructor(
 ) {
     operator fun invoke(): Flow<WeeklyMoodView> {
         return sessionManager.currentUserId.flatMapLatest { userId ->
+            println("GetWeeklyMoodViewUseCase: Current user ID: $userId")
             if (userId == null) {
-                flowOf(WeeklyMoodView(emptyList(), 0))
+                println("GetWeeklyMoodViewUseCase: No user ID, generating empty week structure")
+                flowOf(generateWeeklyView(emptyList())) // Generate empty week structure for guests
             } else {
+                println("GetWeeklyMoodViewUseCase: Fetching mood check-ins for user: $userId")
                 moodCheckInRepository.getRecentMoodCheckIns(userId, 7).map { response ->
                     when (response) {
-                        is Response.Success -> generateWeeklyView(response.data)
-                        is Response.Failure -> WeeklyMoodView(emptyList(), 0)
-                        is Response.Loading -> WeeklyMoodView(emptyList(), 0)
+                        is Response.Success -> {
+                            println("GetWeeklyMoodViewUseCase: Got ${response.data.size} mood check-ins")
+                            val weeklyView = generateWeeklyView(response.data)
+                            println("GetWeeklyMoodViewUseCase: Generated weekly view with ${weeklyView.days.size} days")
+                            weeklyView
+                        }
+                        is Response.Failure -> {
+                            println("GetWeeklyMoodViewUseCase: Failed to get mood data: ${response.exception}")
+                            generateWeeklyView(emptyList()) // Generate empty week view
+                        }
+                        is Response.Loading -> {
+                            println("GetWeeklyMoodViewUseCase: Loading mood data")
+                            generateWeeklyView(emptyList()) // Show empty structure while loading
+                        }
                     }
                 }
             }
@@ -33,6 +47,8 @@ class GetWeeklyMoodViewUseCase @Inject constructor(
     }
 
     private fun generateWeeklyView(recentCheckIns: List<com.orielle.domain.model.MoodCheckIn>): WeeklyMoodView {
+        println("GetWeeklyMoodViewUseCase: generateWeeklyView called with ${recentCheckIns.size} check-ins")
+
         val calendar = Calendar.getInstance()
         val today = calendar.time
 
@@ -54,6 +70,7 @@ class GetWeeklyMoodViewUseCase @Inject constructor(
             val isToday = isSameDay(currentDate, today)
             if (isToday) {
                 todayIndex = i
+                println("GetWeeklyMoodViewUseCase: Today is day $i (${getDayLabel(i)})")
             }
 
             // Find mood check-in for this date
@@ -62,16 +79,7 @@ class GetWeeklyMoodViewUseCase @Inject constructor(
             }
 
             // Generate day label
-            val dayLabel = when (i) {
-                0 -> "M"
-                1 -> "T"
-                2 -> "W"
-                3 -> "T"
-                4 -> "F"
-                5 -> "S"
-                6 -> "S"
-                else -> "?"
-            }
+            val dayLabel = getDayLabel(i)
 
             days.add(
                 DayMoodData(
@@ -81,9 +89,13 @@ class GetWeeklyMoodViewUseCase @Inject constructor(
                     isToday = isToday
                 )
             )
+
+            println("GetWeeklyMoodViewUseCase: Added day $i: $dayLabel, isToday: $isToday")
         }
 
-        return WeeklyMoodView(days = days, todayIndex = todayIndex)
+        val result = WeeklyMoodView(days = days, todayIndex = todayIndex)
+        println("GetWeeklyMoodViewUseCase: Created WeeklyMoodView with ${result.days.size} days, todayIndex: $todayIndex")
+        return result
     }
 
     private fun isSameDay(date1: Date, date2: Date): Boolean {
@@ -91,5 +103,18 @@ class GetWeeklyMoodViewUseCase @Inject constructor(
         val cal2 = Calendar.getInstance().apply { time = date2 }
         return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
                 cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+    }
+
+    private fun getDayLabel(dayIndex: Int): String {
+        return when (dayIndex) {
+            0 -> "M"  // Monday
+            1 -> "T"  // Tuesday
+            2 -> "W"  // Wednesday
+            3 -> "T"  // Thursday
+            4 -> "F"  // Friday
+            5 -> "S"  // Saturday
+            6 -> "S"  // Sunday
+            else -> "?"
+        }
     }
 }

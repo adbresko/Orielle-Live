@@ -108,7 +108,15 @@ class JournalEditorViewModel @Inject constructor(
     fun saveEntry(onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
-                val userId = sessionManager.currentUserId.first() ?: return@launch
+                println("JournalEditorViewModel: Starting to save entry")
+                val userId = sessionManager.currentUserId.first()
+                if (userId == null) {
+                    println("JournalEditorViewModel: No user ID found!")
+                    showMessage("Error: No user session found")
+                    return@launch
+                }
+
+                println("JournalEditorViewModel: Saving for user: $userId")
 
                 val entry = JournalEntry(
                     id = _uiState.value.entryId.ifEmpty { UUID.randomUUID().toString() },
@@ -123,15 +131,29 @@ class JournalEditorViewModel @Inject constructor(
                     entryType = _uiState.value.entryType
                 )
 
-                saveJournalEntryUseCase(entry)
+                println("JournalEditorViewModel: Entry created with ID: ${entry.id}")
 
-                _uiState.value = _uiState.value.copy(
-                    hasUnsavedChanges = false,
-                    showSavedMessage = true
-                )
+                val result = saveJournalEntryUseCase(entry)
 
-                kotlinx.coroutines.delay(500) // Brief delay to show the saved message
-                onSuccess()
+                when (result) {
+                    is com.orielle.domain.model.Response.Success -> {
+                        println("JournalEditorViewModel: Entry saved successfully")
+                        _uiState.value = _uiState.value.copy(
+                            hasUnsavedChanges = false,
+                            showSavedMessage = true
+                        )
+
+                        kotlinx.coroutines.delay(500) // Brief delay to show the saved message
+                        onSuccess()
+                    }
+                    is com.orielle.domain.model.Response.Failure -> {
+                        println("JournalEditorViewModel: Save failed: ${result.exception}")
+                        showMessage("Failed to save entry: ${result.exception?.message ?: "Unknown error"}")
+                    }
+                    is com.orielle.domain.model.Response.Loading -> {
+                        println("JournalEditorViewModel: Save still loading")
+                    }
+                }
 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -163,6 +185,10 @@ class JournalEditorViewModel @Inject constructor(
             tags = tags,
             hasUnsavedChanges = true
         )
+    }
+
+    private fun showMessage(message: String) {
+        _uiState.value = _uiState.value.copy(error = message)
     }
 }
 

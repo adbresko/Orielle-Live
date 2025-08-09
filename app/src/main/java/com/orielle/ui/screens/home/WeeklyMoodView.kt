@@ -28,6 +28,8 @@ fun WeeklyMoodView(
     val isDark = MaterialTheme.colorScheme.background == DarkGray
     val accentColor = WaterBlue
 
+
+
     // Breathing animation for today's indicator
     val breathingTransition = rememberInfiniteTransition(label = "breathing")
     val breathingScale by breathingTransition.animateFloat(
@@ -39,6 +41,14 @@ fun WeeklyMoodView(
         ), label = "breathingScale"
     )
 
+    // Debug logging
+    androidx.compose.runtime.LaunchedEffect(weeklyView) {
+        println("WeeklyMoodView: Received data with ${weeklyView.days.size} days")
+        if (weeklyView.days.isEmpty()) {
+            println("WeeklyMoodView: WARNING - No days data!")
+        }
+    }
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -49,19 +59,72 @@ fun WeeklyMoodView(
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(16.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            weeklyView.days.forEachIndexed { index, dayData ->
-                WeeklyMoodDayItem(
-                    dayData = dayData,
-                    isToday = dayData.isToday,
-                    breathingScale = if (dayData.isToday) breathingScale else 1f,
-                    accentColor = accentColor,
-                    isDark = isDark
-                )
+
+        if (weeklyView.days.isEmpty()) {
+            // Temporary fallback - generate basic week structure with correct today calculation
+            val fallbackDays = listOf("M", "T", "W", "T", "F", "S", "S")
+            val calendar = java.util.Calendar.getInstance()
+            val todayDayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK)
+            // Convert to Monday=0 based index (Sunday=7 -> 6, Monday=2 -> 0, etc.)
+            val todayIndex = when (todayDayOfWeek) {
+                java.util.Calendar.MONDAY -> 0
+                java.util.Calendar.TUESDAY -> 1
+                java.util.Calendar.WEDNESDAY -> 2
+                java.util.Calendar.THURSDAY -> 3
+                java.util.Calendar.FRIDAY -> 4
+                java.util.Calendar.SATURDAY -> 5
+                java.util.Calendar.SUNDAY -> 6
+                else -> 0
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                fallbackDays.forEachIndexed { index, dayLabel ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = dayLabel,
+                            style = Typography.bodyMedium.copy(color = if (isDark) SoftSand else Charcoal)
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(
+                                    color = if (index == todayIndex) WaterBlue.copy(alpha = 0.25f) else androidx.compose.ui.graphics.Color.Transparent,
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .background(
+                                        color = if (isDark) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f) else Charcoal.copy(alpha = 0.2f),
+                                        shape = CircleShape
+                                    )
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                weeklyView.days.forEachIndexed { index, dayData ->
+                    WeeklyMoodDayItem(
+                        dayData = dayData,
+                        isToday = dayData.isToday,
+                        breathingScale = if (dayData.isToday) breathingScale else 1f,
+                        accentColor = accentColor,
+                        isDark = isDark
+                    )
+                }
             }
         }
     }
@@ -93,7 +156,7 @@ private fun WeeklyMoodDayItem(
                     modifier = Modifier
                         .size(40.dp)
                         .background(
-                            color = accentColor.copy(alpha = 0.25f),
+                            color = WaterBlue.copy(alpha = 0.25f),
                             shape = CircleShape
                         )
                 )

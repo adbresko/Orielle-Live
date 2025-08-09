@@ -96,6 +96,7 @@ dependencies {
     // Hilt - Dependency Injection
     implementation(libs.hilt.android)
     implementation(libs.androidx.datastore.core.android)
+
     kapt(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 

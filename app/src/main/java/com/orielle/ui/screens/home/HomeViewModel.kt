@@ -79,6 +79,7 @@ class HomeViewModel @Inject constructor(
     init {
         observeSessionState()
         fetchJournalEntries()
+        checkMoodCheckInStatus() // Check mood status for dashboard state
         checkDashboardState()
         fetchWeeklyMoodView()
     }
@@ -164,18 +165,53 @@ class HomeViewModel @Inject constructor(
 
     private fun checkDashboardState() {
         viewModelScope.launch(coroutineExceptionHandler) {
-            val lastCheckIn = sessionManager.getLastCheckInTimestamp()
-            val now = System.currentTimeMillis()
-            val isInitial = lastCheckIn == null || (now - (lastCheckIn ?: 0L)) > TimeUnit.HOURS.toMillis(24)
-            _dashboardState.value = if (isInitial) DashboardState.Initial else DashboardState.Unfolded
+            try {
+                val userId = sessionManager.currentUserId.first()
+                if (userId != null) {
+                    val today = java.util.Date()
+                    val result = hasMoodCheckInForDateUseCase(userId, today)
+
+                    when (result) {
+                        is com.orielle.domain.model.Response.Success -> {
+                            // If user has done today's check-in, show unfolded dashboard
+                            // If not, show initial dashboard with check-in prompt
+                            _dashboardState.value = if (result.data) DashboardState.Unfolded else DashboardState.Initial
+                            println("HomeViewModel: Dashboard state set to ${if (result.data) "Unfolded" else "Initial"} based on mood check-in: ${result.data}")
+                        }
+                        is com.orielle.domain.model.Response.Failure -> {
+                            Timber.e(result.exception, "Error checking mood check-in for dashboard state")
+                            // Default to initial state if we can't check
+                            _dashboardState.value = DashboardState.Initial
+                        }
+                        is com.orielle.domain.model.Response.Loading -> {
+                            // Keep current state while loading
+                        }
+                    }
+                } else {
+                    // Guest users always see initial state (can still do check-ins)
+                    _dashboardState.value = DashboardState.Initial
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error checking dashboard state")
+                _dashboardState.value = DashboardState.Initial
+            }
         }
     }
 
     fun onCheckInCompletedOrSkipped() {
         viewModelScope.launch(coroutineExceptionHandler) {
             sessionManager.setLastCheckInTimestamp(System.currentTimeMillis())
-            _dashboardState.value = DashboardState.Unfolded
+            // Refresh dashboard state and mood data after check-in
+            checkDashboardState()
+            fetchWeeklyMoodView()
         }
+    }
+
+    fun refreshHomeData() {
+        println("HomeViewModel: Refreshing home data after screen return")
+        checkDashboardState()
+        fetchWeeklyMoodView()
+        checkMoodCheckInStatus()
     }
 
     fun logOut(navController: NavController?) {
@@ -194,7 +230,12 @@ class HomeViewModel @Inject constructor(
 
     private fun fetchWeeklyMoodView() {
         viewModelScope.launch(coroutineExceptionHandler) {
+            println("HomeViewModel: Starting to fetch weekly mood view")
             getWeeklyMoodViewUseCase().collect { weeklyView ->
+                println("HomeViewModel: Received weekly view with ${weeklyView.days.size} days")
+                weeklyView.days.forEachIndexed { index, day ->
+                    println("HomeViewModel: Day $index: ${day.dayLabel}, isToday: ${day.isToday}")
+                }
                 _uiState.value = _uiState.value.copy(weeklyMoodView = weeklyView)
             }
         }

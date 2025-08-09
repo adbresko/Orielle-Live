@@ -279,10 +279,9 @@ fun SplashScreenRouter(
 
     LaunchedEffect(isUserAuthenticated, hasSeenOnboarding) {
         if (isUserAuthenticated == true) {
-            // Check if mood check-in is needed
-            val lastCheckIn = sessionManager.getLastCheckInTimestamp()
-            val now = System.currentTimeMillis()
-            needsMoodCheckIn = lastCheckIn == null || (now - lastCheckIn) > 24 * 60 * 60 * 1000L
+            // For authenticated users, always route to home and let HomeViewModel handle check-in status
+            // This way, they can see their existing mood data even if they haven't done today's check-in
+            needsMoodCheckIn = false
             checkedMood = true
         } else {
             checkedMood = true

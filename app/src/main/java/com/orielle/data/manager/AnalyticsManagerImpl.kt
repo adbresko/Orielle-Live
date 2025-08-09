@@ -1,76 +1,89 @@
 package com.orielle.data.manager
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.os.Bundle
 import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.ktx.analytics
-import com.google.firebase.analytics.ktx.logEvent
-import com.google.firebase.ktx.Firebase
 import com.orielle.domain.manager.AnalyticsManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AnalyticsManagerImpl @Inject constructor() : AnalyticsManager {
+class AnalyticsManagerImpl @Inject constructor(
+    @ApplicationContext private val context: Context
+) : AnalyticsManager {
 
-    private val analytics = Firebase.analytics
+    private val analytics = FirebaseAnalytics.getInstance(context)
 
     override suspend fun trackSignUp(method: String) {
-        analytics.logEvent(FirebaseAnalytics.Event.SIGN_UP) {
-            param(FirebaseAnalytics.Param.METHOD, method)
+        val bundle = Bundle().apply {
+            putString(FirebaseAnalytics.Param.METHOD, method)
         }
+        analytics.logEvent(FirebaseAnalytics.Event.SIGN_UP, bundle)
     }
 
     override suspend fun trackSignIn(method: String) {
-        analytics.logEvent(FirebaseAnalytics.Event.LOGIN) {
-            param(FirebaseAnalytics.Param.METHOD, method)
+        val bundle = Bundle().apply {
+            putString(FirebaseAnalytics.Param.METHOD, method)
         }
+        analytics.logEvent(FirebaseAnalytics.Event.LOGIN, bundle)
     }
 
     override suspend fun trackMoodCheckIn(mood: String, hasNotes: Boolean) {
-        analytics.logEvent("mood_check_in") {
-            param("mood", mood)
-            param("has_notes", if (hasNotes) "true" else "false")
+        val bundle = Bundle().apply {
+            putString("mood", mood)
+            putString("has_notes", if (hasNotes) "true" else "false")
         }
+        analytics.logEvent("mood_check_in", bundle)
     }
 
     override suspend fun trackJournalEntryCreated(hasMood: Boolean, wordCount: Int) {
-        analytics.logEvent("journal_entry_created") {
-            param("has_mood", if (hasMood) "true" else "false")
-            param("word_count", wordCount.toLong())
+        val bundle = Bundle().apply {
+            putString("has_mood", if (hasMood) "true" else "false")
+            putLong("word_count", wordCount.toLong())
         }
+        analytics.logEvent("journal_entry_created", bundle)
     }
 
     override suspend fun trackChatMessageSent(messageLength: Int, conversationId: String) {
-        analytics.logEvent("chat_message_sent") {
-            param("message_length", messageLength.toLong())
-            param("conversation_id", conversationId)
+        val bundle = Bundle().apply {
+            putLong("message_length", messageLength.toLong())
+            putString("conversation_id", conversationId)
         }
+        analytics.logEvent("chat_message_sent", bundle)
     }
 
     override suspend fun trackPremiumSubscription(plan: String, price: Double) {
-        analytics.logEvent(FirebaseAnalytics.Event.PURCHASE) {
-            param(FirebaseAnalytics.Param.ITEM_ID, plan)
-            param(FirebaseAnalytics.Param.PRICE, price)
-            param(FirebaseAnalytics.Param.CURRENCY, "USD")
+        val bundle = Bundle().apply {
+            putString(FirebaseAnalytics.Param.ITEM_ID, plan)
+            putDouble(FirebaseAnalytics.Param.PRICE, price)
+            putString(FirebaseAnalytics.Param.CURRENCY, "USD")
         }
+        analytics.logEvent(FirebaseAnalytics.Event.PURCHASE, bundle)
     }
 
     override suspend fun trackFeatureUsage(feature: String) {
-        analytics.logEvent("feature_usage") {
-            param("feature_name", feature)
+        val bundle = Bundle().apply {
+            putString("feature_name", feature)
         }
+        analytics.logEvent("feature_usage", bundle)
     }
 
     override suspend fun trackScreenView(screenName: String) {
-        analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
-            param(FirebaseAnalytics.Param.SCREEN_NAME, screenName)
+        val bundle = Bundle().apply {
+            putString(FirebaseAnalytics.Param.SCREEN_NAME, screenName)
         }
+        analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, bundle)
     }
 
+    @SuppressLint("InvalidAnalyticsName")
     override suspend fun trackUserEngagement(action: String, value: String?) {
-        analytics.logEvent("user_engagement") {
-            param("action", action)
-            value?.let { param("value", it) }
+        val bundle = Bundle().apply {
+            putString("action", action)
+            value?.let { putString("value", it) }
         }
+        analytics.logEvent("user_engagement", bundle)
     }
 
     override suspend fun setUserProperties(userId: String, properties: Map<String, String>) {
@@ -81,16 +94,17 @@ class AnalyticsManagerImpl @Inject constructor() : AnalyticsManager {
     }
 
     override suspend fun trackCustomEvent(eventName: String, parameters: Map<String, Any>) {
-        analytics.logEvent(eventName) {
+        val bundle = Bundle().apply {
             parameters.forEach { (key, value) ->
                 when (value) {
-                    is String -> param(key, value)
-                    is Long -> param(key, value)
-                    is Int -> param(key, value.toLong())
-                    is Double -> param(key, value)
-                    is Boolean -> param(key, if (value) "true" else "false")
+                    is String -> putString(key, value)
+                    is Long -> putLong(key, value)
+                    is Int -> putLong(key, value.toLong())
+                    is Double -> putDouble(key, value)
+                    is Boolean -> putString(key, if (value) "true" else "false")
                 }
             }
         }
+        analytics.logEvent(eventName, bundle)
     }
 }

@@ -54,6 +54,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -72,6 +73,8 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.ExperimentalComposeUiApi
 import com.orielle.ui.theme.OrielleTheme
 
+// Import the WeeklyMoodView composable from the same package (auto-resolved)
+
 @Composable
 fun HomeScreen(
     navController: NavController,
@@ -79,13 +82,22 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val dashboardState by viewModel.dashboardState.collectAsState()
+
+    // Refresh data when returning to home screen
+    LaunchedEffect(Unit) {
+        viewModel.refreshHomeData()
+    }
+
     HomeDashboardScreen(
         userName = uiState.userName,
         journalEntries = uiState.journalEntries,
         weeklyMoodView = uiState.weeklyMoodView,
         navController = navController,
         dashboardState = dashboardState,
-        onCheckInTap = { viewModel.onCheckInCompletedOrSkipped() }
+        onCheckInTap = {
+            // Navigate to mood check-in screen instead of just changing state
+            navController.navigate("mood_check_in")
+        }
     )
 }
 
@@ -124,18 +136,18 @@ fun HomeDashboardScreen(
                     .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Orielle logo and text
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // Orielle logo and text - stacked vertically
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_orielle_drop),
                         contentDescription = "Orielle Logo",
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(20.dp),
                         tint = accentColor
                     )
-                    Spacer(Modifier.width(8.dp))
                     Text(
                         text = "ORIELLE",
-                        style = Typography.bodyLarge.copy(color = textColor, fontWeight = FontWeight.Normal)
+                        style = Typography.bodySmall.copy(color = textColor, fontWeight = FontWeight.Normal),
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
                 Spacer(Modifier.weight(1f))
@@ -151,14 +163,23 @@ fun HomeDashboardScreen(
             }
         },
         bottomBar = {
-            Box(
+            // Navigation bar with proper background
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(backgroundColor)
-                    .padding(bottom = 24.dp)
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isDark) Color(0xFF2A2A2A) else Color(0xFFF0F0F0)
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = if (isDark) 0.dp else 8.dp
+                )
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -195,15 +216,17 @@ fun HomeDashboardScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.Top,
+            verticalArrangement = if (dashboardState == DashboardState.Initial) Arrangement.Center else Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(80.dp))
+            if (dashboardState == DashboardState.Unfolded) {
+                Spacer(Modifier.height(48.dp))
+            }
             AnimatedVisibility(
                 visible = dashboardState == DashboardState.Initial,
                 enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 }),
             ) {
-                // State 1: Pre-check-in
+                // State 1: Pre-check-in - ONLY the check-in card, no greeting or date
                 var pressed by remember { mutableStateOf(false) }
                 val scale by animateFloatAsState(targetValue = if (pressed) 0.95f else 1f, label = "tapScale")
                 Card(
@@ -245,14 +268,16 @@ fun HomeDashboardScreen(
                         Spacer(Modifier.height(16.dp))
                         Text(
                             text = "How is your inner weather ?",
-                            style = Typography.headlineLarge.copy(color = textColor),
-                            textAlign = TextAlign.Center
+                            style = Typography.titleLarge.copy(color = textColor),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
                             text = "Tap here to begin your check-in.",
                             style = Typography.bodyLarge.copy(color = if (isDark) SoftSand else Charcoal),
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
@@ -268,13 +293,13 @@ fun HomeDashboardScreen(
                 ) {
                     Text(
                         text = "Good morning, ${userName ?: "User"}.",
-                        style = Typography.displayLarge.copy(color = textColor),
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        style = Typography.headlineLarge.copy(color = textColor),
+                        modifier = Modifier.padding(bottom = 72.dp)
                     )
                     Text(
                         text = "${dateFormat.format(today)} • waxing crescent 311 • Day 204",
-                        style = Typography.bodyLarge.copy(color = if (isDark) SoftSand else Charcoal),
-                        modifier = Modifier.padding(bottom = 24.dp)
+                        style = Typography.bodySmall.copy(color = if (isDark) SoftSand else Charcoal),
+                        modifier = Modifier.padding(bottom = 84.dp)
                     )
                     // Inner Weather Card
                     var weatherPressed by remember { mutableStateOf(false) }
@@ -300,7 +325,7 @@ fun HomeDashboardScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 8.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(vertical = 24.dp, horizontal = 8.dp),
+                            modifier = Modifier.padding(vertical = 16.dp, horizontal = 8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             WeeklyMoodView(
@@ -309,7 +334,7 @@ fun HomeDashboardScreen(
                             )
                         }
                     }
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(60.dp))
                     // Thought From Your Past Card
                     var thoughtPressed by remember { mutableStateOf(false) }
                     val thoughtScale by animateFloatAsState(targetValue = if (thoughtPressed) 0.95f else 1f, label = "thoughtTapScale")
@@ -334,19 +359,19 @@ fun HomeDashboardScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 8.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(vertical = 32.dp, horizontal = 16.dp),
+                            modifier = Modifier.padding(vertical = 20.dp, horizontal = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
                                 text = "A THOUGHT FROM YOUR PAST",
-                                style = Typography.titleLarge.copy(color = accentColor),
+                                style = Typography.titleMedium.copy(color = accentColor),
                                 textAlign = TextAlign.Center
                             )
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(12.dp))
                             val quote = journalEntries.lastOrNull()?.content ?: "Felt a real sense of growth today after that challenging conversation."
                             Text(
                                 text = quote,
-                                style = Typography.bodyLarge.copy(
+                                style = Typography.bodyMedium.copy(
                                     color = if (isDark) SoftSand else Charcoal,
                                     fontStyle = FontStyle.Italic
                                 ),
