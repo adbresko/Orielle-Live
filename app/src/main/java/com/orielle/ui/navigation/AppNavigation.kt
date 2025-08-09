@@ -181,22 +181,41 @@ fun AppNavigation(
             )
         }
         composable("profile_settings") {
-            // Get user data from ViewModel or session (replace with your actual data source)
+            // Get user data from SessionManager and Firebase Auth
             val homeViewModel: com.orielle.ui.screens.home.HomeViewModel = hiltViewModel()
             val uiState by homeViewModel.uiState.collectAsState()
-            val userId = "TODO_USER_ID" // Replace with actual user ID from session/auth
-            ProfileSettingsScreen(
-                navController = navController,
-                userId = userId,
-                userName = uiState.userName,
-                userEmail = null, // Replace with actual email if available
-                profileImageUrl = null, // Replace with actual image URL if available
-                onLogOut = {
-                    // Log out and navigate to sign-in
-                    homeViewModel.logOut(navController)
-                },
-                homeViewModel = homeViewModel // Pass the view model for refresh
-            )
+
+            // Get real user ID from SessionManager
+            val currentUserId by sessionManager.currentUserId.collectAsState(initial = null)
+            val isGuest by sessionManager.isGuest.collectAsState(initial = true)
+
+            val userId = currentUserId
+            if (userId != null && !isGuest) {
+                ProfileSettingsScreen(
+                    navController = navController,
+                    userId = userId,
+                    userName = null, // Let ProfileSettingsScreen load this from Firebase
+                    userEmail = null, // Let ProfileSettingsScreen load this from Firebase
+                    profileImageUrl = null, // Let ProfileSettingsScreen load this from Firebase
+                    onLogOut = {
+                        // Log out and navigate to sign-in
+                        homeViewModel.logOut(navController)
+                    },
+                    homeViewModel = homeViewModel // Pass the view model for refresh
+                )
+            } else {
+                // Show loading or redirect to sign-in if no valid user
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isGuest) {
+                        Text("Profile settings not available for guest users")
+                    } else {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
         }
 
         // Ask feature screens

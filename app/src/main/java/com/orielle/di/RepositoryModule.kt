@@ -18,6 +18,7 @@ import com.orielle.data.repository.ChatRepositoryImpl
 import com.orielle.domain.repository.TagRepository
 import com.orielle.data.repository.TagRepositoryImpl
 import com.orielle.domain.manager.SessionManager
+import com.orielle.domain.manager.SyncManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -32,8 +33,9 @@ object RepositoryModule {
     @Singleton
     fun provideAuthRepository(
         auth: FirebaseAuth,
-        db: FirebaseFirestore
-    ): AuthRepository = AuthRepositoryImpl(auth, db)
+        db: FirebaseFirestore,
+        syncManager: SyncManager
+    ): AuthRepository = AuthRepositoryImpl(auth, db, syncManager)
 
     // CORRECTED: This provider now includes all necessary dependencies.
     @Provides

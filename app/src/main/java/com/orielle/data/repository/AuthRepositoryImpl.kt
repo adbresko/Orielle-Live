@@ -19,10 +19,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import javax.inject.Inject
 import timber.log.Timber
+import com.orielle.domain.manager.SyncManager
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 class AuthRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
-    private val db: FirebaseFirestore
+    private val db: FirebaseFirestore,
+    private val syncManager: SyncManager
 ) : AuthRepository {
 
     override fun signUpWithEmail(email: String, firstName: String, password: String): Flow<Response<FirebaseUser>> = callbackFlow {
@@ -75,6 +80,21 @@ class AuthRepositoryImpl @Inject constructor(
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
+                    Timber.d("✅ Email sign-in successful")
+                    // Download cloud data for existing user
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            Timber.d("🔄 Starting cloud data download after email sign-in")
+                            val result = syncManager.downloadCloudData()
+                            if (result.isSuccess) {
+                                Timber.d("✅ Cloud data downloaded successfully after email sign-in")
+                            } else {
+                                Timber.w("⚠️ Cloud data download failed after email sign-in: ${result.exceptionOrNull()}")
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "❌ Error downloading cloud data after email sign-in")
+                        }
+                    }
                     trySend(Response.Success(true))
                 } else {
                     val e = task.exception
@@ -106,6 +126,7 @@ class AuthRepositoryImpl @Inject constructor(
                                     )
                                     db.collection("users").document(newUser.uid).set(newUser)
                                         .addOnSuccessListener {
+                                            Timber.d("✅ New Google user created successfully")
                                             trySend(Response.Success(true))
                                         }
                                         .addOnFailureListener { e ->
@@ -114,6 +135,21 @@ class AuthRepositoryImpl @Inject constructor(
                                             trySend(Response.Failure(AppError.Database, e))
                                         }
                                 } else {
+                                    Timber.d("✅ Existing Google user signed in successfully")
+                                    // Download cloud data for existing user
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        try {
+                                            Timber.d("🔄 Starting cloud data download after Google sign-in")
+                                            val result = syncManager.downloadCloudData()
+                                            if (result.isSuccess) {
+                                                Timber.d("✅ Cloud data downloaded successfully after Google sign-in")
+                                            } else {
+                                                Timber.w("⚠️ Cloud data download failed after Google sign-in: ${result.exceptionOrNull()}")
+                                            }
+                                        } catch (e: Exception) {
+                                            Timber.e(e, "❌ Error downloading cloud data after Google sign-in")
+                                        }
+                                    }
                                     trySend(Response.Success(true))
                                 }
                             }

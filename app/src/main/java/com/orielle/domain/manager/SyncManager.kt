@@ -18,7 +18,14 @@ interface SyncManager {
     suspend fun isCurrentlyOnline(): Boolean
 
     /**
-     * Trigger manual sync of all pending data
+     * Download all cloud data to local storage (cloud → local)
+     * Used on sign-in to restore user data from Firebase
+     */
+    suspend fun downloadCloudData(): Result<Unit>
+
+    /**
+     * Upload pending local data to cloud (local → cloud)
+     * Used to sync offline changes when network returns
      */
     suspend fun syncPendingData(): Result<Unit>
 

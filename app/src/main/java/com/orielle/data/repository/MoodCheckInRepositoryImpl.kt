@@ -30,10 +30,16 @@ class MoodCheckInRepositoryImpl @Inject constructor(
 ) : MoodCheckInRepository {
 
     override suspend fun saveMoodCheckIn(moodCheckIn: MoodCheckIn): Response<Unit> {
+        Timber.d("🎯 MoodCheckInRepository.saveMoodCheckIn called with mood: ${moodCheckIn.mood}")
         return try {
             val userId = sessionManager.currentUserId.first()
-                ?: return Response.Failure(AppError.Auth, Exception("No user session found."))
+            Timber.d("📋 Retrieved userId: $userId")
+            if (userId == null) {
+                Timber.e("❌ No user session found in MoodCheckInRepository")
+                return Response.Failure(AppError.Auth, Exception("No user session found."))
+            }
             val isGuest = sessionManager.isGuest.first()
+            Timber.d("👤 User guest status: $isGuest")
 
             val moodToSave = moodCheckIn.copy(
                 userId = userId,

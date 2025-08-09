@@ -29,32 +29,82 @@ class ProfileSettingsViewModel @Inject constructor(
     val uiState: StateFlow<ProfileSettingsUiState> = _uiState.asStateFlow()
 
     fun initializeUserData(userId: String, userName: String?, userEmail: String?, profileImageUrl: String?) {
-        _uiState.value = _uiState.value.copy(
-            userId = userId,
-            userName = userName,
-            userEmail = userEmail,
-            profileImageUrl = profileImageUrl,
-            editingName = userName ?: "",
-            editingEmail = userEmail ?: ""
-        )
+        viewModelScope.launch {
+            try {
+                val isGuest = sessionManager.isGuest.first()
+                Timber.d("🏁 ProfileSettings init - userId: $userId, isGuest: $isGuest")
 
-        // Load saved preferences
-        loadUserPreferences(userId)
+                if (isGuest) {
+                    showMessage("Profile settings not available for guest users", isError = true)
+                    return@launch
+                }
+
+                _uiState.value = _uiState.value.copy(
+                    userId = userId,
+                    userName = userName,
+                    userEmail = userEmail,
+                    profileImageUrl = profileImageUrl,
+                    editingName = userName ?: "",
+                    editingEmail = userEmail ?: ""
+                )
+
+                // Load saved preferences with authentication check
+                loadUserPreferences(userId)
+            } catch (e: Exception) {
+                Timber.e(e, "Error initializing profile data")
+                showMessage("Failed to initialize profile settings", isError = true)
+            }
+        }
     }
 
     private fun loadUserPreferences(userId: String) {
         viewModelScope.launch {
             try {
+                Timber.d("🔍 Loading user preferences for: $userId")
+
+                // Debug: Check Firebase Auth state
+                val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                Timber.d("🔐 Firebase Auth user: ${currentUser?.uid}, matches sessionUserId: ${currentUser?.uid == userId}")
+
+                if (currentUser == null) {
+                    Timber.e("❌ No Firebase Auth user - this will cause PERMISSION_DENIED")
+                    showMessage("Authentication required. Please sign in again.", isError = true)
+                    return@launch
+                }
+
+                // Check if Firebase Auth token is valid by refreshing it
+                try {
+                    val tokenResult = currentUser.getIdToken(true).await()
+                    Timber.d("🔄 Firebase Auth token refreshed successfully")
+                } catch (tokenError: Exception) {
+                    Timber.e(tokenError, "❌ Failed to refresh Firebase Auth token")
+                    showMessage("Authentication expired. Please sign in again.", isError = true)
+                    return@launch
+                }
+
                 val doc = firestore.collection("users").document(userId).get().await()
                 val biometricsEnabled = (sessionManager as? com.orielle.data.manager.SessionManagerImpl)?.isBiometricsEnabled() ?: false
 
+                // Extract user profile data
+                val firstName = doc.getString("firstName") ?: "User"
+                val email = doc.getString("email") ?: ""
+                val profileImageUrl = doc.getString("profileImageUrl")
+
+                Timber.d("📄 Loaded user data - name: $firstName, email: $email")
+
                 _uiState.value = _uiState.value.copy(
+                    userName = firstName,
+                    userEmail = email,
+                    profileImageUrl = profileImageUrl,
                     twoFactorEnabled = doc.getBoolean("twoFactorEnabled") ?: false,
                     notificationsEnabled = doc.getBoolean("notificationsEnabled") ?: true,
                     biometricsEnabled = biometricsEnabled
                 )
+
+                Timber.d("✅ Profile preferences loaded successfully")
             } catch (e: Exception) {
-                showMessage("Failed to load preferences", isError = true)
+                Timber.e(e, "❌ Failed to load user preferences")
+                showMessage("Failed to load preferences: ${e.message}", isError = true)
             }
         }
     }

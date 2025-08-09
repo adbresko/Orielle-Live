@@ -14,10 +14,13 @@ import java.util.Date
  * @param notes Optional notes associated with the mood check-in.
  */
 data class MoodCheckIn(
-    val id: String,
-    val userId: String,
-    val mood: String,
+    val id: String = "",
+    val userId: String = "",
+    val mood: String = "",
     val tags: List<String> = emptyList(),
-    val timestamp: Date,
+    val timestamp: Date = Date(),
     val notes: String? = null
-)
+) {
+    // No-argument constructor for Firebase Firestore deserialization
+    constructor() : this("", "", "", emptyList(), Date(), null)
+}
