@@ -5,14 +5,17 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
@@ -23,6 +26,10 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.orielle.R
+import com.orielle.data.manager.SessionManagerImpl
+import com.orielle.ui.components.WaterDropLoading
+import com.orielle.ui.screens.ask.AskScreen
+import com.orielle.ui.screens.ask.AskTaggingScreen
 import com.orielle.ui.screens.auth.AuthViewModel
 import com.orielle.ui.screens.auth.DataTransparencyScreen
 import com.orielle.ui.screens.auth.EmailSignUpScreen
@@ -31,28 +38,17 @@ import com.orielle.ui.screens.auth.WelcomeScreen
 import com.orielle.ui.screens.home.HomeScreen
 import com.orielle.ui.screens.mood.MoodCheckInScreen
 import com.orielle.ui.screens.mood.MoodCheckInViewModel
+import com.orielle.ui.screens.mood.MoodFinalScreen
 import com.orielle.ui.screens.mood.MoodReflectionScreen
 import com.orielle.ui.screens.onboarding.OnboardingScreen
-import com.orielle.ui.screens.sanctuary.SanctuaryScreen
-import com.orielle.ui.screens.mood.MoodFinalScreen
-import android.content.Context
-import androidx.hilt.navigation.compose.hiltViewModel
-import dagger.hilt.android.EntryPointAccessors
-import com.orielle.data.manager.SessionManagerImpl
-import com.orielle.domain.manager.SessionManager
-import dagger.hilt.android.qualifiers.ApplicationContext
-import androidx.compose.ui.platform.LocalContext
 import com.orielle.ui.screens.profile.ProfileSettingsScreen
-import com.orielle.ui.screens.ask.AskScreen
-import com.orielle.ui.screens.ask.AskTaggingScreen
-import com.orielle.ui.screens.reflect.ReflectScreen
+import com.orielle.ui.screens.reflect.JournalDetailScreen
 import com.orielle.ui.screens.reflect.JournalEditorScreen
 import com.orielle.ui.screens.reflect.JournalLogScreen
-import com.orielle.ui.screens.reflect.JournalDetailScreen
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import com.orielle.ui.screens.reflect.ReflectScreen
+import com.orielle.ui.screens.premium.PremiumScreen
+import com.orielle.ui.screens.sanctuary.SanctuaryScreen
+import dagger.hilt.android.EntryPointAccessors
 
 @Composable
 fun AppNavigation(
@@ -95,11 +91,41 @@ fun AppNavigation(
             HomeScreen(navController = navController)
         }
 
+        // Sanctuary screen
+        composable("sanctuary") {
+            val authViewModel: AuthViewModel = hiltViewModel()
+            val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
+            // Guard: If not authenticated, redirect to auth_graph
+            LaunchedEffect(isUserAuthenticated) {
+                if (isUserAuthenticated == false) {
+                    navController.navigate("auth_graph") {
+                        popUpTo("sanctuary") { inclusive = true }
+                    }
+                }
+            }
+            if (isUserAuthenticated == true) {
+                SanctuaryScreen(
+                    onNavigateToAuth = {
+                        navController.navigate("auth_graph") {
+                            popUpTo("sanctuary") { inclusive = true }
+                        }
+                    }
+                )
+            } else {
+                // Show loading while redirecting
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    WaterDropLoading()
+                }
+            }
+        }
+
         // Mood check-in screen
         composable("mood_check_in") {
             val authViewModel: AuthViewModel = hiltViewModel()
             val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
-            val navController = navController
             // Guard: If not authenticated, redirect to auth_graph
             LaunchedEffect(isUserAuthenticated) {
                 if (isUserAuthenticated == false) {
@@ -212,7 +238,7 @@ fun AppNavigation(
                     if (isGuest) {
                         Text("Profile settings not available for guest users")
                     } else {
-                        CircularProgressIndicator()
+                        WaterDropLoading()
                     }
                 }
             }
@@ -286,6 +312,40 @@ fun AppNavigation(
             // Reuse the Ask tagging screen for journal entries
             AskTaggingScreen(navController = navController)
         }
+
+        // Premium screen
+        composable("premium") {
+            val authViewModel: AuthViewModel = hiltViewModel()
+            val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
+            // Guard: If not authenticated, redirect to auth_graph
+            LaunchedEffect(isUserAuthenticated) {
+                if (isUserAuthenticated == false) {
+                    navController.navigate("auth_graph") {
+                        popUpTo("premium") { inclusive = true }
+                    }
+                }
+            }
+            if (isUserAuthenticated == true) {
+                PremiumScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onUpgradeComplete = {
+                        navController.navigate("home_graph") {
+                            popUpTo("premium") { inclusive = true }
+                        }
+                    }
+                )
+            } else {
+                // Show loading while redirecting
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    WaterDropLoading()
+                }
+            }
+        }
     }
 }
 
@@ -322,7 +382,7 @@ fun SplashScreenRouter(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            WaterDropLoading()
         }
         return
     }
@@ -353,7 +413,7 @@ fun SplashScreenRouter(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator()
+        WaterDropLoading()
     }
 }
 
@@ -409,11 +469,9 @@ fun NavGraphBuilder.authGraph(navController: NavController, authViewModel: AuthV
         composable("data_transparency_screen") {
             DataTransparencyScreen(
                 navigateToHome = {
-                    // --- THIS IS THE CHANGE ---
-                    // Instead of going home, we now go to the security setup screen.
-                    navController.navigate("security_setup_screen") {
-                        // We pop the transparency screen off the back stack so the user can't go back to it.
-                        popUpTo("data_transparency_screen") { inclusive = true }
+                    // Navigate directly to home after data transparency
+                    navController.navigate("home_graph") {
+                        popUpTo("auth_graph") { inclusive = true }
                     }
                 }
             )
@@ -421,7 +479,13 @@ fun NavGraphBuilder.authGraph(navController: NavController, authViewModel: AuthV
 
         // --- NEW SCREEN ADDED TO THE GRAPH ---
         composable("sanctuary") {
-            HomeScreen(navController = navController)
+            SanctuaryScreen(
+                onNavigateToAuth = {
+                    navController.navigate("auth_graph") {
+                        popUpTo("sanctuary") { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }

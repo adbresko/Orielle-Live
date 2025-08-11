@@ -72,6 +72,7 @@ import android.view.MotionEvent
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.ExperimentalComposeUiApi
 import com.orielle.ui.theme.OrielleTheme
+import com.orielle.ui.components.WaterDropLoading
 
 // Import the WeeklyMoodView composable from the same package (auto-resolved)
 
@@ -95,9 +96,9 @@ fun HomeScreen(
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator(
-                    color = WaterBlue,
-                    modifier = Modifier.size(48.dp)
+                WaterDropLoading(
+                    size = 80,
+                    modifier = Modifier.size(80.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(

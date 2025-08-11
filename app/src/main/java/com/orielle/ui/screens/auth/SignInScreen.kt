@@ -38,6 +38,7 @@ import androidx.compose.material3.OutlinedButton
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.clickable
+import com.orielle.ui.components.WaterDropLoading
 
 @Composable
 fun SignInScreen(
@@ -197,7 +198,7 @@ fun SignInScreen(
             when (val response = authResponse) {
                 is Response.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        WaterDropLoading()
                     }
                 }
                 is Response.Success -> {

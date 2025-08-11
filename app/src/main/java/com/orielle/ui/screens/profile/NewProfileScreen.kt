@@ -21,6 +21,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.orielle.ui.theme.*
+import com.orielle.ui.components.WaterDropLoading
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,9 +54,9 @@ fun ProfileSettingsScreen(
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator(
-                    color = WaterBlue,
-                    modifier = Modifier.size(48.dp)
+                WaterDropLoading(
+                    size = 80,
+                    modifier = Modifier.size(80.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(

@@ -36,6 +36,7 @@ import com.orielle.ui.components.OrielleOutlinedButton
 import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.theme.OrielleTheme
 import com.orielle.ui.theme.WaterRippleTheme
+import com.orielle.ui.components.WaterDropLoading
 
 @Composable
 fun WelcomeScreen(
@@ -162,7 +163,7 @@ fun WelcomeScreen(
                     .background(Color.Black.copy(alpha = 0.5f)),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                WaterDropLoading()
             }
         }
 

@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.theme.OrielleTheme
+import com.orielle.ui.components.WaterDropLoading
 
 @Composable
 fun PremiumScreen(
@@ -117,9 +118,9 @@ fun PremiumScreen(
                 enabled = uiState.selectedProductId != null && !uiState.isLoading
             ) {
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                    WaterDropLoading(
+                        size = 20,
+                        modifier = Modifier.size(20.dp)
                     )
                 } else {
                     Text("Upgrade Now")

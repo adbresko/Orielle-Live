@@ -43,6 +43,7 @@ import com.orielle.ui.components.OrielleLogo
 import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.components.SocialLoginOptions
 import com.orielle.ui.theme.OrielleTheme
+import com.orielle.ui.components.WaterDropLoading
 import com.orielle.ui.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
@@ -260,7 +261,7 @@ fun EmailSignUpScreen(
             }
 
             if (authResponse is Response.Loading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                WaterDropLoading(modifier = Modifier.align(Alignment.Center))
             }
         }
     }

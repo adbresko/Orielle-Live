@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import com.orielle.domain.model.JournalEntry
 import com.orielle.domain.model.JournalEntryType
 import com.orielle.ui.theme.*
+import com.orielle.ui.components.WaterDropLoading
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -103,7 +105,7 @@ fun JournalDetailScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = WaterBlue)
+                WaterDropLoading(tint = ColorFilter.tint(WaterBlue))
             }
         } else {
             uiState.entry?.let { entry ->
