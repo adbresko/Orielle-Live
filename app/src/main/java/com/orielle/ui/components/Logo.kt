@@ -1,5 +1,6 @@
 package com.orielle.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -24,11 +25,11 @@ fun OrielleLogo(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
+        Image(
             painter = painterResource(id = R.drawable.ic_orielle_drop),
             contentDescription = "Orielle Logo",
-            modifier = Modifier.size(60.dp),
-            tint = MaterialTheme.colorScheme.primary
+            modifier = Modifier.size(60.dp)
+            // No colorFilter - using native colors for consistency
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(

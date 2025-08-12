@@ -17,11 +17,12 @@ import com.orielle.R
 /**
  * Custom loading component that displays a pulsating water drop icon
  * instead of the basic CircularProgressIndicator
+ * Uses native colors from ic_orielle_drop.xml for consistency
  */
 @Composable
 fun WaterDropLoading(
     modifier: Modifier = Modifier,
-    size: Int = 120,
+    size: Int = 80,
     tint: ColorFilter? = null
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "water_drop_pulse")
@@ -51,13 +52,13 @@ fun WaterDropLoading(
         contentAlignment = Alignment.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.orielle_drop),
+            painter = painterResource(id = R.drawable.ic_orielle_drop),
             contentDescription = "Loading water drop",
             modifier = Modifier
                 .size(size.dp)
                 .scale(scale)
                 .alpha(alpha),
-            colorFilter = tint ?: ColorFilter.tint(MaterialTheme.colorScheme.primary)
+            colorFilter = tint // Only apply tint if explicitly provided, otherwise use native colors
         )
     }
 }
@@ -68,7 +69,7 @@ fun WaterDropLoading(
 @Composable
 fun WaterDropLoadingCompact(
     modifier: Modifier = Modifier,
-    size: Int = 80,
+    size: Int = 60,
     tint: ColorFilter? = null
 ) {
     WaterDropLoading(
@@ -84,7 +85,7 @@ fun WaterDropLoadingCompact(
 @Composable
 fun WaterDropLoadingLarge(
     modifier: Modifier = Modifier,
-    size: Int = 160,
+    size: Int = 120,
     tint: ColorFilter? = null
 ) {
     WaterDropLoading(

@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.orielle.ui.theme.OrielleTheme
+import com.orielle.ui.util.ScreenUtils
 
 @Composable
 fun OnboardingTextContent(
@@ -27,7 +28,7 @@ fun OnboardingTextContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // TODO: Replace placeholder FontFamily.Serif with the Lora font once added to res/font

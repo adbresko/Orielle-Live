@@ -25,6 +25,7 @@ import androidx.compose.foundation.Image
 import com.orielle.ui.components.OrielleScreenHeader
 import com.orielle.ui.components.AccountRequiredModal
 import com.orielle.ui.screens.auth.AuthViewModel
+import com.orielle.ui.util.ScreenUtils
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.graphicsLayer
@@ -85,7 +86,7 @@ fun MoodCheckInScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
-            .padding(24.dp),
+            .padding(if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -99,7 +100,7 @@ fun MoodCheckInScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp)
+                .padding(bottom = if (ScreenUtils.isSmallScreen()) 24.dp else 32.dp)
         )
 
         // Emotion Selection Grid (3x3)
@@ -111,7 +112,7 @@ fun MoodCheckInScreen(
             }
         )
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(if (ScreenUtils.isSmallScreen()) 36.dp else 48.dp))
 
         // Show Continue button when mood is selected
         if (selectedMood != null) {

@@ -15,6 +15,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.orielle.ui.theme.OrielleTheme
 import kotlinx.coroutines.flow.collectLatest
 import com.orielle.ui.util.UiEvent
+import com.orielle.ui.util.ScreenUtils
 import com.orielle.ui.components.ErrorScreen
 
 @Composable
@@ -62,7 +63,7 @@ fun SanctuaryScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {

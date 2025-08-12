@@ -17,6 +17,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 import javax.inject.Inject
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
+import com.orielle.ui.components.AvatarOption
 
 @HiltViewModel
 class ProfileSettingsViewModel @Inject constructor(
@@ -27,6 +31,22 @@ class ProfileSettingsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ProfileSettingsUiState())
     val uiState: StateFlow<ProfileSettingsUiState> = _uiState.asStateFlow()
+
+    // Avatar library - curated selection of beautiful avatars
+    private val avatarLibrary = listOf(
+        AvatarOption("nature_1", "Forest Spirit", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
+        AvatarOption("nature_2", "Ocean Wave", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
+        AvatarOption("nature_3", "Mountain Peak", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
+        AvatarOption("nature_4", "Sunset Glow", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
+        AvatarOption("nature_5", "Moonlight", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
+        AvatarOption("nature_6", "Starlight", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
+        AvatarOption("premium_1", "Crystal Essence", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", true),
+        AvatarOption("premium_2", "Golden Aura", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", true),
+        AvatarOption("premium_3", "Diamond Light", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", true)
+    )
+
+    // Get avatar library
+    fun getAvatarLibrary(): List<AvatarOption> = avatarLibrary
 
     fun initializeUserData(userId: String, userName: String?, userEmail: String?, profileImageUrl: String?) {
         viewModelScope.launch {
@@ -82,32 +102,89 @@ class ProfileSettingsViewModel @Inject constructor(
                     return@launch
                 }
 
-                val doc = firestore.collection("users").document(userId).get().await()
-                val biometricsEnabled = (sessionManager as? com.orielle.data.manager.SessionManagerImpl)?.isBiometricsEnabled() ?: false
+                // First, try to get cached profile data
+                val cachedProfile = sessionManager.getCachedUserProfile(userId)
 
-                // Extract user profile data
-                val firstName = doc.getString("firstName") ?: "User"
-                val email = doc.getString("email") ?: ""
-                val profileImageUrl = doc.getString("profileImageUrl")
+                if (cachedProfile != null) {
+                    // Use cached data immediately
+                    Timber.d("📋 ProfileSettings: Using cached profile data for: $userId")
 
-                Timber.d("📄 Loaded user data - name: $firstName, email: $email")
+                    _uiState.value = _uiState.value.copy(
+                        userName = cachedProfile.firstName,
+                        userEmail = cachedProfile.email,
+                        profileImageUrl = cachedProfile.profileImageUrl,
+                        isPremium = cachedProfile.isPremium,
+                        twoFactorEnabled = cachedProfile.twoFactorEnabled,
+                        notificationsEnabled = cachedProfile.notificationsEnabled,
+                        biometricsEnabled = (sessionManager as? com.orielle.data.manager.SessionManagerImpl)?.isBiometricsEnabled() ?: false,
+                        isLoading = false
+                    )
 
-                _uiState.value = _uiState.value.copy(
-                    userName = firstName,
-                    userEmail = email,
-                    profileImageUrl = profileImageUrl,
-                    twoFactorEnabled = doc.getBoolean("twoFactorEnabled") ?: false,
-                    notificationsEnabled = doc.getBoolean("notificationsEnabled") ?: true,
-                    biometricsEnabled = biometricsEnabled,
-                    isLoading = false // Mark loading as complete
-                )
+                    // Check if cache is getting stale and refresh in background
+                    val cacheAge = System.currentTimeMillis() - cachedProfile.cachedAt
+                    if (cacheAge > 1800000) { // 30 minutes
+                        Timber.d("🔄 ProfileSettings: Cache is getting stale, refreshing in background")
+                        refreshUserProfileFromFirebase(userId)
+                    }
+                } else {
+                    // No cached data, fetch from Firebase
+                    Timber.d("🌐 ProfileSettings: No cached profile, fetching from Firebase")
+                    refreshUserProfileFromFirebase(userId)
+                }
 
-                Timber.d("✅ Profile preferences loaded successfully")
             } catch (e: Exception) {
                 Timber.e(e, "❌ Failed to load user preferences")
                 _uiState.value = _uiState.value.copy(isLoading = false) // Stop loading on error
                 showMessage("Failed to load preferences: ${e.message}", isError = true)
             }
+        }
+    }
+
+    private suspend fun refreshUserProfileFromFirebase(userId: String) {
+        try {
+            val doc = firestore.collection("users").document(userId).get().await()
+            val biometricsEnabled = (sessionManager as? com.orielle.data.manager.SessionManagerImpl)?.isBiometricsEnabled() ?: false
+
+            // Extract user profile data
+            val firstName = doc.getString("firstName") ?: "User"
+            val displayName = doc.getString("displayName")
+            val email = doc.getString("email") ?: ""
+            val profileImageUrl = doc.getString("profileImageUrl")
+            val isPremium = doc.getBoolean("premium") ?: false
+            val notificationsEnabled = doc.getBoolean("notificationsEnabled") ?: true
+            val twoFactorEnabled = doc.getBoolean("twoFactorEnabled") ?: false
+
+            Timber.d("📄 Loaded user data from Firebase - name: $firstName, email: $email")
+
+            // Update UI state
+            _uiState.value = _uiState.value.copy(
+                userName = firstName,
+                userEmail = email,
+                profileImageUrl = profileImageUrl,
+                isPremium = isPremium,
+                twoFactorEnabled = twoFactorEnabled,
+                notificationsEnabled = notificationsEnabled,
+                biometricsEnabled = biometricsEnabled,
+                isLoading = false // Mark loading as complete
+            )
+
+            // Cache the profile data for future use
+            sessionManager.cacheUserProfile(
+                userId = userId,
+                firstName = firstName,
+                displayName = displayName,
+                email = email,
+                profileImageUrl = profileImageUrl,
+                isPremium = isPremium,
+                notificationsEnabled = notificationsEnabled,
+                twoFactorEnabled = twoFactorEnabled
+            )
+
+            Timber.d("✅ Profile preferences loaded and cached successfully")
+        } catch (e: Exception) {
+            Timber.e(e, "❌ Failed to refresh user profile from Firebase")
+            _uiState.value = _uiState.value.copy(isLoading = false) // Stop loading on error
+            showMessage("Failed to refresh profile: ${e.message}", isError = true)
         }
     }
 
@@ -122,6 +199,11 @@ class ProfileSettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(isUploadingImage = true)
 
                 val userId = _uiState.value.userId
+
+                // Save image locally first
+                val localImagePath = saveImageLocally(context, imageUri, userId)
+
+                // Upload to Firebase Storage
                 val storageRef = FirebaseStorage.getInstance().reference.child("profile_images/$userId.jpg")
                 val uploadTask = storageRef.putFile(imageUri)
                 uploadTask.await()
@@ -132,16 +214,129 @@ class ProfileSettingsViewModel @Inject constructor(
                 firestore.collection("users").document(userId)
                     .update("profileImageUrl", downloadUrl).await()
 
+                // Update UI state with both local and remote URLs
                 _uiState.value = _uiState.value.copy(
                     profileImageUrl = downloadUrl,
+                    localImagePath = localImagePath,
                     isUploadingImage = false
                 )
 
-                showMessage("Profile image updated successfully")
+                // Update cached profile data
+                sessionManager.updateCachedUserProfile(
+                    userId = userId,
+                    profileImageUrl = downloadUrl
+                )
+
+                showMessage("Profile image updated successfully!")
+                Timber.d("✅ Profile image uploaded and saved locally: $localImagePath")
 
             } catch (e: Exception) {
+                Timber.e(e, "❌ Failed to upload profile image")
                 _uiState.value = _uiState.value.copy(isUploadingImage = false)
                 showMessage("Failed to upload image: ${e.message}", isError = true)
+            }
+        }
+    }
+
+    // Save image locally for offline access
+    private fun saveImageLocally(context: Context, imageUri: Uri, userId: String): String {
+        return try {
+            val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
+            val file = File(context.filesDir, "profile_image_$userId.jpg")
+
+            inputStream?.use { input ->
+                FileOutputStream(file).use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            file.absolutePath
+        } catch (e: Exception) {
+            Timber.e(e, "❌ Failed to save image locally")
+            ""
+        }
+    }
+
+    // Select avatar from library
+    fun selectAvatar(avatar: AvatarOption) {
+        viewModelScope.launch {
+            try {
+                val userId = _uiState.value.userId
+
+                // Check if user is premium for premium avatars
+                if (avatar.isPremium) {
+                    val cachedProfile = sessionManager.getCachedUserProfile(userId)
+                    if (cachedProfile?.isPremium != true) {
+                        showMessage("Premium avatars require a premium subscription", isError = true)
+                        return@launch
+                    }
+                }
+
+                // Update UI state immediately
+                _uiState.value = _uiState.value.copy(
+                    profileImageUrl = avatar.imageUrl,
+                    selectedAvatarId = avatar.id
+                )
+
+                // Save to Firestore
+                firestore.collection("users").document(userId)
+                    .update("profileImageUrl", avatar.imageUrl).await()
+
+                // Update cached profile data
+                sessionManager.updateCachedUserProfile(
+                    userId = userId,
+                    profileImageUrl = avatar.imageUrl
+                )
+
+                showMessage("Avatar updated successfully!")
+                Timber.d("✅ Avatar selected: ${avatar.name}")
+
+            } catch (e: Exception) {
+                Timber.e(e, "❌ Failed to select avatar")
+                showMessage("Failed to update avatar: ${e.message}", isError = true)
+            }
+        }
+    }
+
+    // Remove profile image
+    fun removeProfileImage(context: Context) {
+        viewModelScope.launch {
+            try {
+                val userId = _uiState.value.userId
+
+                // Remove from Firebase Storage
+                val storageRef = FirebaseStorage.getInstance().reference.child("profile_images/$userId.jpg")
+                storageRef.delete().await()
+
+                // Remove local file
+                val localFile = File(context.filesDir, "profile_image_$userId.jpg")
+                if (localFile.exists()) {
+                    localFile.delete()
+                }
+
+                // Update Firestore
+                firestore.collection("users").document(userId)
+                    .update("profileImageUrl", null).await()
+
+                // Update UI state
+                _uiState.value = _uiState.value.copy(
+                    profileImageUrl = null,
+                    localImagePath = null,
+                    selectedAvatarId = null
+                )
+
+                // Update cached profile data
+                sessionManager.updateCachedUserProfile(
+                    userId = userId,
+                    profileImageUrl = null
+                )
+
+                showMessage("Profile image removed successfully!")
+                Timber.d("✅ Profile image removed")
+
+            } catch (e: Exception) {
+                Timber.e(e, "❌ Failed to remove profile image")
+                showMessage("Failed to remove image: ${e.message}", isError = true)
             }
         }
     }
@@ -173,9 +368,16 @@ class ProfileSettingsViewModel @Inject constructor(
                 firestore.collection("users").document(_uiState.value.userId)
                     .update("firstName", newName).await()
 
+                // Update UI state
                 _uiState.value = _uiState.value.copy(
                     userName = newName,
                     showEditNameDialog = false
+                )
+
+                // Update cached profile data
+                sessionManager.updateCachedUserProfile(
+                    userId = _uiState.value.userId,
+                    firstName = newName
                 )
 
                 showMessage("Name updated successfully")
@@ -430,6 +632,15 @@ class ProfileSettingsViewModel @Inject constructor(
     fun clearMessage() {
         _uiState.value = _uiState.value.copy(message = null, isError = false)
     }
+
+    // Avatar library dialog management
+    fun showAvatarLibrary() {
+        _uiState.value = _uiState.value.copy(showAvatarLibrary = true)
+    }
+
+    fun hideAvatarLibrary() {
+        _uiState.value = _uiState.value.copy(showAvatarLibrary = false)
+    }
 }
 
 data class ProfileSettingsUiState(
@@ -437,6 +648,9 @@ data class ProfileSettingsUiState(
     val userName: String? = null,
     val userEmail: String? = null,
     val profileImageUrl: String? = null,
+    val localImagePath: String? = null,
+    val selectedAvatarId: String? = null,
+    val isPremium: Boolean = false,
     val isUploadingImage: Boolean = false,
 
     // Dialog states
@@ -445,6 +659,7 @@ data class ProfileSettingsUiState(
     val showChangePasswordDialog: Boolean = false,
     val showLogoutConfirmation: Boolean = false,
     val showDeleteAccountConfirmation: Boolean = false,
+    val showAvatarLibrary: Boolean = false,
 
     // Edit fields
     val editingName: String = "",

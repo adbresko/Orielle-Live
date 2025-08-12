@@ -1,5 +1,6 @@
 package com.orielle.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -45,11 +46,11 @@ fun PremiumRequiredModal(
                     contentAlignment = Alignment.Center
                 ) {
                     // Use a crown icon or your own premium icon
-                    androidx.compose.material3.Icon(
+                    Image(
                         painter = painterResource(id = R.drawable.ic_orielle_drop), // Replace with crown icon if available
                         contentDescription = "Premium Required",
-                        tint = Color.White,
                         modifier = Modifier.size(36.dp)
+                        // No colorFilter - using native colors for consistency
                     )
                 }
                 Spacer(modifier = Modifier.height(24.dp))

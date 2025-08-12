@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.orielle.R
 import com.orielle.ui.theme.OrielleTheme
+import com.orielle.ui.util.ScreenUtils
 import kotlinx.coroutines.launch
 
 // Data class to hold the content for each onboarding page
@@ -107,7 +108,7 @@ fun OnboardingScreen(onNavigateToAuth: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 50.dp),
+                        .padding(top = if (ScreenUtils.isSmallScreen()) 32.dp else 50.dp),
                     contentAlignment = Alignment.TopCenter
                 ) {
                     Box(
@@ -147,7 +148,7 @@ fun OnboardingScreen(onNavigateToAuth: () -> Unit) {
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    Spacer(modifier = Modifier.height(if (ScreenUtils.isSmallScreen()) 60.dp else 80.dp))
 
                     OnboardingTextContent(
                         title = pages[pagerState.currentPage].title,
@@ -180,7 +181,7 @@ fun OnboardingScreen(onNavigateToAuth: () -> Unit) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp),
+                            .padding(horizontal = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         TextButton(

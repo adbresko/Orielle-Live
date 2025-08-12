@@ -37,6 +37,7 @@ import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.theme.OrielleTheme
 import com.orielle.ui.theme.WaterRippleTheme
 import com.orielle.ui.components.WaterDropLoading
+import com.orielle.ui.util.ScreenUtils
 
 @Composable
 fun WelcomeScreen(
@@ -90,7 +91,7 @@ fun WelcomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
-                    .padding(top = 60.dp),
+                    .padding(top = if (ScreenUtils.isSmallScreen()) 40.dp else 60.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 OrielleLogo()
@@ -110,7 +111,12 @@ fun WelcomeScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(top = 100.dp, start = 24.dp, end = 24.dp, bottom = 32.dp),
+                            .padding(
+                                top = if (ScreenUtils.isSmallScreen()) 80.dp else 100.dp,
+                                start = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                                end = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                                bottom = if (ScreenUtils.isSmallScreen()) 24.dp else 32.dp
+                            ),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Top // Key change: Content starts from the top
                     ) {

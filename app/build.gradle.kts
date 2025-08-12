@@ -25,6 +25,14 @@ android {
         }
     }
 
+    // Add support for different screen sizes
+    androidResources {
+        // Modern approach for locale filtering
+        localeFilters += "en"
+        // Note: Android automatically handles different screen densities
+        // Our responsive design system will handle UI scaling
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true

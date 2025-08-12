@@ -45,77 +45,127 @@ fun ReflectScreen(
     val textColor = if (isDark) SoftSand else Charcoal
     val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundColor)
-            .verticalScroll(rememberScrollState())
-    ) {
-        // Header
-        ReflectHeader(
-            isDark = isDark,
-            textColor = textColor,
-            onSettingsClick = { navController.navigate("profile_settings") },
-            onJournalLogClick = { navController.navigate("journal_log") }
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Content
-        Column(
-            modifier = Modifier.padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            // Today's Prompt Card
-            TodaysPromptCard(
-                prompt = uiState.todaysPrompt,
-                cardColor = cardColor,
-                textColor = textColor,
-                isDark = isDark,
-                onClick = {
-                    navController.navigate("journal_editor?promptText=${uiState.todaysPrompt}")
+    Scaffold(
+        bottomBar = {
+            // Bottom Navigation Bar
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = cardColor
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DashboardNavItem(
+                        icon = R.drawable.ic_orielle_drop,
+                        label = "Home",
+                        selected = false,
+                        onClick = { navController.navigate("home_graph") }
+                    )
+                    DashboardNavItem(
+                        icon = R.drawable.reflect,
+                        label = "Reflect",
+                        selected = true,
+                        onClick = { /* Already on reflect */ }
+                    )
+                    DashboardNavItem(
+                        icon = R.drawable.ask,
+                        label = "Ask",
+                        selected = false,
+                        onClick = { navController.navigate("ask") }
+                    )
+                    DashboardNavItem(
+                        icon = R.drawable.remember,
+                        label = "Remember",
+                        selected = false,
+                        onClick = { navController.navigate("remember") }
+                    )
                 }
+            }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(backgroundColor)
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Header
+            ReflectHeader(
+                isDark = isDark,
+                textColor = textColor,
+                onSettingsClick = { navController.navigate("profile_settings") },
+                onJournalLogClick = { navController.navigate("journal_log") }
             )
 
-            // Action Cards Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Content
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                ActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Free write",
-                    subtitle = "Your blank canvas",
-                    icon = R.drawable.reflect,
+                // Today's Prompt Card
+                TodaysPromptCard(
+                    prompt = uiState.todaysPrompt,
                     cardColor = cardColor,
                     textColor = textColor,
-                    onClick = { navController.navigate("journal_editor") }
-                )
-
-                ActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Quick entry",
-                    subtitle = "A single thought",
-                    icon = R.drawable.remember,
-                    cardColor = cardColor,
-                    textColor = textColor,
-                    onClick = { navController.navigate("journal_editor?isQuickEntry=true") }
-                )
-            }
-
-            // Look Back Module (only show if there's a past entry)
-            uiState.lookBackEntry?.let { entry ->
-                LookBackModule(
-                    entry = entry,
-                    cardColor = cardColor,
-                    textColor = textColor,
+                    isDark = isDark,
                     onClick = {
-                        navController.navigate("journal_detail/${entry.id}")
+                        navController.navigate("journal_editor?promptText=${uiState.todaysPrompt}")
                     }
                 )
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                // Action Cards Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    ActionCard(
+                        modifier = Modifier.weight(1f),
+                        title = "Free write",
+                        subtitle = "Your blank canvas",
+                        icon = R.drawable.reflect,
+                        cardColor = cardColor,
+                        textColor = textColor,
+                        onClick = { navController.navigate("journal_editor") }
+                    )
+
+                    ActionCard(
+                        modifier = Modifier.weight(1f),
+                        title = "Quick entry",
+                        subtitle = "A single thought",
+                        icon = R.drawable.remember,
+                        cardColor = cardColor,
+                        textColor = textColor,
+                        onClick = { navController.navigate("journal_editor?isQuickEntry=true") }
+                    )
+                }
+
+                // Look Back Module (only show if there's a past entry)
+                uiState.lookBackEntry?.let { entry ->
+                    LookBackModule(
+                        entry = entry,
+                        cardColor = cardColor,
+                        textColor = textColor,
+                        onClick = {
+                            navController.navigate("journal_detail/${entry.id}")
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }
@@ -312,6 +362,36 @@ private fun LookBackModule(
                     )
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun DashboardNavItem(icon: Int, label: String, selected: Boolean, onClick: () -> Unit = {}) {
+    val unselectedTextColor = Color(0xFF333333) // #333333 - Charcoal
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Image(
+            painter = painterResource(id = icon),
+            contentDescription = label,
+            modifier = Modifier.size(28.dp)
+        )
+        Text(
+            text = label,
+            style = Typography.bodyMedium.copy(
+                color = if (selected) StillwaterTeal else unselectedTextColor
+            )
+        )
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .height(2.dp)
+                    .width(32.dp)
+                    .background(StillwaterTeal)
+            )
         }
     }
 }

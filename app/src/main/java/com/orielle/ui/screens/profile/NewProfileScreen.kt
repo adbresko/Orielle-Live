@@ -20,8 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.platform.LocalContext
 import com.orielle.ui.theme.*
 import com.orielle.ui.components.WaterDropLoading
+import com.orielle.ui.components.ProfileImageSelector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +39,7 @@ fun ProfileSettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
+    val currentContext = LocalContext.current
 
     val backgroundColor = if (isDark) DarkGray else SoftSand
     val textColor = if (isDark) SoftSand else Charcoal
@@ -117,14 +120,19 @@ fun ProfileSettingsScreen(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile",
-                        tint = WaterBlue,
-                        modifier = Modifier.size(48.dp)
+                    // Profile Image Selector
+                    ProfileImageSelector(
+                        profileImageUrl = uiState.profileImageUrl,
+                        localImagePath = uiState.localImagePath,
+                        selectedAvatarId = uiState.selectedAvatarId,
+                        isUploading = uiState.isUploadingImage,
+                        onImageUpload = { uri -> viewModel.uploadImage(uri, currentContext) },
+                        onAvatarSelect = { avatar -> viewModel.selectAvatar(avatar) },
+                        onImageRemove = { viewModel.removeProfileImage(currentContext) },
+                        avatarLibrary = viewModel.getAvatarLibrary(),
+                        isPremiumUser = uiState.isPremium ?: false,
+                        modifier = Modifier.padding(bottom = 16.dp)
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
                         text = uiState.userName ?: "Welcome",

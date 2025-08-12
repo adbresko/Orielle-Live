@@ -48,6 +48,8 @@ import com.orielle.ui.screens.reflect.JournalLogScreen
 import com.orielle.ui.screens.reflect.ReflectScreen
 import com.orielle.ui.screens.premium.PremiumScreen
 import com.orielle.ui.screens.sanctuary.SanctuaryScreen
+import com.orielle.ui.screens.remember.RememberScreen
+import com.orielle.ui.screens.remember.ConversationDetailScreen
 import dagger.hilt.android.EntryPointAccessors
 
 @Composable
@@ -311,6 +313,32 @@ fun AppNavigation(
             val tempEntryId = backStackEntry.arguments?.getString("tempEntryId") ?: ""
             // Reuse the Ask tagging screen for journal entries
             AskTaggingScreen(navController = navController)
+        }
+
+        // Remember screen
+        composable("remember") {
+            com.orielle.ui.screens.remember.RememberScreen(navController = navController)
+        }
+
+        // Conversation detail screen
+        composable(
+            "conversation_detail/{conversationId}",
+            arguments = listOf(navArgument("conversationId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val conversationId = backStackEntry.arguments?.getString("conversationId") ?: ""
+            com.orielle.ui.screens.remember.ConversationDetailScreen(
+                navController = navController,
+                conversationId = conversationId
+            )
+        }
+
+        // Mood detail screen
+        composable("mood_detail") {
+            // TODO: Create MoodDetailScreen
+            // For now, navigate back to home
+            navController.navigate("home_graph") {
+                popUpTo("mood_detail") { inclusive = true }
+            }
         }
 
         // Premium screen

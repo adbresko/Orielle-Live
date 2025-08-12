@@ -15,3 +15,11 @@ val DarkGray = Color(0xFF1A1A1A) // Deep Space for dark theme background
 
 // Semantic Colors
 val ErrorRed = Color(0xFFD32F2F)
+
+// Mood Colors for Remember Screen
+val HappyYellow = Color(0xFFF1C40F)
+val CalmBlue = Color(0xFF5DADE2)
+val ContentTeal = Color(0xFF48C9B0)
+val AnxiousPurple = Color(0xFFAF7AC5)
+val SadGray = Color(0xFF34495E)
+val TiredNeutral = Color(0xFF566573)

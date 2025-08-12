@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.orielle.R
 import com.orielle.ui.components.OrielleScreenHeader
+import androidx.compose.foundation.Image
 
 @Composable
 fun MoodFinalScreen(
@@ -62,11 +63,11 @@ fun MoodFinalScreen(
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Icon(
-                    painter = painterResource(id = R.drawable.orielle_drop),
+                Image(
+                    painter = painterResource(id = R.drawable.ic_orielle_drop),
                     contentDescription = "Orielle Drop",
-                    modifier = Modifier.size(32.dp),
-                    tint = Color(0xFF8EC6C6)
+                    modifier = Modifier.size(32.dp)
+                    // No colorFilter - using native colors for consistency
                 )
             }
         }

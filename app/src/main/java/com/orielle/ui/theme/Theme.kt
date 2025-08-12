@@ -46,6 +46,7 @@ fun OrielleTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val responsiveTypography = getResponsiveTypography()
 
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -63,7 +64,7 @@ fun OrielleTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = responsiveTypography,
         shapes = OrielleShapes,
         content = content
     )

@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.google.firebase.auth.FirebaseAuth
 import com.orielle.domain.manager.SessionManager
+import com.orielle.domain.manager.CachedUserProfile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -17,6 +18,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import com.google.gson.Gson
+import timber.log.Timber
 
 // DataStore setup - must be at top-level
 internal val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "orielle_preferences")
@@ -33,7 +37,15 @@ class SessionManagerImpl @Inject constructor(
         val ONBOARDING_SEEN_KEY = stringPreferencesKey("onboarding_seen")
         val BIOMETRICS_ENABLED_KEY = booleanPreferencesKey("biometrics_enabled")
         val PIN_CODE_KEY = stringPreferencesKey("pin_code")
+
+        // --- NEW: Profile Caching Keys ---
+        val CACHED_PROFILE_PREFIX = "cached_profile_"
+        val PROFILE_CACHE_TIMESTAMP_PREFIX = "profile_cache_timestamp_"
+        val PROFILE_CACHE_EXPIRATION = longPreferencesKey("profile_cache_expiration")
     }
+
+    private val gson = Gson()
+    private val defaultCacheExpiration = 3600000L // 1 hour in milliseconds
 
     override val currentUserId: Flow<String?> = context.dataStore.data
         .map { preferences ->
@@ -111,8 +123,162 @@ class SessionManagerImpl @Inject constructor(
     }
 
     override suspend fun clearSession() {
-        context.dataStore.edit { preferences ->
-            preferences.clear()
+        try {
+            // Clear cached profile data for the current user if authenticated
+            val currentUserId = auth.currentUser?.uid
+            if (currentUserId != null) {
+                clearCachedUserProfile(currentUserId)
+                Timber.d("🗑️ Cleared cached profile data for user: $currentUserId")
+            }
+
+            // Clear all session data
+            context.dataStore.edit { preferences ->
+                preferences.clear()
+            }
+
+            Timber.d("✅ Session data cleared successfully")
+        } catch (e: Exception) {
+            Timber.e(e, "❌ Error clearing session data")
+            // Try to clear basic preferences even if profile cache clearing fails
+            context.dataStore.edit { preferences ->
+                preferences.clear()
+            }
+        }
+    }
+
+    // --- NEW: Profile Caching Implementation ---
+
+    override suspend fun cacheUserProfile(
+        userId: String,
+        firstName: String?,
+        displayName: String?,
+        email: String?,
+        profileImageUrl: String?,
+        isPremium: Boolean,
+        notificationsEnabled: Boolean,
+        twoFactorEnabled: Boolean
+    ) {
+        try {
+            val cachedProfile = CachedUserProfile(
+                userId = userId,
+                firstName = firstName,
+                displayName = displayName,
+                email = email,
+                profileImageUrl = profileImageUrl,
+                isPremium = isPremium,
+                notificationsEnabled = notificationsEnabled,
+                twoFactorEnabled = twoFactorEnabled,
+                cachedAt = System.currentTimeMillis()
+            )
+
+            val profileJson = gson.toJson(cachedProfile)
+            val profileKey = stringPreferencesKey("${PreferencesKeys.CACHED_PROFILE_PREFIX}$userId")
+            val timestampKey = longPreferencesKey("${PreferencesKeys.PROFILE_CACHE_TIMESTAMP_PREFIX}$userId")
+
+            context.dataStore.edit { preferences ->
+                preferences[profileKey] = profileJson
+                preferences[timestampKey] = System.currentTimeMillis()
+            }
+
+            Timber.d("✅ Cached user profile for: $userId")
+        } catch (e: Exception) {
+            Timber.e(e, "❌ Failed to cache user profile for: $userId")
+        }
+    }
+
+    override suspend fun getCachedUserProfile(userId: String): CachedUserProfile? {
+        return try {
+            val preferences = context.dataStore.data.first()
+            val profileKey = stringPreferencesKey("${PreferencesKeys.CACHED_PROFILE_PREFIX}$userId")
+            val timestampKey = longPreferencesKey("${PreferencesKeys.PROFILE_CACHE_TIMESTAMP_PREFIX}$userId")
+
+            val profileJson = preferences[profileKey] ?: return null
+            val cacheTimestamp = preferences[timestampKey] ?: return null
+
+            // Check if cache has expired
+            val cacheExpiration = getProfileCacheExpiration()
+            if (System.currentTimeMillis() - cacheTimestamp > cacheExpiration) {
+                Timber.d("🕐 Cached profile expired for: $userId")
+                clearCachedUserProfile(userId)
+                return null
+            }
+
+            val cachedProfile = gson.fromJson(profileJson, CachedUserProfile::class.java)
+            Timber.d("📋 Retrieved cached profile for: $userId")
+            cachedProfile
+        } catch (e: Exception) {
+            Timber.e(e, "❌ Failed to retrieve cached profile for: $userId")
+            null
+        }
+    }
+
+    override suspend fun updateCachedUserProfile(
+        userId: String,
+        firstName: String?,
+        displayName: String?,
+        email: String?,
+        profileImageUrl: String?,
+        isPremium: Boolean?,
+        notificationsEnabled: Boolean?,
+        twoFactorEnabled: Boolean?
+    ) {
+        try {
+            val existingProfile = getCachedUserProfile(userId)
+            if (existingProfile != null) {
+                val updatedProfile = existingProfile.copy(
+                    firstName = firstName ?: existingProfile.firstName,
+                    displayName = displayName ?: existingProfile.displayName,
+                    email = email ?: existingProfile.email,
+                    profileImageUrl = profileImageUrl ?: existingProfile.profileImageUrl,
+                    isPremium = isPremium ?: existingProfile.isPremium,
+                    notificationsEnabled = notificationsEnabled ?: existingProfile.notificationsEnabled,
+                    twoFactorEnabled = twoFactorEnabled ?: existingProfile.twoFactorEnabled,
+                    cachedAt = System.currentTimeMillis()
+                )
+                cacheUserProfile(
+                    userId = updatedProfile.userId,
+                    firstName = updatedProfile.firstName,
+                    displayName = updatedProfile.displayName,
+                    email = updatedProfile.email,
+                    profileImageUrl = updatedProfile.profileImageUrl,
+                    isPremium = updatedProfile.isPremium,
+                    notificationsEnabled = updatedProfile.notificationsEnabled,
+                    twoFactorEnabled = updatedProfile.twoFactorEnabled
+                )
+                Timber.d("🔄 Updated cached profile for: $userId")
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "❌ Failed to update cached profile for: $userId")
+        }
+    }
+
+    override suspend fun clearCachedUserProfile(userId: String) {
+        try {
+            val profileKey = stringPreferencesKey("${PreferencesKeys.CACHED_PROFILE_PREFIX}$userId")
+            val timestampKey = longPreferencesKey("${PreferencesKeys.PROFILE_CACHE_TIMESTAMP_PREFIX}$userId")
+
+            context.dataStore.edit { preferences ->
+                preferences.remove(profileKey)
+                preferences.remove(timestampKey)
+            }
+
+            Timber.d("🗑️ Cleared cached profile for: $userId")
+        } catch (e: Exception) {
+            Timber.e(e, "❌ Failed to clear cached profile for: $userId")
+        }
+    }
+
+    override suspend fun hasValidCachedProfile(userId: String): Boolean {
+        return getCachedUserProfile(userId) != null
+    }
+
+    override suspend fun getProfileCacheExpiration(): Long {
+        return try {
+            val preferences = context.dataStore.data.first()
+            preferences[PreferencesKeys.PROFILE_CACHE_EXPIRATION] ?: defaultCacheExpiration
+        } catch (e: Exception) {
+            Timber.e(e, "❌ Failed to get profile cache expiration, using default")
+            defaultCacheExpiration
         }
     }
 }

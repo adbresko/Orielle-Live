@@ -73,6 +73,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.ExperimentalComposeUiApi
 import com.orielle.ui.theme.OrielleTheme
 import com.orielle.ui.components.WaterDropLoading
+import com.orielle.ui.util.ScreenUtils
 
 // Import the WeeklyMoodView composable from the same package (auto-resolved)
 
@@ -90,35 +91,45 @@ fun HomeScreen(
     }
 
     // Show loading indicator during initialization to prevent flicker
-    if (uiState.isInitializing) {
+    if (uiState.isInitializing || dashboardState == DashboardState.Loading) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 WaterDropLoading(
-                    size = 80,
-                    modifier = Modifier.size(80.dp)
+                    size = if (ScreenUtils.isSmallScreen()) 60 else 80,
+                    modifier = Modifier.size(if (ScreenUtils.isSmallScreen()) 60.dp else 80.dp)
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(if (ScreenUtils.isSmallScreen()) 12.dp else 16.dp))
                 Text(
-                    text = "Loading your dashboard...",
-                    style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground)
+                    text = if (uiState.isInitializing) "Loading your dashboard..." else "Preparing your day...",
+                    style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground),
+                    textAlign = TextAlign.Center
                 )
             }
         }
     } else {
-        HomeDashboardScreen(
-            userName = uiState.userName,
-            journalEntries = uiState.journalEntries,
-            weeklyMoodView = uiState.weeklyMoodView,
-            navController = navController,
-            dashboardState = dashboardState,
-            onCheckInTap = {
-                // Navigate to mood check-in screen instead of just changing state
-                navController.navigate("mood_check_in")
-            }
-        )
+        // Smooth transition when dashboard state changes
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                animationSpec = tween(300),
+                initialOffsetY = { it / 4 }
+            )
+        ) {
+            HomeDashboardScreen(
+                userName = uiState.userName,
+                journalEntries = uiState.journalEntries,
+                weeklyMoodView = uiState.weeklyMoodView,
+                navController = navController,
+                dashboardState = dashboardState,
+                onCheckInTap = {
+                    // Navigate to mood check-in screen instead of just changing state
+                    navController.navigate("mood_check_in")
+                }
+            )
+        }
     }
 }
 
@@ -130,8 +141,7 @@ fun HomeDashboardScreen(
     weeklyMoodView: com.orielle.domain.model.WeeklyMoodView,
     navController: NavController,
     dashboardState: DashboardState,
-    onCheckInTap: () -> Unit,
-    profileImageUrl: String? = null
+    onCheckInTap: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.background == DarkGray
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -154,16 +164,21 @@ fun HomeDashboardScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
+                    .padding(
+                        start = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                        end = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                        top = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp,
+                        bottom = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp
+                    ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Orielle logo and text - stacked vertically
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
+                    Image(
                         painter = painterResource(id = R.drawable.ic_orielle_drop),
                         contentDescription = "Orielle Logo",
-                        modifier = Modifier.size(20.dp),
-                        tint = accentColor
+                        modifier = Modifier.size(20.dp)
+                        // No colorFilter - using native colors for consistency
                     )
                     Text(
                         text = "ORIELLE",
@@ -205,7 +220,7 @@ fun HomeDashboardScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     DashboardNavItem(
-                        icon = R.drawable.home,
+                        icon = R.drawable.ic_orielle_drop,
                         label = "Home",
                         selected = true,
                         onClick = { /* Already on home */ }
@@ -226,7 +241,7 @@ fun HomeDashboardScreen(
                         icon = R.drawable.remember,
                         label = "Remember",
                         selected = false,
-                        onClick = { /* TODO: Navigate to remember */ }
+                        onClick = { navController.navigate("remember") }
                     )
                 }
             }
@@ -236,12 +251,12 @@ fun HomeDashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp),
             verticalArrangement = if (dashboardState == DashboardState.Initial) Arrangement.Center else Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (dashboardState == DashboardState.Unfolded) {
-                Spacer(Modifier.height(48.dp))
+                Spacer(Modifier.height(if (ScreenUtils.isSmallScreen()) 36.dp else 48.dp))
             }
             AnimatedVisibility(
                 visible = dashboardState == DashboardState.Initial,
@@ -279,11 +294,11 @@ fun HomeDashboardScreen(
                                 .size(64.dp)
                                 .scale(breathingScale)
                         ) {
-                            Icon(
+                            Image(
                                 painter = painterResource(id = R.drawable.ic_orielle_drop),
                                 contentDescription = "Water Drop",
-                                modifier = Modifier.fillMaxSize(),
-                                tint = accentColor
+                                modifier = Modifier.fillMaxSize()
+                                // No colorFilter - using native colors for consistency
                             )
                         }
                         Spacer(Modifier.height(16.dp))
@@ -315,12 +330,12 @@ fun HomeDashboardScreen(
                     Text(
                         text = "Good morning, ${userName ?: "User"}.",
                         style = Typography.headlineLarge.copy(color = textColor),
-                        modifier = Modifier.padding(bottom = 72.dp)
+                        modifier = Modifier.padding(bottom = if (ScreenUtils.isSmallScreen()) 54.dp else 72.dp)
                     )
                     Text(
                         text = "${dateFormat.format(today)} • waxing crescent 311 • Day 204",
                         style = Typography.bodySmall.copy(color = if (isDark) SoftSand else Charcoal),
-                        modifier = Modifier.padding(bottom = 84.dp)
+                        modifier = Modifier.padding(bottom = if (ScreenUtils.isSmallScreen()) 63.dp else 84.dp)
                     )
                     // Inner Weather Card
                     var weatherPressed by remember { mutableStateOf(false) }
@@ -355,7 +370,7 @@ fun HomeDashboardScreen(
                             )
                         }
                     }
-                    Spacer(Modifier.height(60.dp))
+                    Spacer(Modifier.height(if (ScreenUtils.isSmallScreen()) 45.dp else 60.dp))
                     // Thought From Your Past Card
                     var thoughtPressed by remember { mutableStateOf(false) }
                     val thoughtScale by animateFloatAsState(targetValue = if (thoughtPressed) 0.95f else 1f, label = "thoughtTapScale")
@@ -409,7 +424,7 @@ fun HomeDashboardScreen(
 @Composable
 fun DashboardNavItem(icon: Int, label: String, selected: Boolean, onClick: () -> Unit = {}) {
     val isDark = MaterialTheme.colorScheme.background == DarkGray
-    val unselectedTextColor = if (isDark) Color.LightGray else Charcoal.copy(alpha = 0.7f)
+    val unselectedTextColor = if (isDark) Color.LightGray else Color(0xFF333333) // #333333 - Charcoal
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -453,8 +468,7 @@ fun Preview_HomeDashboard_Initial_Light() {
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Initial,
-            onCheckInTap = {},
-            profileImageUrl = null
+            onCheckInTap = {}
         )
     }
 }
@@ -477,8 +491,7 @@ fun Preview_HomeDashboard_Initial_Dark() {
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Initial,
-            onCheckInTap = {},
-            profileImageUrl = null
+            onCheckInTap = {}
         )
     }
 }
@@ -501,8 +514,7 @@ fun Preview_HomeDashboard_Unfolded_Light() {
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Unfolded,
-            onCheckInTap = {},
-            profileImageUrl = null
+            onCheckInTap = {}
         )
     }
 }
@@ -525,8 +537,7 @@ fun Preview_HomeDashboard_Unfolded_Dark() {
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Unfolded,
-            onCheckInTap = {},
-            profileImageUrl = null
+            onCheckInTap = {}
         )
     }
 }
