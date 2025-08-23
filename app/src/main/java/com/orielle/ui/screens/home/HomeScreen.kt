@@ -199,51 +199,39 @@ fun HomeDashboardScreen(
             }
         },
         bottomBar = {
-            // Navigation bar with proper background
-            Card(
+            // Navigation bar with minimal styling
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isDark) Color(0xFF2A2A2A) else Color(0xFFF0F0F0)
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = if (isDark) 0.dp else 8.dp
-                )
+                    .background(if (isDark) Color(0xFF1A1A1A) else Color.White)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    DashboardNavItem(
-                        icon = R.drawable.ic_orielle_drop,
-                        label = "Home",
-                        selected = true,
-                        onClick = { /* Already on home */ }
-                    )
-                    DashboardNavItem(
-                        icon = R.drawable.reflect,
-                        label = "Reflect",
-                        selected = false,
-                        onClick = { navController.navigate("reflect") }
-                    )
-                    DashboardNavItem(
-                        icon = R.drawable.ask,
-                        label = "Ask",
-                        selected = false,
-                        onClick = { navController.navigate("ask") }
-                    )
-                    DashboardNavItem(
-                        icon = R.drawable.remember,
-                        label = "Remember",
-                        selected = false,
-                        onClick = { navController.navigate("remember") }
-                    )
-                }
+                DashboardNavItem(
+                    icon = R.drawable.ic_orielle_drop,
+                    label = "Home",
+                    selected = true,
+                    onClick = { /* Already on home */ }
+                )
+                DashboardNavItem(
+                    icon = R.drawable.reflect,
+                    label = "Reflect",
+                    selected = false,
+                    onClick = { navController.navigate("reflect") }
+                )
+                DashboardNavItem(
+                    icon = R.drawable.ask,
+                    label = "Ask",
+                    selected = false,
+                    onClick = { navController.navigate("ask") }
+                )
+                DashboardNavItem(
+                    icon = R.drawable.remember,
+                    label = "Remember",
+                    selected = false,
+                    onClick = { navController.navigate("remember") }
+                )
             }
         }
     ) { innerPadding ->

@@ -49,6 +49,13 @@
             android:enabled="true"
             android:exported="false" />
 
+        <!-- Smart auto-sync service with foreground capability -->
+        <service
+            android:name=".data.service.SmartAutoSyncService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
     </application>
 
 </manifest>

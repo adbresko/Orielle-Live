@@ -9,6 +9,7 @@ import com.orielle.data.local.dao.UserDao
 import com.orielle.data.local.dao.ChatConversationDao
 import com.orielle.data.local.dao.ChatMessageDao
 import com.orielle.data.local.dao.TagDao
+import com.orielle.data.local.dao.MemoryEntryDao
 import com.orielle.data.local.model.JournalEntryEntity
 import com.orielle.data.local.model.MoodCheckInEntity
 import com.orielle.data.local.model.UserEntity
@@ -16,6 +17,7 @@ import com.orielle.data.local.model.ChatConversationEntity
 import com.orielle.data.local.model.ChatMessageEntity
 import com.orielle.data.local.model.TagEntity
 import com.orielle.data.local.model.ConversationTagCrossRef
+import com.orielle.data.local.model.MemoryEntryEntity
 
 @Database(
     entities = [
@@ -25,9 +27,10 @@ import com.orielle.data.local.model.ConversationTagCrossRef
         ChatConversationEntity::class,
         ChatMessageEntity::class,
         TagEntity::class,
-        ConversationTagCrossRef::class
+        ConversationTagCrossRef::class,
+        MemoryEntryEntity::class
     ],
-    version = 7, // Increment for mood check-in tags field
+    version = 8, // Increment for memory entries table
     exportSchema = false
 )
 @TypeConverters(Converters::class) // Add this to handle the Date type
@@ -39,6 +42,7 @@ abstract class OrielleDatabase : RoomDatabase() {
     abstract fun chatConversationDao(): ChatConversationDao
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun tagDao(): TagDao
+    abstract fun memoryEntryDao(): MemoryEntryDao
 
     companion object {
         val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
@@ -136,6 +140,30 @@ abstract class OrielleDatabase : RoomDatabase() {
             override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
                 // Add tags column to mood_check_ins table
                 database.execSQL("ALTER TABLE mood_check_ins ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
+            }
+        }
+
+        val MIGRATION_7_8 = object : androidx.room.migration.Migration(7, 8) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // Create memory_entries table
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS memory_entries (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        userId TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        entryType TEXT NOT NULL,
+                        mood TEXT,
+                        content TEXT NOT NULL,
+                        tags TEXT NOT NULL DEFAULT '[]',
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+
+                // Create indices for better performance
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_memory_entries_userId ON memory_entries(userId)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_memory_entries_date ON memory_entries(date)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_memory_entries_entryType ON memory_entries(entryType)")
             }
         }
     }

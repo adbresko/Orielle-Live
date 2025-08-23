@@ -320,6 +320,11 @@ fun AppNavigation(
             com.orielle.ui.screens.remember.RememberScreen(navController = navController)
         }
 
+        // Remember filter and search screen
+        composable("remember_search") {
+            com.orielle.ui.screens.remember.RememberSearchScreen(navController = navController)
+        }
+
         // Conversation detail screen
         composable(
             "conversation_detail/{conversationId}",
@@ -334,9 +339,8 @@ fun AppNavigation(
 
         // Mood detail screen
         composable("mood_detail") {
-            // TODO: Create MoodDetailScreen
-            // For now, navigate back to home
-            navController.navigate("home_graph") {
+            // For now, navigate to mood check-in where users can see their mood data
+            navController.navigate("mood_check_in") {
                 popUpTo("mood_detail") { inclusive = true }
             }
         }

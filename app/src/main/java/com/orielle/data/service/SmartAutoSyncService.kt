@@ -15,7 +15,7 @@ import com.orielle.data.manager.CacheManager
 import com.orielle.data.manager.EnhancedSyncManager
 import com.orielle.data.manager.SyncResult
 import com.orielle.data.manager.DataConflict
-import com.orielle.domain.model.UserActivity
+import com.orielle.domain.model.UserActivityLevel
 import com.orielle.domain.manager.SessionManager
 import com.orielle.util.NetworkUtils
 import dagger.hilt.android.AndroidEntryPoint
@@ -303,20 +303,20 @@ class SmartAutoSyncService : LifecycleService() {
     /**
      * Get sync interval based on user activity
      */
-    private fun getSyncInterval(userActivity: UserActivity): Long {
+    private fun getSyncInterval(userActivity: UserActivityLevel): Long {
         return when (userActivity) {
-            UserActivity.ACTIVE -> SYNC_INTERVAL_ACTIVE
-            UserActivity.INACTIVE -> SYNC_INTERVAL_INACTIVE
-            UserActivity.BACKGROUND -> SYNC_INTERVAL_BACKGROUND
+            UserActivityLevel.ACTIVE -> SYNC_INTERVAL_ACTIVE
+            UserActivityLevel.INACTIVE -> SYNC_INTERVAL_INACTIVE
+            UserActivityLevel.BACKGROUND -> SYNC_INTERVAL_BACKGROUND
         }
     }
 
     /**
      * Get current user activity level
      */
-    private suspend fun getUserActivityLevel(): UserActivity {
+    private suspend fun getUserActivityLevel(): UserActivityLevel {
         // This would be implemented in CacheManager
-        return UserActivity.ACTIVE // Default for now
+        return UserActivityLevel.ACTIVE // Default for now
     }
 
     /**

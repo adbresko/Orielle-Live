@@ -47,7 +47,7 @@ enum class DataType {
 /**
  * User activity levels for cache TTL decisions
  */
-enum class UserActivity {
+enum class UserActivityLevel {
     ACTIVE,     // User actively using app
     INACTIVE,   // User not actively using app
     BACKGROUND  // App in background

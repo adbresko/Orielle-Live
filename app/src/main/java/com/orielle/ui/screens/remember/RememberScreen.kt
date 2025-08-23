@@ -3,35 +3,44 @@ package com.orielle.ui.screens.remember
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.ui.tooling.preview.Preview
-import com.orielle.ui.theme.OrielleTheme
 import androidx.navigation.NavController
-import com.orielle.domain.model.ChatConversation
-import com.orielle.domain.model.JournalEntry
-import com.orielle.domain.model.MoodCheckIn
+import androidx.compose.ui.tooling.preview.Preview
 import com.orielle.ui.theme.*
+import com.orielle.ui.theme.OrielleTheme
+import com.orielle.domain.model.CalendarDay
+import com.orielle.domain.model.UserActivity
+import com.orielle.domain.model.ActivityType
 import com.orielle.R
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Calendar
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
 @Composable
 fun RememberScreen(
@@ -47,218 +56,432 @@ fun RememberScreen(
     Scaffold(
         topBar = {
             RememberHeader(
-                onSearchClick = { viewModel.showSearchDialog() }
+                onClearSearch = { viewModel.clearSearch() },
+                onNavigateToSearch = { navController.navigate("remember_search") }
             )
         },
         bottomBar = {
-            // Bottom Navigation Bar
-            Card(
+            // Navigation bar with minimal styling
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    .background(if (MaterialTheme.colorScheme.background == DarkGray) Color(0xFF1A1A1A) else Color.White)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    DashboardNavItem(
-                        icon = R.drawable.ic_orielle_drop,
-                        label = "Home",
-                        selected = false,
-                        onClick = { navController.navigate("home_graph") }
-                    )
-                    DashboardNavItem(
-                        icon = R.drawable.reflect,
-                        label = "Reflect",
-                        selected = false,
-                        onClick = { navController.navigate("reflect") }
-                    )
-                    DashboardNavItem(
-                        icon = R.drawable.ask,
-                        label = "Ask",
-                        selected = false,
-                        onClick = { navController.navigate("ask") }
-                    )
-                    DashboardNavItem(
-                        icon = R.drawable.remember,
-                        label = "Remember",
-                        selected = true,
-                        onClick = { /* Already on remember */ }
-                    )
-                }
+                DashboardNavItem(
+                    icon = R.drawable.ic_orielle_drop,
+                    label = "Home",
+                    selected = false,
+                    onClick = { navController.navigate("home_graph") }
+                )
+                DashboardNavItem(
+                    icon = R.drawable.reflect,
+                    label = "Reflect",
+                    selected = false,
+                    onClick = { navController.navigate("reflect") }
+                )
+                DashboardNavItem(
+                    icon = R.drawable.ask,
+                    label = "Ask",
+                    selected = false,
+                    onClick = { navController.navigate("ask") }
+                )
+                DashboardNavItem(
+                    icon = R.drawable.remember,
+                    label = "Remember",
+                    selected = true,
+                    onClick = { /* Already on remember */ }
+                )
             }
         }
     ) { paddingValues ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
         ) {
-
-            // Journal Entry Cards - Show only 1 entry for now
-            if (uiState.journalEntries.isNotEmpty()) {
-                item(contentType = "journal_entry") {
-                    JournalEntryCard(
-                        entry = uiState.journalEntries.first(),
-                        onClick = { navController.navigate("journal_detail/${uiState.journalEntries.first().id}") }
-                    )
-                }
-            }
-
-            // Conversation Cards
-            items(
-                items = uiState.conversations,
-                key = { it.id },
-                contentType = { "conversation" }
-            ) { conversation ->
-                ConversationCard(
-                    conversation = conversation,
-                    onClick = { navController.navigate("conversation_detail/${conversation.id}") }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Calendar Component
+                CalendarComponent(
+                    calendarDays = uiState.calendarDays,
+                    currentMonthYear = uiState.currentMonthYear,
+                    onNextMonth = { viewModel.nextMonth() },
+                    onPreviousMonth = { viewModel.previousMonth() },
+                    onDayClick = { viewModel.onDayClick(it) },
+                    onMonthClick = { viewModel.showMonthSelector() },
+                    onYearClick = { viewModel.showYearSelector() }
                 )
             }
 
-            // Weekly Mood Horizon Card
-            if (uiState.weeklyMoodData.isNotEmpty()) {
-                item(contentType = "mood_horizon") {
-                    WeeklyMoodHorizonCard(
-                        moodData = uiState.weeklyMoodData,
-                        onClick = { navController.navigate("mood_detail") }
-                    )
-                }
-            }
-
-            // Milestone Card
-            if (uiState.milestoneMessage != null) {
-                item(contentType = "milestone") {
-                    MilestoneCard(message = uiState.milestoneMessage!!)
-                }
+            // Daily Glimpse Panel - positioned at bottom
+            if (uiState.showDayDetail && uiState.selectedDay != null) {
+                DailyGlimpsePanel(
+                    day = uiState.selectedDay!!,
+                    onDismiss = { viewModel.hideDayDetail() },
+                    onNavigateToDetail = { activity ->
+                        when (activity.activityType) {
+                            ActivityType.REFLECT -> navController.navigate("journal_detail/${activity.relatedId}")
+                            ActivityType.ASK -> navController.navigate("conversation_detail/${activity.relatedId}")
+                            ActivityType.CHECK_IN -> navController.navigate("mood_detail")
+                        }
+                        viewModel.hideDayDetail()
+                    }
+                )
             }
         }
-    }
-
-    // Search Dialog
-    if (uiState.showSearchDialog) {
-        SearchFilterDialog(
-            onDismiss = { viewModel.hideSearchDialog() },
-            onApplyFilters = { dateFilter, tagFilter ->
-                viewModel.applyFilters(dateFilter, tagFilter)
-                viewModel.hideSearchDialog()
-            }
-        )
     }
 }
 
 @Composable
 private fun RememberHeader(
-    onSearchClick: () -> Unit
+    onClearSearch: () -> Unit,
+    onNavigateToSearch: () -> Unit
 ) {
-    Row(
+    var searchQuery by remember { mutableStateOf("") }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .background(SoftSand)
+            .padding(20.dp)
     ) {
+        // Title
         Text(
             text = "Remember",
-            style = Typography.headlineLarge.copy(
-                color = Color(0xFF333333), // #333333 - Charcoal
-                fontWeight = FontWeight.Bold
-            )
+            fontFamily = Lora,
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = Charcoal,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        IconButton(onClick = onSearchClick) {
+        // Search Bar
+        SearchBar(
+            query = searchQuery,
+            onClearSearch = {
+                searchQuery = ""
+                onClearSearch()
+            },
+            onNavigateToSearch = onNavigateToSearch
+        )
+    }
+}
+
+@Composable
+private fun SearchBar(
+    query: String,
+    onClearSearch: () -> Unit,
+    onNavigateToSearch: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onNavigateToSearch() },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "Search and filter",
-                tint = Color(0xFF333333), // #333333 - Charcoal
+                contentDescription = "Search",
+                tint = Charcoal,
                 modifier = Modifier.size(24.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = if (query.isEmpty()) "Search by tag, mood, or memory..." else query,
+                fontFamily = NotoSans,
+                fontSize = 14.sp,
+                color = if (query.isEmpty()) Color(0xFF999999) else Charcoal,
+                fontWeight = FontWeight.Normal,
+                modifier = Modifier.weight(1f)
+            )
+
+            if (query.isNotEmpty()) {
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(
+                    onClick = {
+                        onClearSearch()
+                    }
+                ) {
+                    Text(
+                        text = "Clear",
+                        color = Charcoal,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarComponent(
+    calendarDays: List<CalendarDay>,
+    currentMonthYear: String,
+    onNextMonth: () -> Unit,
+    onPreviousMonth: () -> Unit,
+    onDayClick: (CalendarDay) -> Unit,
+    onMonthClick: () -> Unit,
+    onYearClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(410.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(19.dp)
+        ) {
+            // Month/Year Header with Navigation
+            MonthYearHeader(
+                monthYear = currentMonthYear,
+                onNextMonth = onNextMonth,
+                onPreviousMonth = onPreviousMonth,
+                onMonthClick = onMonthClick,
+                onYearClick = onYearClick
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Day Headers
+            DayHeaders()
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Calendar Grid
+            CalendarGrid(
+                calendarDays = calendarDays,
+                onDayClick = onDayClick
             )
         }
     }
 }
 
 @Composable
-private fun JournalEntryCard(
-    entry: JournalEntry,
+private fun MonthYearHeader(
+    monthYear: String,
+    onNextMonth: () -> Unit,
+    onPreviousMonth: () -> Unit,
+    onMonthClick: () -> Unit,
+    onYearClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Previous month arrow
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+            contentDescription = "Previous month",
+            tint = Charcoal,
+            modifier = Modifier
+                .size(24.dp)
+                .clickable { onPreviousMonth() }
+        )
+
+        // Month dropdown
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val parts = monthYear.split(" ")
+            Text(
+                text = if (parts.isNotEmpty()) parts[0] else "Loading...", // Month name
+                fontFamily = NotoSans,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Charcoal,
+                modifier = Modifier.clickable { onMonthClick() }
+            )
+
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = "Month dropdown",
+                tint = Charcoal,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onMonthClick() }
+            )
+        }
+
+        // Year dropdown
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val parts = monthYear.split(" ")
+            Text(
+                text = if (parts.size >= 2) parts[1] else "2024", // Year
+                fontFamily = NotoSans,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Charcoal,
+                modifier = Modifier.clickable { onYearClick() }
+            )
+
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = "Year dropdown",
+                tint = Charcoal,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onYearClick() }
+            )
+        }
+
+        // Next month arrow
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = "Next month",
+            tint = Charcoal,
+            modifier = Modifier
+                .size(24.dp)
+                .clickable { onNextMonth() }
+        )
+    }
+}
+
+@Composable
+private fun DayHeaders() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        val dayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+        dayNames.forEach { day ->
+            Text(
+                text = day,
+                fontFamily = NotoSans,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                color = Charcoal,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarGrid(
+    calendarDays: List<CalendarDay>,
+    onDayClick: (CalendarDay) -> Unit
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(7),
+        horizontalArrangement = Arrangement.spacedBy(0.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
+    ) {
+        items(calendarDays) { day ->
+            CalendarDayCell(
+                day = day,
+                onClick = { onDayClick(day) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarDayCell(
+    day: CalendarDay,
     onClick: () -> Unit
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()) }
-
-    // Use the same yellow background as the debug card
-    val backgroundColor = Color(0xFFFFF3CD) // Same yellow as debug card
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(110.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
+    if (day.dayOfMonth == 0) {
+        // Empty cell for padding
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
         )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+    } else {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .clickable { onClick() }
+                .background(
+                    when {
+                        day.isToday -> WaterBlue
+                        else -> Color.Transparent
+                    }
+                ),
+            contentAlignment = Alignment.Center
         ) {
+            // Day number
             Text(
-                text = "Reflection from ${dateFormat.format(entry.timestamp)}",
-                fontFamily = Typography.bodyMedium.fontFamily, // Noto Sans equivalent
-                fontSize = 14.sp,
-                lineHeight = 19.sp,
-                fontWeight = FontWeight.Normal, // 400
-                color = Color(0xFFB75100), // #B75100 - Orange-brown
-                modifier = Modifier.padding(bottom = 5.dp)
-            )
-
-            Text(
-                text = entry.content.take(120) + if (entry.content.length > 120) "..." else "",
-                fontFamily = Typography.bodyMedium.fontFamily, // Noto Sans equivalent
+                text = day.dayOfMonth.toString(),
+                fontFamily = NotoSans,
                 fontSize = 16.sp,
-                lineHeight = 22.sp,
-                fontWeight = FontWeight.Normal, // 400
-                color = Color(0xFF333333), // #333333 - Charcoal
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+                fontWeight = FontWeight.Normal,
+                color = if (day.isToday) Color.White else Charcoal
             )
 
-            // Show tags if they exist
-            if (entry.tags.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.wrapContentSize(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+            // Debug: Show activity count
+            if (day.activities.isNotEmpty()) {
+                Text(
+                    text = "${day.activities.size}",
+                    fontSize = 8.sp,
+                    color = Color.Red,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            }
+
+            // Activity indicators (dots) - positioned at bottom
+            if (day.activities.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    entry.tags.forEach { tag ->
+                    // Reflection dot (teal)
+                    if (day.hasReflectActivity) {
                         Box(
                             modifier = Modifier
-                                .background(
-                                    color = Color(0xFF856404), // Dark brown for tags
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = tag,
-                                fontSize = 12.sp,
-                                color = Color(0xFFFFF3CD), // Light yellow text on dark brown
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(StillwaterTeal)
+                        )
+                    }
+
+                    // Ask dot (gold)
+                    if (day.hasAskActivity) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(AuroraGold)
+                        )
+                    }
+
+                    // Check-in dot (blue)
+                    if (day.hasCheckInActivity) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(WaterBlue)
+                        )
                     }
                 }
             }
@@ -267,301 +490,238 @@ private fun JournalEntryCard(
 }
 
 @Composable
-private fun ConversationCard(
-    conversation: ChatConversation,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(130.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE0E0E0) // #E0E0E0 - Light Gray
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "A thought from Orielle & You",
-                fontFamily = Typography.bodyMedium.fontFamily, // Noto Sans equivalent
-                fontSize = 14.sp,
-                lineHeight = 19.sp,
-                fontWeight = FontWeight.Normal, // 400
-                color = Color(0xFF333333), // #333333 - Charcoal
-                modifier = Modifier.padding(bottom = 5.dp)
-            )
-
-            Text(
-                text = conversation.lastMessagePreview ?: "Continue your conversation...",
-                fontFamily = Typography.bodyMedium.fontFamily, // Noto Sans equivalent
-                fontSize = 16.sp,
-                lineHeight = 22.sp,
-                fontWeight = FontWeight.Normal, // 400
-                color = Color(0xFF333333), // #333333 - Charcoal
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun WeeklyMoodHorizonCard(
-    moodData: List<MoodCheckIn>,
-    onClick: () -> Unit
-) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
-    val calendar = Calendar.getInstance()
-
-    // Get the date range for the week
-    calendar.firstDayOfWeek = Calendar.MONDAY
-    calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
-    val startOfWeek = calendar.time
-    calendar.add(Calendar.DAY_OF_YEAR, 6)
-    val endOfWeek = calendar.time
-
-    val weekRangeText = "${dateFormat.format(startOfWeek)} - ${dateFormat.format(endOfWeek)}, ${Calendar.getInstance().get(Calendar.YEAR)}"
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(140.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFFFFF) // #FFFFFF - White
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Your Weekly Horizon",
-                fontFamily = Typography.titleLarge.fontFamily, // Noto Sans equivalent
-                fontSize = 20.sp,
-                lineHeight = 27.sp,
-                fontWeight = FontWeight.Bold, // 700
-                color = Color(0xFF333333) // #333333 - Charcoal
-            )
-
-            Spacer(modifier = Modifier.height(3.dp))
-
-            Text(
-                text = weekRangeText,
-                fontFamily = Typography.bodyMedium.fontFamily, // Noto Sans equivalent
-                fontSize = 14.sp,
-                lineHeight = 19.sp,
-                fontWeight = FontWeight.Normal, // 400
-                color = Color(0xFF333333) // #333333 - Charcoal
-            )
-
-            Spacer(modifier = Modifier.height(19.dp))
-
-            // Mood Horizon Gradient - using the exact gradient from the CSS specs
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0x005DADE2), // rgba(93, 173, 226, 0) - 5.77%
-                                Color(0x2B48C9B0), // rgba(72, 201, 176, 0.17) - 19.23%
-                                Color(0x15F1C40F), // rgba(241, 196, 15, 0.085) - 31.73%
-                                Color(0x41AF7AC5), // rgba(175, 122, 197, 0.255) - 53.37%
-                                Color(0x57549BC7), // rgba(84, 153, 199, 0.34) - 76.44%
-                                Color(0x6C566573), // rgba(86, 101, 115, 0.425) - 82.69%
-                                Color(0x8034495E)  // rgba(52, 73, 94, 0.5) - 96.63%
-                            ),
-                            startX = 0f,
-                            endX = 1f
-                        )
-                    )
-            )
-        }
-    }
-}
-
-@Composable
-private fun MilestoneCard(
-    message: String
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF79B4B7) // #79B4B7 - Stillwater Teal
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Achievement icon - military tech/medal icon
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .background(
-                        color = Color(0xFFE4C27A), // #E4C27A - Gold background
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                // Using a medal-like icon (you can replace with actual military_tech icon)
-                Text(
-                    text = "🏅", // Medal emoji as placeholder
-                    fontSize = 16.sp,
-                    color = Color(0xFFE4C27A)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(13.dp)) // 73px - 36px - 24px = 13px spacing
-
-            // Text content - supporting two lines as shown in the image
-            Text(
-                text = message,
-                fontFamily = Typography.bodyMedium.fontFamily, // Noto Sans equivalent
-                fontSize = 16.sp,
-                lineHeight = 22.sp,
-                fontWeight = FontWeight.Normal, // 400
-                color = Color(0xFFFFFFFF), // #FFFFFF - White
-                modifier = Modifier.weight(1f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun SearchFilterDialog(
+private fun DailyGlimpsePanel(
+    day: CalendarDay,
     onDismiss: () -> Unit,
-    onApplyFilters: (String?, String?) -> Unit
+    onNavigateToDetail: (UserActivity) -> Unit
 ) {
-    var selectedDateFilter by remember { mutableStateOf<String?>(null) }
-    var selectedTagFilter by remember { mutableStateOf<String?>(null) }
+    val isDark = MaterialTheme.colorScheme.background == DarkGray
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Filter Feed") },
-        text = {
-            Column {
-                Text("Date Filter")
-                // Add date picker or date range selector here
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f))
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(380.dp)
+                .align(Alignment.BottomCenter),
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isDark) Color(0xFF2A2A2A) else Color.White
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 12.dp)
+            ) {
+                // Grabber
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(40.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xFFE0E0E0))
+                    )
+                }
+
+                // Header with date and close button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = formatDateForGlimpse(day.date),
+                        fontFamily = NotoSans,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) SoftSand else Charcoal
+                    )
+
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = if (isDark) SoftSand else Charcoal,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text("Tag Filter")
-                // Add tag selector here
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onApplyFilters(selectedDateFilter, selectedTagFilter) }
-            ) {
-                Text("Apply")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                // Activities list - Group by type to avoid duplication
+                if (day.activities.isNotEmpty()) {
+                    val groupedActivities = day.activities.groupBy { it.activityType }
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Show first Reflection activity only
+                        groupedActivities[ActivityType.REFLECT]?.firstOrNull()?.let { activity ->
+                            GlimpseActivityItem(
+                                activity = activity,
+                                onClick = { onNavigateToDetail(activity) }
+                            )
+                        }
+
+                        // Show first Chat/Ask activity only
+                        groupedActivities[ActivityType.ASK]?.firstOrNull()?.let { activity ->
+                            GlimpseActivityItem(
+                                activity = activity,
+                                onClick = { onNavigateToDetail(activity) }
+                            )
+                        }
+
+                        // Show first Mood Check-in activity only
+                        groupedActivities[ActivityType.CHECK_IN]?.firstOrNull()?.let { activity ->
+                            GlimpseActivityItem(
+                                activity = activity,
+                                onClick = { onNavigateToDetail(activity) }
+                            )
+                        }
+                    }
+                } else {
+                    // Empty state
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(vertical = 40.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "No activities on this day",
+                            fontFamily = NotoSans,
+                            fontSize = 16.sp,
+                            color = if (isDark) Color(0xFFAAAAAA) else Color(0xFF999999),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
         }
-    )
-}
-
-// Helper functions
-@Composable
-private fun getMoodColor(mood: String?): Color? {
-    return when (mood?.lowercase()) {
-        "happy", "joyful" -> HappyYellow
-        "calm", "flowing" -> CalmBlue
-        "content", "peaceful" -> ContentTeal
-        "anxious", "uncertain" -> AnxiousPurple
-        "sad", "gloomy" -> SadGray
-        "tired", "neutral" -> TiredNeutral
-        else -> null
     }
 }
 
 @Composable
-private fun getWeeklyMoodColors(moodData: List<MoodCheckIn>): List<Color> {
-    val colors = mutableListOf<Color>()
+private fun GlimpseActivityItem(
+    activity: UserActivity,
+    onClick: () -> Unit
+) {
+    val isDark = MaterialTheme.colorScheme.background == DarkGray
 
-    // Generate 7 colors for the week
-    for (i in 0..6) {
-        val moodForDay = moodData.getOrNull(i)
-        val moodColor = getMoodColor(moodForDay?.mood)
-        colors.add(moodColor ?: Color(0xFFE5E5E5)) // Use default light gray if no mood color
+    val activityColor = when (activity.activityType) {
+        ActivityType.REFLECT -> StillwaterTeal
+        ActivityType.ASK -> AuroraGold
+        ActivityType.CHECK_IN -> WaterBlue
     }
 
-    // If we don't have 7 moods, fill with default colors
-    while (colors.size < 7) {
-        colors.add(Color(0xFFE5E5E5)) // Light gray for missing data
+    val activityTitle = when (activity.activityType) {
+        ActivityType.REFLECT -> "Your Reflection"
+        ActivityType.ASK -> "Chat with Orielle"
+        ActivityType.CHECK_IN -> "Mood Check-in"
     }
 
-    return colors
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        // Title with color-coded type
+        Text(
+            text = activityTitle,
+            fontFamily = NotoSans,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = activityColor
+        )
+
+        // Preview content
+        if (activity.preview != null) {
+            Text(
+                text = activity.preview,
+                fontFamily = NotoSans,
+                fontSize = 16.sp,
+                color = if (isDark) SoftSand else Charcoal,
+                maxLines = 3,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+
+        // Action link
+        val actionText = when (activity.activityType) {
+            ActivityType.REFLECT -> "Read more..."
+            ActivityType.ASK -> "View conversation..."
+            ActivityType.CHECK_IN -> "View details..."
+        }
+
+        Text(
+            text = actionText,
+            fontFamily = NotoSans,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = WaterBlue,
+            modifier = Modifier.padding(top = 12.dp)
+        )
+    }
+}
+
+// Helper function to format date for glimpse panel
+private fun formatDateForGlimpse(date: Date): String {
+    val calendar = Calendar.getInstance()
+    calendar.time = date
+    val month = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault())
+    val day = calendar.get(Calendar.DAY_OF_MONTH)
+    val year = calendar.get(Calendar.YEAR)
+    return "$month $day, $year"
 }
 
 @Composable
-private fun DashboardNavItem(icon: Int, label: String, selected: Boolean, onClick: () -> Unit = {}) {
-    val unselectedTextColor = Color(0xFF333333) // #333333 - Charcoal
-
+private fun DashboardNavItem(
+    icon: Int,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable { onClick() }
     ) {
-        Image(
-            painter = painterResource(id = icon),
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(id = icon),
             contentDescription = label,
-            modifier = Modifier.size(28.dp)
+            modifier = Modifier.size(24.dp)
         )
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                color = if (selected) StillwaterTeal else unselectedTextColor
-            )
+            fontSize = 12.sp,
+            color = if (selected) WaterBlue else Charcoal,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
-        if (selected) {
-            Box(
-                modifier = Modifier
-                    .height(2.dp)
-                    .width(32.dp)
-                    .background(StillwaterTeal)
-            )
-        }
     }
 }
 
+// Preview function
 @Preview(showBackground = true)
 @Composable
 fun RememberScreenPreview() {
     OrielleTheme {
-        // Preview placeholder - you can add sample data here
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Remember Screen Preview",
-                style = Typography.headlineMedium,
-                color = Color(0xFF333333)
-            )
-        }
+        RememberScreen(
+            navController = androidx.navigation.compose.rememberNavController()
+        )
     }
 }

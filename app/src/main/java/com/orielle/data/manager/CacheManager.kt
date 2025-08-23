@@ -8,7 +8,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.orielle.domain.model.DataType
-import com.orielle.domain.model.UserActivity
+import com.orielle.domain.model.UserActivityLevel
 import com.orielle.domain.model.CacheMetadata
 import com.orielle.util.NetworkUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,37 +38,37 @@ class CacheManager @Inject constructor(
     /**
      * Get cache timeout based on data type and user activity
      */
-    fun getCacheTimeout(dataType: DataType, userActivity: UserActivity): Long {
+    fun getCacheTimeout(dataType: DataType, userActivity: UserActivityLevel): Long {
         return when (dataType) {
             DataType.MOOD_CHECK_IN -> when (userActivity) {
-                UserActivity.ACTIVE -> 2 * 60 * 1000L      // 2 minutes for active users
-                UserActivity.INACTIVE -> 10 * 60 * 1000L    // 10 minutes for inactive users
-                UserActivity.BACKGROUND -> 30 * 60 * 1000L  // 30 minutes for background
+                UserActivityLevel.ACTIVE -> 2 * 60 * 1000L      // 2 minutes for active users
+                UserActivityLevel.INACTIVE -> 10 * 60 * 1000L    // 10 minutes for inactive users
+                UserActivityLevel.BACKGROUND -> 30 * 60 * 1000L  // 30 minutes for background
             }
             DataType.JOURNAL_ENTRY -> when (userActivity) {
-                UserActivity.ACTIVE -> 5 * 60 * 1000L       // 5 minutes for active users
-                UserActivity.INACTIVE -> 15 * 60 * 1000L    // 15 minutes for inactive users
-                UserActivity.BACKGROUND -> 60 * 60 * 1000L  // 1 hour for background
+                UserActivityLevel.ACTIVE -> 5 * 60 * 1000L       // 5 minutes for active users
+                UserActivityLevel.INACTIVE -> 15 * 60 * 1000L    // 15 minutes for inactive users
+                UserActivityLevel.BACKGROUND -> 60 * 60 * 1000L  // 1 hour for background
             }
             DataType.CHAT_MESSAGE -> when (userActivity) {
-                UserActivity.ACTIVE -> 1 * 60 * 1000L       // 1 minute for active users
-                UserActivity.INACTIVE -> 5 * 60 * 1000L     // 5 minutes for inactive users
-                UserActivity.BACKGROUND -> 15 * 60 * 1000L  // 15 minutes for background
+                UserActivityLevel.ACTIVE -> 1 * 60 * 1000L       // 1 minute for active users
+                UserActivityLevel.INACTIVE -> 5 * 60 * 1000L     // 5 minutes for inactive users
+                UserActivityLevel.BACKGROUND -> 15 * 60 * 1000L  // 15 minutes for background
             }
             DataType.USER_PROFILE -> when (userActivity) {
-                UserActivity.ACTIVE -> 10 * 60 * 1000L      // 10 minutes for active users
-                UserActivity.INACTIVE -> 30 * 60 * 1000L    // 30 minutes for inactive users
-                UserActivity.BACKGROUND -> 2 * 60 * 60 * 1000L // 2 hours for background
+                UserActivityLevel.ACTIVE -> 10 * 60 * 1000L      // 10 minutes for active users
+                UserActivityLevel.INACTIVE -> 30 * 60 * 1000L    // 30 minutes for inactive users
+                UserActivityLevel.BACKGROUND -> 2 * 60 * 60 * 1000L // 2 hours for background
             }
             DataType.TAG -> when (userActivity) {
-                UserActivity.ACTIVE -> 15 * 60 * 1000L      // 15 minutes for active users
-                UserActivity.INACTIVE -> 60 * 60 * 1000L    // 1 hour for inactive users
-                UserActivity.BACKGROUND -> 4 * 60 * 60 * 1000L // 4 hours for background
+                UserActivityLevel.ACTIVE -> 15 * 60 * 1000L      // 15 minutes for active users
+                UserActivityLevel.INACTIVE -> 60 * 60 * 1000L    // 1 hour for inactive users
+                UserActivityLevel.BACKGROUND -> 4 * 60 * 60 * 1000L // 4 hours for background
             }
             DataType.CHAT_CONVERSATION -> when (userActivity) {
-                UserActivity.ACTIVE -> 2 * 60 * 1000L       // 2 minutes for active users
-                UserActivity.INACTIVE -> 10 * 60 * 1000L    // 10 minutes for inactive users
-                UserActivity.BACKGROUND -> 30 * 60 * 1000L  // 30 minutes for background
+                UserActivityLevel.ACTIVE -> 2 * 60 * 1000L       // 2 minutes for active users
+                UserActivityLevel.INACTIVE -> 10 * 60 * 1000L    // 10 minutes for inactive users
+                UserActivityLevel.BACKGROUND -> 30 * 60 * 1000L  // 30 minutes for background
             }
         }
     }
@@ -115,14 +115,14 @@ class CacheManager @Inject constructor(
     suspend fun updateUserActivity() {
         context.cacheDataStore.edit { preferences ->
             preferences[CacheKeys.LAST_USER_ACTIVITY] = System.currentTimeMillis()
-            preferences[CacheKeys.USER_ACTIVITY_LEVEL] = UserActivity.ACTIVE.ordinal.toLong()
+            preferences[CacheKeys.USER_ACTIVITY_LEVEL] = UserActivityLevel.ACTIVE.ordinal.toLong()
         }
     }
 
     /**
      * Get current user activity level
      */
-    private suspend fun getUserActivityLevel(): UserActivity {
+    private suspend fun getUserActivityLevel(): UserActivityLevel {
         val lastActivity = context.cacheDataStore.data.map { preferences ->
             preferences[CacheKeys.LAST_USER_ACTIVITY] ?: 0L
         }.first()
@@ -130,9 +130,9 @@ class CacheManager @Inject constructor(
         val timeSinceLastActivity = System.currentTimeMillis() - lastActivity
 
         return when {
-            timeSinceLastActivity < 5 * 60 * 1000L -> UserActivity.ACTIVE      // 5 minutes
-            timeSinceLastActivity < 30 * 60 * 1000L -> UserActivity.INACTIVE   // 30 minutes
-            else -> UserActivity.BACKGROUND
+            timeSinceLastActivity < 5 * 60 * 1000L -> UserActivityLevel.ACTIVE      // 5 minutes
+            timeSinceLastActivity < 30 * 60 * 1000L -> UserActivityLevel.INACTIVE   // 30 minutes
+            else -> UserActivityLevel.BACKGROUND
         }
     }
 
