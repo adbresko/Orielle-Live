@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -25,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +37,7 @@ import com.orielle.ui.theme.OrielleTheme
 import com.orielle.domain.model.CalendarDay
 import com.orielle.domain.model.UserActivity
 import com.orielle.domain.model.ActivityType
+import com.orielle.ui.components.BottomNavigation
 import com.orielle.R
 import java.util.Date
 import java.util.Calendar
@@ -61,77 +66,82 @@ fun RememberScreen(
             )
         },
         bottomBar = {
-            // Navigation bar with minimal styling
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(if (MaterialTheme.colorScheme.background == DarkGray) Color(0xFF1A1A1A) else Color.White)
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                DashboardNavItem(
-                    icon = R.drawable.ic_orielle_drop,
-                    label = "Home",
-                    selected = false,
-                    onClick = { navController.navigate("home_graph") }
-                )
-                DashboardNavItem(
-                    icon = R.drawable.reflect,
-                    label = "Reflect",
-                    selected = false,
-                    onClick = { navController.navigate("reflect") }
-                )
-                DashboardNavItem(
-                    icon = R.drawable.ask,
-                    label = "Ask",
-                    selected = false,
-                    onClick = { navController.navigate("ask") }
-                )
-                DashboardNavItem(
-                    icon = R.drawable.remember,
-                    label = "Remember",
-                    selected = true,
-                    onClick = { /* Already on remember */ }
-                )
-            }
+            BottomNavigation(
+                navController = navController,
+                currentRoute = "remember"
+            )
         }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(SoftSand)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = 20.dp)
             ) {
-                // Calendar Component
-                CalendarComponent(
+                // Calendar Section
+                CalendarSection(
                     calendarDays = uiState.calendarDays,
                     currentMonthYear = uiState.currentMonthYear,
+                    selectedDay = uiState.selectedDay,
+                    showMonthSelector = uiState.showMonthSelector,
+                    showYearSelector = uiState.showYearSelector,
+                    onDayClick = { viewModel.onDayClick(it) },
                     onNextMonth = { viewModel.nextMonth() },
                     onPreviousMonth = { viewModel.previousMonth() },
-                    onDayClick = { viewModel.onDayClick(it) },
                     onMonthClick = { viewModel.showMonthSelector() },
-                    onYearClick = { viewModel.showYearSelector() }
+                    onYearClick = { viewModel.showYearSelector() },
+                    onSelectMonth = { viewModel.selectMonth(it) },
+                    onSelectYear = { viewModel.selectYear(it) },
+                    onHideMonthSelector = { viewModel.hideMonthSelector() },
+                    onHideYearSelector = { viewModel.hideYearSelector() }
                 )
+
             }
 
-            // Daily Glimpse Panel - positioned at bottom
-            if (uiState.showDayDetail && uiState.selectedDay != null) {
+            // Loading indicator
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = WaterBlue)
+                }
+            }
+
+            // Error message
+            if (uiState.error != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = uiState.error!!,
+                        color = Color.Red,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            // Daily Glimpse Panel - Display as overlay
+            if (uiState.selectedDay != null && uiState.showDayDetail) {
                 DailyGlimpsePanel(
                     day = uiState.selectedDay!!,
-                    onDismiss = { viewModel.hideDayDetail() },
+                    onDismiss = { viewModel.onDayDetailDismiss() },
                     onNavigateToDetail = { activity ->
                         when (activity.activityType) {
                             ActivityType.REFLECT -> navController.navigate("journal_detail/${activity.relatedId}")
                             ActivityType.ASK -> navController.navigate("conversation_detail/${activity.relatedId}")
-                            ActivityType.CHECK_IN -> navController.navigate("mood_detail")
+                            ActivityType.CHECK_IN -> navController.navigate("mood_check_in")
                         }
-                        viewModel.hideDayDetail()
                     }
                 )
             }
@@ -231,47 +241,100 @@ private fun SearchBar(
 }
 
 @Composable
-private fun CalendarComponent(
+private fun CalendarSection(
     calendarDays: List<CalendarDay>,
     currentMonthYear: String,
+    selectedDay: CalendarDay?,
+    showMonthSelector: Boolean,
+    showYearSelector: Boolean,
+    onDayClick: (CalendarDay) -> Unit,
     onNextMonth: () -> Unit,
     onPreviousMonth: () -> Unit,
-    onDayClick: (CalendarDay) -> Unit,
     onMonthClick: () -> Unit,
-    onYearClick: () -> Unit
+    onYearClick: () -> Unit,
+    onSelectMonth: (Int) -> Unit,
+    onSelectYear: (Int) -> Unit,
+    onHideMonthSelector: () -> Unit,
+    onHideYearSelector: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(410.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(19.dp)
+    Box {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(if (showMonthSelector || showYearSelector) 610.dp else 410.dp), // Expand height when dropdowns are shown
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            // Month/Year Header with Navigation
-            MonthYearHeader(
-                monthYear = currentMonthYear,
-                onNextMonth = onNextMonth,
-                onPreviousMonth = onPreviousMonth,
-                onMonthClick = onMonthClick,
-                onYearClick = onYearClick
-            )
+            Column(
+                modifier = Modifier.padding(19.dp)
+            ) {
+                // Month/Year Header with Navigation
+                MonthYearHeader(
+                    monthYear = currentMonthYear,
+                    showMonthSelector = showMonthSelector,
+                    showYearSelector = showYearSelector,
+                    onNextMonth = onNextMonth,
+                    onPreviousMonth = onPreviousMonth,
+                    onMonthClick = onMonthClick,
+                    onYearClick = onYearClick,
+                    onSelectMonth = onSelectMonth,
+                    onSelectYear = onSelectYear,
+                    onHideMonthSelector = onHideMonthSelector,
+                    onHideYearSelector = onHideYearSelector
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                if (!showMonthSelector && !showYearSelector) {
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            // Day Headers
-            DayHeaders()
+                    // Day Headers
+                    DayHeaders()
 
-            Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-            // Calendar Grid
-            CalendarGrid(
-                calendarDays = calendarDays,
-                onDayClick = onDayClick
-            )
+                    // Calendar Grid
+                    CalendarGrid(
+                        calendarDays = calendarDays,
+                        selectedDay = selectedDay,
+                        onDayClick = onDayClick
+                    )
+                }
+            }
+        }
+
+        // Invisible overlay to close dropdowns when clicking outside
+        if (showMonthSelector || showYearSelector) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable {
+                        onHideMonthSelector()
+                        onHideYearSelector()
+                    }
+            ) {
+                // Position the dropdowns above the overlay so they're clickable
+                if (showMonthSelector) {
+                    val currentMonth = currentMonthYear.split(" ")[0]
+                    val monthIndex = listOf("January", "February", "March", "April", "May", "June",
+                        "July", "August", "September", "October", "November", "December").indexOf(currentMonth)
+
+                    MonthSelector(
+                        currentSelectedMonth = if (monthIndex >= 0) monthIndex else Calendar.getInstance().get(Calendar.MONTH),
+                        onSelectMonth = onSelectMonth,
+                        onDismiss = onHideMonthSelector
+                    )
+                }
+
+                if (showYearSelector) {
+                    val currentYear = currentMonthYear.split(" ").getOrNull(1)?.toIntOrNull() ?: Calendar.getInstance().get(Calendar.YEAR)
+
+                    YearSelector(
+                        currentSelectedYear = currentYear,
+                        onSelectYear = onSelectYear,
+                        onDismiss = onHideYearSelector
+                    )
+                }
+            }
         }
     }
 }
@@ -279,85 +342,202 @@ private fun CalendarComponent(
 @Composable
 private fun MonthYearHeader(
     monthYear: String,
+    showMonthSelector: Boolean,
+    showYearSelector: Boolean,
     onNextMonth: () -> Unit,
     onPreviousMonth: () -> Unit,
     onMonthClick: () -> Unit,
-    onYearClick: () -> Unit
+    onYearClick: () -> Unit,
+    onSelectMonth: (Int) -> Unit,
+    onSelectYear: (Int) -> Unit,
+    onHideMonthSelector: () -> Unit,
+    onHideYearSelector: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Previous month arrow
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = "Previous month",
+                tint = Charcoal,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onPreviousMonth() }
+            )
+
+            // Month dropdown
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val parts = monthYear.split(" ")
+                Text(
+                    text = if (parts.isNotEmpty()) parts[0] else "Loading...", // Month name
+                    fontFamily = NotoSans,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Charcoal,
+                    modifier = Modifier.clickable { onMonthClick() }
+                )
+
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Month dropdown",
+                    tint = Charcoal,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable { onMonthClick() }
+                )
+            }
+
+            // Year dropdown
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val parts = monthYear.split(" ")
+                Text(
+                    text = if (parts.size >= 2) parts[1] else "2024", // Year
+                    fontFamily = NotoSans,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Charcoal,
+                    modifier = Modifier.clickable { onYearClick() }
+                )
+
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Year dropdown",
+                    tint = Charcoal,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable { onYearClick() }
+                )
+            }
+
+            // Next month arrow
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Next month",
+                tint = Charcoal,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onNextMonth() }
+            )
+        }
+
+
+    }
+}
+
+@Composable
+private fun MonthSelector(
+    currentSelectedMonth: Int,
+    onSelectMonth: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val months = listOf(
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        // Previous month arrow
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-            contentDescription = "Previous month",
-            tint = Charcoal,
-            modifier = Modifier
-                .size(24.dp)
-                .clickable { onPreviousMonth() }
-        )
-
-        // Month dropdown
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        LazyColumn(
+            modifier = Modifier.heightIn(max = 200.dp),
+            state = rememberLazyListState(initialFirstVisibleItemIndex = maxOf(0, currentSelectedMonth - 2))
         ) {
-            val parts = monthYear.split(" ")
-            Text(
-                text = if (parts.isNotEmpty()) parts[0] else "Loading...", // Month name
-                fontFamily = NotoSans,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Charcoal,
-                modifier = Modifier.clickable { onMonthClick() }
-            )
+            items(months.size) { index ->
+                val month = months[index]
+                val isSelected = index == currentSelectedMonth
 
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = "Month dropdown",
-                tint = Charcoal,
-                modifier = Modifier
-                    .size(24.dp)
-                    .clickable { onMonthClick() }
-            )
+                Text(
+                    text = month,
+                    fontFamily = NotoSans,
+                    fontSize = 16.sp,
+                    color = if (isSelected) WaterBlue else Charcoal,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(if (isSelected) WaterBlue.copy(alpha = 0.1f) else Color.Transparent)
+                        .clickable {
+                            onSelectMonth(index)
+                            onDismiss()
+                        }
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                )
+                if (index < months.size - 1) {
+                    HorizontalDivider(
+                        color = Color(0xFFE0E0E0),
+                        thickness = 0.5.dp,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+            }
         }
+    }
+}
 
-        // Year dropdown
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+@Composable
+private fun YearSelector(
+    currentSelectedYear: Int,
+    onSelectYear: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+    val years = (currentYear - 5..currentYear + 5).toList() // 5 years back, 5 years forward
+    val selectedIndex = years.indexOf(currentSelectedYear).takeIf { it >= 0 } ?: years.indexOf(currentYear)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        LazyColumn(
+            modifier = Modifier.heightIn(max = 200.dp),
+            state = rememberLazyListState(initialFirstVisibleItemIndex = maxOf(0, selectedIndex - 2))
         ) {
-            val parts = monthYear.split(" ")
-            Text(
-                text = if (parts.size >= 2) parts[1] else "2024", // Year
-                fontFamily = NotoSans,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Charcoal,
-                modifier = Modifier.clickable { onYearClick() }
-            )
+            items(years.size) { index ->
+                val year = years[index]
+                val isSelected = year == currentSelectedYear
 
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = "Year dropdown",
-                tint = Charcoal,
-                modifier = Modifier
-                    .size(24.dp)
-                    .clickable { onYearClick() }
-            )
+                Text(
+                    text = year.toString(),
+                    fontFamily = NotoSans,
+                    fontSize = 16.sp,
+                    color = if (isSelected) WaterBlue else Charcoal,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(if (isSelected) WaterBlue.copy(alpha = 0.1f) else Color.Transparent)
+                        .clickable {
+                            onSelectYear(year)
+                            onDismiss()
+                        }
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                )
+                if (index < years.size - 1) {
+                    HorizontalDivider(
+                        color = Color(0xFFE0E0E0),
+                        thickness = 0.5.dp,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+            }
         }
-
-        // Next month arrow
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = "Next month",
-            tint = Charcoal,
-            modifier = Modifier
-                .size(24.dp)
-                .clickable { onNextMonth() }
-        )
     }
 }
 
@@ -385,6 +565,7 @@ private fun DayHeaders() {
 @Composable
 private fun CalendarGrid(
     calendarDays: List<CalendarDay>,
+    selectedDay: CalendarDay?,
     onDayClick: (CalendarDay) -> Unit
 ) {
     LazyVerticalGrid(
@@ -395,6 +576,7 @@ private fun CalendarGrid(
         items(calendarDays) { day ->
             CalendarDayCell(
                 day = day,
+                isSelected = selectedDay?.let { it.dayOfMonth == day.dayOfMonth && it.date.time == day.date.time } ?: false,
                 onClick = { onDayClick(day) }
             )
         }
@@ -404,6 +586,7 @@ private fun CalendarGrid(
 @Composable
 private fun CalendarDayCell(
     day: CalendarDay,
+    isSelected: Boolean,
     onClick: () -> Unit
 ) {
     if (day.dayOfMonth == 0) {
@@ -422,6 +605,7 @@ private fun CalendarDayCell(
                 .background(
                     when {
                         day.isToday -> WaterBlue
+                        isSelected -> WaterBlue.copy(alpha = 0.3f)
                         else -> Color.Transparent
                     }
                 ),
@@ -436,29 +620,19 @@ private fun CalendarDayCell(
                 color = if (day.isToday) Color.White else Charcoal
             )
 
-            // Debug: Show activity count
-            if (day.activities.isNotEmpty()) {
-                Text(
-                    text = "${day.activities.size}",
-                    fontSize = 8.sp,
-                    color = Color.Red,
-                    modifier = Modifier.align(Alignment.TopEnd)
-                )
-            }
-
             // Activity indicators (dots) - positioned at bottom
-            if (day.activities.isNotEmpty()) {
-                Column(
+            if (day.hasReflectActivity || day.hasAskActivity || day.hasCheckInActivity) {
+                Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 2.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                        .padding(bottom = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     // Reflection dot (teal)
                     if (day.hasReflectActivity) {
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(6.dp)
                                 .clip(CircleShape)
                                 .background(StillwaterTeal)
                         )
@@ -468,17 +642,17 @@ private fun CalendarDayCell(
                     if (day.hasAskActivity) {
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(6.dp)
                                 .clip(CircleShape)
                                 .background(AuroraGold)
                         )
                     }
 
-                    // Check-in dot (blue)
+                    // Check-in dot (blue/water blue)
                     if (day.hasCheckInActivity) {
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(6.dp)
                                 .clip(CircleShape)
                                 .background(WaterBlue)
                         )
@@ -505,8 +679,9 @@ private fun DailyGlimpsePanel(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(380.dp)
-                .align(Alignment.BottomCenter),
+                .height(500.dp) // Increased height to cover more of the screen
+                .align(Alignment.BottomCenter)
+                .offset(y = 80.dp), // Offset to overhang the bottom navigation
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = if (isDark) Color(0xFF2A2A2A) else Color.White
@@ -689,31 +864,7 @@ private fun formatDateForGlimpse(date: Date): String {
     return "$month $day, $year"
 }
 
-@Composable
-private fun DashboardNavItem(
-    icon: Int,
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
-    ) {
-        androidx.compose.foundation.Image(
-            painter = androidx.compose.ui.res.painterResource(id = icon),
-            contentDescription = label,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            color = if (selected) WaterBlue else Charcoal,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-        )
-    }
-}
+
 
 // Preview function
 @Preview(showBackground = true)

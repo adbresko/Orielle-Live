@@ -251,8 +251,21 @@ fun AppNavigation(
             AskScreen(navController = navController)
         }
 
-        composable("ask_tagging") {
-            AskTaggingScreen(navController = navController)
+        composable(
+            "ask_tagging?conversationId={conversationId}",
+            arguments = listOf(
+                navArgument("conversationId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val conversationId = backStackEntry.arguments?.getString("conversationId")
+            AskTaggingScreen(
+                navController = navController,
+                conversationId = conversationId
+            )
         }
 
         // Reflect/Journal screens

@@ -55,111 +55,20 @@ class SplashActivity : ComponentActivity() {
 @OptIn(UnstableApi::class)
 @Composable
 fun VideoBrandingScreen(onExperienceEnd: () -> Unit) {
-    val context = LocalContext.current
-
-    // Animation states for the different text elements
-    var brandTextVisible by remember { mutableStateOf(false) }
-    val brandTextAlpha by animateFloatAsState(
-        targetValue = if (brandTextVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = 1500),
-        label = "brand text fade"
-    )
-
-    var arrivalTextVisible by remember { mutableStateOf(false) }
-    val arrivalTextAlpha by animateFloatAsState(
-        targetValue = if (arrivalTextVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = 1500),
-        label = "arrival text fade"
-    )
-
-    // Trigger animations with delays
+    // Immediately navigate to main app, skipping the video
     LaunchedEffect(Unit) {
-        delay(500)
-        brandTextVisible = true
-        delay(1000) // Wait a bit longer for the arrival text
-        arrivalTextVisible = true
+        onExperienceEnd()
     }
 
-    val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            val mediaItem = MediaItem.fromUri("android.resource://${context.packageName}/${R.raw.brand_intro}")
-            setMediaItem(mediaItem)
-            playWhenReady = true
-            prepare()
-        }
-    }
-
-    DisposableEffect(exoPlayer) {
-        val listener = object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_ENDED) {
-                    onExperienceEnd()
-                }
-            }
-        }
-        exoPlayer.addListener(listener)
-        onDispose {
-            exoPlayer.removeListener(listener)
-            exoPlayer.release()
-        }
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Video Player Background
-        AndroidView(
-            factory = {
-                PlayerView(it).apply {
-                    player = exoPlayer
-                    useController = false
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                }
-            },
-            modifier = Modifier.fillMaxSize()
+    // Simple loading screen while transitioning
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "ORIELLE",
+            style = MaterialTheme.typography.displayMedium,
+            color = Color.White.copy(alpha = 0.8f)
         )
-
-        // "ORIELLE" Text Overlay (Centered)
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "ORIELLE",
-                style = MaterialTheme.typography.displayMedium,
-                color = Color.White.copy(alpha = 0.8f),
-                modifier = Modifier.alpha(brandTextAlpha)
-            )
-        }
-
-        // "Arrival" Text and Skip Button Overlay (Bottom)
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 90.dp, start = 24.dp, end = 24.dp)
-                .alpha(arrivalTextAlpha), // Fade in the whole column
-            verticalArrangement = Arrangement.Bottom,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "You belong in this moment.",
-                style = MaterialTheme.typography.headlineSmall,
-                color = Color.White.copy(alpha = 0.9f),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Take a breath.",
-                style = MaterialTheme.typography.headlineSmall,
-                color = Color.White.copy(alpha = 0.9f),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-            TextButton(onClick = onExperienceEnd) {
-                Text(
-                    "Skip",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-            }
-        }
     }
 }

@@ -22,10 +22,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import dagger.hilt.android.lifecycle.HiltViewModel
+import timber.log.Timber
 import javax.inject.Inject
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
@@ -35,8 +38,14 @@ import com.orielle.ui.theme.*
 @Composable
 fun AskTaggingScreen(
     navController: NavController,
+    conversationId: String? = null,
     viewModel: AskTaggingViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
+
+    // Set conversation ID in ViewModel
+    LaunchedEffect(conversationId) {
+        conversationId?.let { viewModel.setConversationId(it) }
+    }
     val uiState by viewModel.uiState.collectAsState()
     val isDark = MaterialTheme.colorScheme.background == DarkGray
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -282,10 +291,19 @@ data class AskTaggingUiState(
 )
 
 @HiltViewModel
-class AskTaggingViewModel @Inject constructor() : ViewModel() {
+class AskTaggingViewModel @Inject constructor(
+    private val chatRepository: com.orielle.domain.repository.ChatRepository,
+    private val sessionManager: com.orielle.domain.manager.SessionManager
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AskTaggingUiState())
     val uiState: StateFlow<AskTaggingUiState> = _uiState.asStateFlow()
+
+    private var conversationId: String? = null
+
+    fun setConversationId(id: String) {
+        conversationId = id
+    }
 
     fun toggleSuggestedTag(tag: String) {
         val currentTags = _uiState.value.selectedTags
@@ -310,8 +328,45 @@ class AskTaggingViewModel @Inject constructor() : ViewModel() {
     }
 
     fun saveConversation() {
-        // TODO: Implement actual saving logic
-        // This would save the conversation with the selected tags
+        val convId = conversationId
+        if (convId == null) {
+            Timber.e("No conversation ID set for saving")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+
+                // Update conversation saved status
+                val savedResult = chatRepository.updateConversationSavedStatus(convId, true)
+                when (savedResult) {
+                    is com.orielle.domain.model.Response.Success -> {
+                        Timber.d("Successfully marked conversation as saved: $convId")
+
+                        // TODO: Also update conversation with tags
+                        // This would require an updateConversationTags method in the repository
+
+                    }
+                    is com.orielle.domain.model.Response.Failure -> {
+                        Timber.e(savedResult.exception, "Failed to save conversation")
+                        _uiState.value = _uiState.value.copy(
+                            error = "Failed to save conversation: ${savedResult.exception?.message ?: "Unknown error"}"
+                        )
+                    }
+                    else -> {
+                        Timber.e("Unknown response type when saving conversation")
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error in saveConversation")
+                _uiState.value = _uiState.value.copy(
+                    error = "Error saving conversation: ${e.message}"
+                )
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
+        }
     }
 }
 

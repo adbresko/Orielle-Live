@@ -90,7 +90,23 @@ class RememberSearchViewModel @Inject constructor(
                     is Response.Success -> moodCheckInsResponse.data
                     else -> emptyList()
                 }
-                val moodActivities = moodCheckIns.map { checkIn ->
+
+                // Deduplicate mood check-ins by grouping by date and keeping only the most recent one per day
+                val deduplicatedMoodCheckIns = moodCheckIns
+                    .groupBy { checkIn ->
+                        // Group by date (year, month, day) to avoid duplicates on the same day
+                        val calendar = java.util.Calendar.getInstance()
+                        calendar.time = checkIn.timestamp
+                        Triple(calendar.get(java.util.Calendar.YEAR), calendar.get(java.util.Calendar.MONTH), calendar.get(java.util.Calendar.DAY_OF_MONTH))
+                    }
+                    .mapValues { (_, checkIns) ->
+                        // Keep the most recent check-in for each day
+                        checkIns.maxByOrNull { it.timestamp }
+                    }
+                    .values
+                    .filterNotNull()
+
+                val moodActivities = deduplicatedMoodCheckIns.map { checkIn ->
                     UserActivity(
                         id = checkIn.id,
                         userId = checkIn.userId,

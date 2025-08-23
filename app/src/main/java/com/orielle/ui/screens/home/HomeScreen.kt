@@ -74,6 +74,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import com.orielle.ui.theme.OrielleTheme
 import com.orielle.ui.components.WaterDropLoading
 import com.orielle.ui.util.ScreenUtils
+import com.orielle.ui.components.BottomNavigation
 
 // Import the WeeklyMoodView composable from the same package (auto-resolved)
 
@@ -199,40 +200,10 @@ fun HomeDashboardScreen(
             }
         },
         bottomBar = {
-            // Navigation bar with minimal styling
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(if (isDark) Color(0xFF1A1A1A) else Color.White)
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                DashboardNavItem(
-                    icon = R.drawable.ic_orielle_drop,
-                    label = "Home",
-                    selected = true,
-                    onClick = { /* Already on home */ }
-                )
-                DashboardNavItem(
-                    icon = R.drawable.reflect,
-                    label = "Reflect",
-                    selected = false,
-                    onClick = { navController.navigate("reflect") }
-                )
-                DashboardNavItem(
-                    icon = R.drawable.ask,
-                    label = "Ask",
-                    selected = false,
-                    onClick = { navController.navigate("ask") }
-                )
-                DashboardNavItem(
-                    icon = R.drawable.remember,
-                    label = "Remember",
-                    selected = false,
-                    onClick = { navController.navigate("remember") }
-                )
-            }
+            BottomNavigation(
+                navController = navController,
+                currentRoute = "home_graph"
+            )
         }
     ) { innerPadding ->
         Column(

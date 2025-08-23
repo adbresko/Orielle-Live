@@ -38,6 +38,8 @@ class AskViewModel @Inject constructor(
 
     private var currentConversationId: String? = null
 
+    fun getCurrentConversationId(): String? = currentConversationId
+
     private val orielleResponses = listOf(
         "I hear you. Can you tell me more about what you're feeling right now?",
         "That sounds really meaningful. What made that moment stand out to you?",

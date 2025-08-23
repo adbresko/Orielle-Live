@@ -42,6 +42,7 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AskScreen(
@@ -71,11 +72,13 @@ fun AskScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(backgroundColor)
+                .padding(paddingValues)
         ) {
             // Header
             TopAppBar(
@@ -167,7 +170,12 @@ fun AskScreen(
             ChoiceModal(
                 onSaveConversation = {
                     viewModel.hideChoiceModal()
-                    navController.navigate("ask_tagging")
+                    val conversationId = viewModel.getCurrentConversationId()
+                    if (conversationId != null) {
+                        navController.navigate("ask_tagging?conversationId=$conversationId")
+                    } else {
+                        navController.navigate("ask_tagging")
+                    }
                 },
                 onLetItGo = {
                     viewModel.letItGo()

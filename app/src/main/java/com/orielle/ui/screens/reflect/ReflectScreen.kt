@@ -30,6 +30,7 @@ import com.orielle.domain.model.DefaultJournalPrompts
 import com.orielle.domain.model.JournalEntry
 import com.orielle.domain.model.JournalEntryType
 import com.orielle.ui.theme.*
+import com.orielle.ui.components.BottomNavigation
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -47,50 +48,10 @@ fun ReflectScreen(
 
     Scaffold(
         bottomBar = {
-            // Bottom Navigation Bar
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = cardColor
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    DashboardNavItem(
-                        icon = R.drawable.ic_orielle_drop,
-                        label = "Home",
-                        selected = false,
-                        onClick = { navController.navigate("home_graph") }
-                    )
-                    DashboardNavItem(
-                        icon = R.drawable.reflect,
-                        label = "Reflect",
-                        selected = true,
-                        onClick = { /* Already on reflect */ }
-                    )
-                    DashboardNavItem(
-                        icon = R.drawable.ask,
-                        label = "Ask",
-                        selected = false,
-                        onClick = { navController.navigate("ask") }
-                    )
-                    DashboardNavItem(
-                        icon = R.drawable.remember,
-                        label = "Remember",
-                        selected = false,
-                        onClick = { navController.navigate("remember") }
-                    )
-                }
-            }
+            BottomNavigation(
+                navController = navController,
+                currentRoute = "reflect"
+            )
         }
     ) { paddingValues ->
         Column(
@@ -366,35 +327,7 @@ private fun LookBackModule(
     }
 }
 
-@Composable
-private fun DashboardNavItem(icon: Int, label: String, selected: Boolean, onClick: () -> Unit = {}) {
-    val unselectedTextColor = Color(0xFF333333) // #333333 - Charcoal
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
-    ) {
-        Image(
-            painter = painterResource(id = icon),
-            contentDescription = label,
-            modifier = Modifier.size(28.dp)
-        )
-        Text(
-            text = label,
-            style = Typography.bodyMedium.copy(
-                color = if (selected) StillwaterTeal else unselectedTextColor
-            )
-        )
-        if (selected) {
-            Box(
-                modifier = Modifier
-                    .height(2.dp)
-                    .width(32.dp)
-                    .background(StillwaterTeal)
-            )
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable

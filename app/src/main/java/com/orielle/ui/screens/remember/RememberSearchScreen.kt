@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -27,9 +27,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.painterResource
 import com.orielle.ui.theme.*
 import com.orielle.domain.model.UserActivity
 import com.orielle.domain.model.ActivityType
+import com.orielle.R
 import java.util.Date
 
 @Composable
@@ -50,50 +52,75 @@ fun RememberSearchScreen(
             )
         }
     ) { paddingValues ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Search Input
-            SearchInput(
-                query = uiState.searchQuery,
-                onQueryChange = { viewModel.updateSearchQuery(it) }
-            )
+            item {
+                // Search Input
+                SearchInput(
+                    query = uiState.searchQuery,
+                    onQueryChange = { viewModel.updateSearchQuery(it) }
+                )
+            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
-            // Filter Sections
-            FilterSection(
-                selectedTypes = uiState.selectedTypes,
-                selectedMoods = uiState.selectedMoods,
-                selectedTags = uiState.selectedTags,
-                availableMoods = uiState.availableMoods,
-                availableTags = uiState.availableTags,
-                onTypeToggle = { viewModel.toggleTypeFilter(it) },
-                onMoodToggle = { viewModel.toggleMoodFilter(it) },
-                onTagToggle = { viewModel.toggleTagFilter(it) }
-            )
+            item {
+                // Filter Sections
+                FilterSection(
+                    selectedTypes = uiState.selectedTypes,
+                    selectedMoods = uiState.selectedMoods,
+                    selectedTags = uiState.selectedTags,
+                    availableMoods = uiState.availableMoods,
+                    availableTags = uiState.availableTags,
+                    onTypeToggle = { viewModel.toggleTypeFilter(it) },
+                    onMoodToggle = { viewModel.toggleMoodFilter(it) },
+                    onTagToggle = { viewModel.toggleTagFilter(it) }
+                )
+            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             // Results Section
             if (uiState.filteredResults.isEmpty() && (uiState.searchQuery.isNotEmpty() ||
                         uiState.selectedTypes.isNotEmpty() || uiState.selectedMoods.isNotEmpty() ||
                         uiState.selectedTags.isNotEmpty())) {
-                EmptySearchResults()
-            } else {
-                ResultsList(
-                    results = uiState.filteredResults,
-                    onResultClick = { activity ->
-                        when (activity.activityType) {
-                            ActivityType.REFLECT -> navController.navigate("journal_detail/${activity.relatedId}")
-                            ActivityType.ASK -> navController.navigate("conversation_detail/${activity.relatedId}")
-                            ActivityType.CHECK_IN -> navController.navigate("mood_detail")
+                item {
+                    EmptySearchResults()
+                }
+            } else if (uiState.filteredResults.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Results (${uiState.filteredResults.size})",
+                        fontFamily = NotoSans,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Charcoal,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+
+                items(uiState.filteredResults) { activity ->
+                    SearchResultCard(
+                        activity = activity,
+                        onClick = {
+                            when (activity.activityType) {
+                                ActivityType.REFLECT -> navController.navigate("journal_detail/${activity.relatedId}")
+                                ActivityType.ASK -> navController.navigate("conversation_detail/${activity.relatedId}")
+                                ActivityType.CHECK_IN -> navController.navigate("mood_detail")
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }
@@ -117,7 +144,7 @@ private fun SearchTopBar(
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = MaterialTheme.colorScheme.onSurface
                 )
@@ -356,14 +383,71 @@ private fun MoodFilterChip(
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = mood.take(2).uppercase(),
-            fontFamily = NotoSans,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (isSelected) WaterBlue else Charcoal,
-            textAlign = TextAlign.Center
-        )
+        // Use mood icons without tint to preserve their native designed colors
+        when (mood.lowercase()) {
+            "happy" -> Icon(
+                painter = painterResource(id = R.drawable.ic_happy),
+                contentDescription = "Happy",
+                tint = Color.Unspecified, // No tint - preserve native colors
+                modifier = Modifier.size(20.dp)
+            )
+            "sad" -> Icon(
+                painter = painterResource(id = R.drawable.ic_sad),
+                contentDescription = "Sad",
+                tint = Color.Unspecified, // No tint - preserve native colors
+                modifier = Modifier.size(20.dp)
+            )
+            "angry" -> Icon(
+                painter = painterResource(id = R.drawable.ic_angry),
+                contentDescription = "Angry",
+                tint = Color.Unspecified, // No tint - preserve native colors
+                modifier = Modifier.size(20.dp)
+            )
+            "peaceful" -> Icon(
+                painter = painterResource(id = R.drawable.ic_peaceful),
+                contentDescription = "Peaceful",
+                tint = Color.Unspecified, // No tint - preserve native colors
+                modifier = Modifier.size(20.dp)
+            )
+            "playful" -> Icon(
+                painter = painterResource(id = R.drawable.ic_playful),
+                contentDescription = "Playful",
+                tint = Color.Unspecified, // No tint - preserve native colors
+                modifier = Modifier.size(20.dp)
+            )
+            "scared" -> Icon(
+                painter = painterResource(id = R.drawable.ic_scared),
+                contentDescription = "Scared",
+                tint = Color.Unspecified, // No tint - preserve native colors
+                modifier = Modifier.size(20.dp)
+            )
+            "shy" -> Icon(
+                painter = painterResource(id = R.drawable.ic_shy),
+                contentDescription = "Shy",
+                tint = Color.Unspecified, // No tint - preserve native colors
+                modifier = Modifier.size(20.dp)
+            )
+            "surprised" -> Icon(
+                painter = painterResource(id = R.drawable.ic_surprised),
+                contentDescription = "Surprised",
+                tint = Color.Unspecified, // No tint - preserve native colors
+                modifier = Modifier.size(20.dp)
+            )
+            "frustrated" -> Icon(
+                painter = painterResource(id = R.drawable.ic_frustrated),
+                contentDescription = "Frustrated",
+                tint = Color.Unspecified, // No tint - preserve native colors
+                modifier = Modifier.size(20.dp)
+            )
+            else -> Text(
+                text = mood.take(2).uppercase(),
+                fontFamily = NotoSans,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) WaterBlue else Charcoal,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
@@ -500,22 +584,22 @@ private fun SearchResultCard(
                 )
             }
 
-            // Preview content
+            // Preview content or mood info
             if (activity.preview != null) {
                 Text(
                     text = activity.preview,
                     fontFamily = NotoSans,
                     fontSize = 14.sp,
                     color = Color(0xFF666666),
-                    maxLines = 3,
+                    maxLines = 2,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
 
-            // Tags
-            if (activity.tags.isNotEmpty()) {
+            // Tags (only show if there are tags and it's not a mood check-in)
+            if (activity.tags.isNotEmpty() && activity.activityType != ActivityType.CHECK_IN) {
                 Row(
-                    modifier = Modifier.padding(top = 12.dp),
+                    modifier = Modifier.padding(top = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     activity.tags.take(3).forEach { tag ->
@@ -547,18 +631,6 @@ private fun SearchResultCard(
                         )
                     }
                 }
-            }
-
-            // Mood for check-ins
-            if (activity.activityType == ActivityType.CHECK_IN && activity.mood != null) {
-                Text(
-                    text = "Mood: ${activity.mood}",
-                    fontFamily = NotoSans,
-                    fontSize = 12.sp,
-                    color = WaterBlue,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
             }
         }
     }

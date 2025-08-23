@@ -30,9 +30,9 @@ class RememberViewModel @Inject constructor(
 
     init {
         // Initialize with current month to prevent crashes
-        val calendar = Calendar.getInstance()
-        val month = calendar.get(Calendar.MONTH)
-        val year = calendar.get(Calendar.YEAR)
+        currentMonth = Calendar.getInstance()
+        val month = currentMonth.get(Calendar.MONTH)
+        val year = currentMonth.get(Calendar.YEAR)
         _uiState.value = _uiState.value.copy(
             currentMonthYear = "${getMonthName(month)} $year"
         )
@@ -46,6 +46,7 @@ class RememberViewModel @Inject constructor(
             try {
                 // Load journal entries and convert to activities
                 val journalEntries = journalRepository.getJournalEntries().first()
+                println("DEBUG: Loaded ${journalEntries.size} journal entries")
                 val journalActivities = journalEntries.map { entry ->
                     UserActivity(
                         id = entry.id,
@@ -63,29 +64,42 @@ class RememberViewModel @Inject constructor(
                 // Load conversations and convert to activities
                 val conversationsResponse = chatRepository.getConversationsForUser().first()
                 val conversationActivities = when (conversationsResponse) {
-                    is Response.Success -> conversationsResponse.data
-                        .filter { it.isSaved }
-                        .map { conversation ->
-                            UserActivity(
-                                id = conversation.id,
-                                userId = conversation.userId,
-                                activityType = ActivityType.ASK,
-                                timestamp = conversation.updatedAt,
-                                relatedId = conversation.id,
-                                title = conversation.title,
-                                preview = conversation.lastMessagePreview,
-                                tags = conversation.tags
-                            )
-                        }
-                    else -> emptyList()
+                    is Response.Success -> {
+                        println("DEBUG: Loaded ${conversationsResponse.data.size} conversations")
+                        conversationsResponse.data
+                            .filter { it.isSaved }
+                            .map { conversation ->
+                                UserActivity(
+                                    id = conversation.id,
+                                    userId = conversation.userId,
+                                    activityType = ActivityType.ASK,
+                                    timestamp = conversation.updatedAt,
+                                    relatedId = conversation.id,
+                                    title = conversation.title,
+                                    preview = conversation.lastMessagePreview,
+                                    tags = conversation.tags
+                                )
+                            }
+                    }
+                    else -> {
+                        println("DEBUG: Failed to load conversations: ${conversationsResponse}")
+                        emptyList()
+                    }
                 }
 
                 // Load mood check-ins and convert to activities
                 val currentUserId = sessionManager.currentUserId.first() ?: ""
+                println("DEBUG: Current user ID: $currentUserId")
                 val moodCheckInsResponse = moodCheckInRepository.getMoodCheckInsByUserId(currentUserId).first()
                 val moodCheckIns = when (moodCheckInsResponse) {
-                    is Response.Success -> moodCheckInsResponse.data
-                    else -> emptyList()
+                    is Response.Success -> {
+                        println("DEBUG: Loaded ${moodCheckInsResponse.data.size} mood check-ins")
+                        moodCheckInsResponse.data
+                    }
+                    else -> {
+                        println("DEBUG: Failed to load mood check-ins: ${moodCheckInsResponse}")
+                        emptyList()
+                    }
                 }
 
                 // Debug: Log mood check-ins specifically
@@ -143,6 +157,8 @@ class RememberViewModel @Inject constructor(
                 generateCalendarData()
 
             } catch (e: Exception) {
+                println("DEBUG: Error loading data: ${e.message}")
+                e.printStackTrace()
                 _uiState.value = _uiState.value.copy(
                     error = "Failed to load data: ${e.message}"
                 )
@@ -169,6 +185,12 @@ class RememberViewModel @Inject constructor(
 
         val calendarDays = mutableListOf<CalendarDay>()
 
+        // Get today's date once to avoid time-based issues
+        val today = Calendar.getInstance()
+        val todayYear = today.get(Calendar.YEAR)
+        val todayMonth = today.get(Calendar.MONTH)
+        val todayDay = today.get(Calendar.DAY_OF_MONTH)
+
         // Add empty days for padding at start (Sunday = 1, so we need to adjust)
         val startPadding = if (firstDayOfWeek == Calendar.SUNDAY) 0 else firstDayOfWeek - 1
         for (i in 0 until startPadding) {
@@ -184,11 +206,8 @@ class RememberViewModel @Inject constructor(
             calendar.set(year, month, day)
             val date = calendar.time
 
-            // Check if this is today
-            val today = Calendar.getInstance()
-            val isToday = calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                    calendar.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
-                    calendar.get(Calendar.DAY_OF_MONTH) == today.get(Calendar.DAY_OF_MONTH)
+            // Check if this is today - compare only date components, not time
+            val isToday = year == todayYear && month == todayMonth && day == todayDay
 
             // Get activities for this day
             val dayActivities = allActivities.filter { activity ->
@@ -241,6 +260,7 @@ class RememberViewModel @Inject constructor(
 
         // Debug: Log final calendar state
         println("DEBUG: Generated ${calendarDays.size} calendar days")
+        println("DEBUG: Today is ${todayMonth + 1}/${todayDay}/${todayYear}")
         calendarDays.filter { it.activities.isNotEmpty() }.forEach { day ->
             println("DEBUG: Calendar day ${day.dayOfMonth} has ${day.activities.size} activities, flags: reflect=${day.hasReflectActivity}, ask=${day.hasAskActivity}, checkIn=${day.hasCheckInActivity}")
         }
@@ -290,12 +310,18 @@ class RememberViewModel @Inject constructor(
     }
 
     fun onDayClick(day: CalendarDay) {
-        if (day.activities.isNotEmpty()) {
-            _uiState.value = _uiState.value.copy(
-                selectedDay = day,
-                showDayDetail = true
-            )
-        }
+        // Allow clicking on any day, not just days with activities
+        _uiState.value = _uiState.value.copy(
+            selectedDay = day,
+            showDayDetail = day.activities.isNotEmpty() // Only show detail panel if there are activities
+        )
+    }
+
+    fun onDayDetailDismiss() {
+        _uiState.value = _uiState.value.copy(
+            showDayDetail = false,
+            selectedDay = null
+        )
     }
 
     fun hideDayDetail() {
@@ -306,10 +332,7 @@ class RememberViewModel @Inject constructor(
     }
 
     fun showMonthSelector() {
-        // For now, just cycle through months
-        currentMonth.add(Calendar.MONTH, 1)
-        generateCalendarData()
-        _uiState.value = _uiState.value.copy(showMonthSelector = false)
+        _uiState.value = _uiState.value.copy(showMonthSelector = true)
     }
 
     fun hideMonthSelector() {
@@ -317,13 +340,22 @@ class RememberViewModel @Inject constructor(
     }
 
     fun showYearSelector() {
-        // For now, just cycle through years
-        currentMonth.add(Calendar.YEAR, 1)
-        generateCalendarData()
-        _uiState.value = _uiState.value.copy(showYearSelector = false)
+        _uiState.value = _uiState.value.copy(showYearSelector = true)
     }
 
     fun hideYearSelector() {
+        _uiState.value = _uiState.value.copy(showYearSelector = false)
+    }
+
+    fun selectMonth(month: Int) {
+        currentMonth.set(Calendar.MONTH, month)
+        generateCalendarData()
+        _uiState.value = _uiState.value.copy(showMonthSelector = false)
+    }
+
+    fun selectYear(year: Int) {
+        currentMonth.set(Calendar.YEAR, year)
+        generateCalendarData()
         _uiState.value = _uiState.value.copy(showYearSelector = false)
     }
 
@@ -343,3 +375,4 @@ data class RememberUiState(
     val showMonthSelector: Boolean = false,
     val showYearSelector: Boolean = false
 )
+
