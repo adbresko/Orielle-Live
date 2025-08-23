@@ -1,6 +1,8 @@
 package com.orielle.ui.screens.remember
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -50,9 +52,15 @@ import java.util.Locale
 @Composable
 fun RememberScreen(
     navController: NavController,
+    themeManager: com.orielle.ui.theme.ThemeManager,
     viewModel: RememberViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
+
+    val backgroundColor = if (isDark) DarkGray else SoftSand
+    val textColor = if (isDark) SoftSand else Charcoal
+    val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
 
     LaunchedEffect(Unit) {
         viewModel.loadRememberData()
@@ -61,6 +69,8 @@ fun RememberScreen(
     Scaffold(
         topBar = {
             RememberHeader(
+                backgroundColor = backgroundColor,
+                textColor = textColor,
                 onClearSearch = { viewModel.clearSearch() },
                 onNavigateToSearch = { navController.navigate("remember_search") }
             )
@@ -68,7 +78,7 @@ fun RememberScreen(
         bottomBar = {
             BottomNavigation(
                 navController = navController,
-                currentRoute = "remember"
+                themeManager = themeManager
             )
         }
     ) { paddingValues ->
@@ -76,7 +86,7 @@ fun RememberScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(SoftSand)
+                .background(backgroundColor)
         ) {
             Column(
                 modifier = Modifier
@@ -90,6 +100,8 @@ fun RememberScreen(
                     selectedDay = uiState.selectedDay,
                     showMonthSelector = uiState.showMonthSelector,
                     showYearSelector = uiState.showYearSelector,
+                    cardColor = cardColor,
+                    textColor = textColor,
                     onDayClick = { viewModel.onDayClick(it) },
                     onNextMonth = { viewModel.nextMonth() },
                     onPreviousMonth = { viewModel.previousMonth() },
@@ -103,16 +115,9 @@ fun RememberScreen(
 
             }
 
-            // Loading indicator
+            // Skeleton loading for better UX
             if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = WaterBlue)
-                }
+                SkeletonLoading()
             }
 
             // Error message
@@ -135,6 +140,9 @@ fun RememberScreen(
             if (uiState.selectedDay != null && uiState.showDayDetail) {
                 DailyGlimpsePanel(
                     day = uiState.selectedDay!!,
+                    cardColor = cardColor,
+                    textColor = textColor,
+                    isDark = isDark,
                     onDismiss = { viewModel.onDayDetailDismiss() },
                     onNavigateToDetail = { activity ->
                         when (activity.activityType) {
@@ -151,6 +159,8 @@ fun RememberScreen(
 
 @Composable
 private fun RememberHeader(
+    backgroundColor: Color,
+    textColor: Color,
     onClearSearch: () -> Unit,
     onNavigateToSearch: () -> Unit
 ) {
@@ -159,7 +169,7 @@ private fun RememberHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SoftSand)
+            .background(backgroundColor)
             .padding(20.dp)
     ) {
         // Title
@@ -168,7 +178,7 @@ private fun RememberHeader(
             fontFamily = Lora,
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Charcoal,
+            color = textColor,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
@@ -190,12 +200,16 @@ private fun SearchBar(
     onClearSearch: () -> Unit,
     onNavigateToSearch: () -> Unit
 ) {
+    val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
+    val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
+    val textColor = if (isDark) SoftSand else Charcoal
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onNavigateToSearch() },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = White),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -207,7 +221,7 @@ private fun SearchBar(
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Search",
-                tint = Charcoal,
+                tint = textColor,
                 modifier = Modifier.size(24.dp)
             )
 
@@ -217,7 +231,7 @@ private fun SearchBar(
                 text = if (query.isEmpty()) "Search by tag, mood, or memory..." else query,
                 fontFamily = NotoSans,
                 fontSize = 14.sp,
-                color = if (query.isEmpty()) Color(0xFF999999) else Charcoal,
+                color = if (query.isEmpty()) Color(0xFF999999) else textColor,
                 fontWeight = FontWeight.Normal,
                 modifier = Modifier.weight(1f)
             )
@@ -231,7 +245,7 @@ private fun SearchBar(
                 ) {
                     Text(
                         text = "Clear",
-                        color = Charcoal,
+                        color = textColor,
                         fontSize = 12.sp
                     )
                 }
@@ -247,6 +261,8 @@ private fun CalendarSection(
     selectedDay: CalendarDay?,
     showMonthSelector: Boolean,
     showYearSelector: Boolean,
+    cardColor: Color,
+    textColor: Color,
     onDayClick: (CalendarDay) -> Unit,
     onNextMonth: () -> Unit,
     onPreviousMonth: () -> Unit,
@@ -261,9 +277,9 @@ private fun CalendarSection(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (showMonthSelector || showYearSelector) 610.dp else 410.dp), // Expand height when dropdowns are shown
+                .wrapContentHeight(), // Let content determine height
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = White),
+            colors = CardDefaults.cardColors(containerColor = cardColor),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(
@@ -272,38 +288,44 @@ private fun CalendarSection(
                 // Month/Year Header with Navigation
                 MonthYearHeader(
                     monthYear = currentMonthYear,
-                    showMonthSelector = showMonthSelector,
-                    showYearSelector = showYearSelector,
+                    textColor = textColor,
                     onNextMonth = onNextMonth,
                     onPreviousMonth = onPreviousMonth,
                     onMonthClick = onMonthClick,
-                    onYearClick = onYearClick,
-                    onSelectMonth = onSelectMonth,
-                    onSelectYear = onSelectYear,
-                    onHideMonthSelector = onHideMonthSelector,
-                    onHideYearSelector = onHideYearSelector
+                    onYearClick = onYearClick
                 )
 
-                if (!showMonthSelector && !showYearSelector) {
-                    Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    // Day Headers
-                    DayHeaders()
+                // Day Headers
+                DayHeaders(textColor = textColor)
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                    // Calendar Grid
-                    CalendarGrid(
-                        calendarDays = calendarDays,
-                        selectedDay = selectedDay,
-                        onDayClick = onDayClick
-                    )
+                // Calendar Grid - Always visible
+                CalendarGrid(
+                    calendarDays = calendarDays,
+                    selectedDay = selectedDay,
+                    textColor = textColor,
+                    onDayClick = onDayClick
+                )
+
+                // Legend for activity dots - Ensure it's always visible
+                Spacer(modifier = Modifier.height(24.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ActivityLegend(textColor = textColor)
                 }
             }
         }
 
-        // Invisible overlay to close dropdowns when clicking outside
+        // Dropdown overlays - positioned above the calendar card
         if (showMonthSelector || showYearSelector) {
+            // Invisible overlay to close dropdowns when clicking outside
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -312,7 +334,7 @@ private fun CalendarSection(
                         onHideYearSelector()
                     }
             ) {
-                // Position the dropdowns above the overlay so they're clickable
+                // Position the dropdowns above the calendar card
                 if (showMonthSelector) {
                     val currentMonth = currentMonthYear.split(" ")[0]
                     val monthIndex = listOf("January", "February", "March", "April", "May", "June",
@@ -320,6 +342,8 @@ private fun CalendarSection(
 
                     MonthSelector(
                         currentSelectedMonth = if (monthIndex >= 0) monthIndex else Calendar.getInstance().get(Calendar.MONTH),
+                        cardColor = cardColor,
+                        textColor = textColor,
                         onSelectMonth = onSelectMonth,
                         onDismiss = onHideMonthSelector
                     )
@@ -330,6 +354,8 @@ private fun CalendarSection(
 
                     YearSelector(
                         currentSelectedYear = currentYear,
+                        cardColor = cardColor,
+                        textColor = textColor,
                         onSelectYear = onSelectYear,
                         onDismiss = onHideYearSelector
                     )
@@ -342,16 +368,11 @@ private fun CalendarSection(
 @Composable
 private fun MonthYearHeader(
     monthYear: String,
-    showMonthSelector: Boolean,
-    showYearSelector: Boolean,
+    textColor: Color,
     onNextMonth: () -> Unit,
     onPreviousMonth: () -> Unit,
     onMonthClick: () -> Unit,
-    onYearClick: () -> Unit,
-    onSelectMonth: (Int) -> Unit,
-    onSelectYear: (Int) -> Unit,
-    onHideMonthSelector: () -> Unit,
-    onHideYearSelector: () -> Unit
+    onYearClick: () -> Unit
 ) {
     Column {
         Row(
@@ -363,7 +384,7 @@ private fun MonthYearHeader(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = "Previous month",
-                tint = Charcoal,
+                tint = textColor,
                 modifier = Modifier
                     .size(24.dp)
                     .clickable { onPreviousMonth() }
@@ -380,14 +401,14 @@ private fun MonthYearHeader(
                     fontFamily = NotoSans,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Charcoal,
+                    color = textColor,
                     modifier = Modifier.clickable { onMonthClick() }
                 )
 
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Month dropdown",
-                    tint = Charcoal,
+                    tint = textColor,
                     modifier = Modifier
                         .size(24.dp)
                         .clickable { onMonthClick() }
@@ -405,14 +426,14 @@ private fun MonthYearHeader(
                     fontFamily = NotoSans,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Charcoal,
+                    color = textColor,
                     modifier = Modifier.clickable { onYearClick() }
                 )
 
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Year dropdown",
-                    tint = Charcoal,
+                    tint = textColor,
                     modifier = Modifier
                         .size(24.dp)
                         .clickable { onYearClick() }
@@ -423,7 +444,7 @@ private fun MonthYearHeader(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = "Next month",
-                tint = Charcoal,
+                tint = textColor,
                 modifier = Modifier
                     .size(24.dp)
                     .clickable { onNextMonth() }
@@ -437,6 +458,8 @@ private fun MonthYearHeader(
 @Composable
 private fun MonthSelector(
     currentSelectedMonth: Int,
+    cardColor: Color,
+    textColor: Color,
     onSelectMonth: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -450,7 +473,7 @@ private fun MonthSelector(
             .fillMaxWidth()
             .padding(horizontal = 20.dp),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         LazyColumn(
@@ -465,7 +488,7 @@ private fun MonthSelector(
                     text = month,
                     fontFamily = NotoSans,
                     fontSize = 16.sp,
-                    color = if (isSelected) WaterBlue else Charcoal,
+                    color = if (isSelected) WaterBlue else textColor,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -491,6 +514,8 @@ private fun MonthSelector(
 @Composable
 private fun YearSelector(
     currentSelectedYear: Int,
+    cardColor: Color,
+    textColor: Color,
     onSelectYear: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -503,7 +528,7 @@ private fun YearSelector(
             .fillMaxWidth()
             .padding(horizontal = 20.dp),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         LazyColumn(
@@ -518,7 +543,7 @@ private fun YearSelector(
                     text = year.toString(),
                     fontFamily = NotoSans,
                     fontSize = 16.sp,
-                    color = if (isSelected) WaterBlue else Charcoal,
+                    color = if (isSelected) WaterBlue else textColor,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -542,7 +567,7 @@ private fun YearSelector(
 }
 
 @Composable
-private fun DayHeaders() {
+private fun DayHeaders(textColor: Color) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
@@ -554,7 +579,7 @@ private fun DayHeaders() {
                 fontFamily = NotoSans,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
-                color = Charcoal,
+                color = textColor,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
             )
@@ -566,6 +591,7 @@ private fun DayHeaders() {
 private fun CalendarGrid(
     calendarDays: List<CalendarDay>,
     selectedDay: CalendarDay?,
+    textColor: Color,
     onDayClick: (CalendarDay) -> Unit
 ) {
     LazyVerticalGrid(
@@ -577,6 +603,7 @@ private fun CalendarGrid(
             CalendarDayCell(
                 day = day,
                 isSelected = selectedDay?.let { it.dayOfMonth == day.dayOfMonth && it.date.time == day.date.time } ?: false,
+                textColor = textColor,
                 onClick = { onDayClick(day) }
             )
         }
@@ -587,6 +614,7 @@ private fun CalendarGrid(
 private fun CalendarDayCell(
     day: CalendarDay,
     isSelected: Boolean,
+    textColor: Color,
     onClick: () -> Unit
 ) {
     if (day.dayOfMonth == 0) {
@@ -604,7 +632,7 @@ private fun CalendarDayCell(
                 .clickable { onClick() }
                 .background(
                     when {
-                        day.isToday -> WaterBlue
+                        day.isToday -> WaterBlue.copy(alpha = 0.7f) // Lighter highlight for current day
                         isSelected -> WaterBlue.copy(alpha = 0.3f)
                         else -> Color.Transparent
                     }
@@ -617,7 +645,7 @@ private fun CalendarDayCell(
                 fontFamily = NotoSans,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Normal,
-                color = if (day.isToday) Color.White else Charcoal
+                color = if (day.isToday) Color.White else textColor
             )
 
             // Activity indicators (dots) - positioned at bottom
@@ -664,12 +692,102 @@ private fun CalendarDayCell(
 }
 
 @Composable
+private fun ActivityLegend(textColor: Color) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        border = BorderStroke(1.dp, textColor.copy(alpha = 0.1f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Text(
+                text = "Activity Legend",
+                fontFamily = NotoSans,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = textColor,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                // Reflection dot
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(StillwaterTeal)
+                    )
+                    Text(
+                        text = "Reflection",
+                        fontFamily = NotoSans,
+                        fontSize = 12.sp,
+                        color = textColor
+                    )
+                }
+
+                // Ask dot
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(AuroraGold)
+                    )
+                    Text(
+                        text = "Chat/Ask",
+                        fontFamily = NotoSans,
+                        fontSize = 12.sp,
+                        color = textColor
+                    )
+                }
+
+                // Check-in dot
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(WaterBlue)
+                    )
+                    Text(
+                        text = "Mood",
+                        fontFamily = NotoSans,
+                        fontSize = 12.sp,
+                        color = textColor
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun DailyGlimpsePanel(
     day: CalendarDay,
+    cardColor: Color,
+    textColor: Color,
+    isDark: Boolean,
     onDismiss: () -> Unit,
     onNavigateToDetail: (UserActivity) -> Unit
 ) {
-    val isDark = MaterialTheme.colorScheme.background == DarkGray
 
     Box(
         modifier = Modifier
@@ -684,7 +802,7 @@ private fun DailyGlimpsePanel(
                 .offset(y = 80.dp), // Offset to overhang the bottom navigation
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (isDark) Color(0xFF2A2A2A) else Color.White
+                containerColor = cardColor
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
@@ -721,14 +839,14 @@ private fun DailyGlimpsePanel(
                         fontFamily = NotoSans,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) SoftSand else Charcoal
+                        color = textColor
                     )
 
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = if (isDark) SoftSand else Charcoal,
+                            tint = textColor,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -864,15 +982,122 @@ private fun formatDateForGlimpse(date: Date): String {
     return "$month $day, $year"
 }
 
+@Composable
+private fun SkeletonLoading() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp)
+    ) {
+        // Header skeleton
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            // Title skeleton
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(32.dp)
+                    .background(
+                        color = Color(0xFFE0E0E0),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Search bar skeleton
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .background(
+                        color = Color(0xFFE0E0E0),
+                        shape = RoundedCornerShape(20.dp)
+                    )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Calendar skeleton
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = White)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                // Month/Year header skeleton
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(24.dp)
+                            .background(
+                                color = Color(0xFFE0E0E0),
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        repeat(2) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(
+                                        color = Color(0xFFE0E0E0),
+                                        shape = CircleShape
+                                    )
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Calendar grid skeleton
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(7),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(42) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(
+                                    color = Color(0xFFE0E0E0),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 
 // Preview function
 @Preview(showBackground = true)
 @Composable
 fun RememberScreenPreview() {
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
     OrielleTheme {
         RememberScreen(
-            navController = androidx.navigation.compose.rememberNavController()
+            navController = androidx.navigation.compose.rememberNavController(),
+            themeManager = fakeThemeManager
         )
     }
 }

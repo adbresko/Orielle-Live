@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import coil.compose.AsyncImage
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,10 +18,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,16 +40,18 @@ import androidx.navigation.compose.rememberNavController
 import com.orielle.R
 import com.orielle.ui.theme.*
 import com.orielle.domain.model.ChatMessage
+import com.orielle.domain.manager.SessionManager
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Locale
+import androidx.hilt.navigation.compose.hiltViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AskScreen(
     navController: NavController,
-    viewModel: AskViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    viewModel: AskViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isDark = MaterialTheme.colorScheme.background == DarkGray
@@ -57,6 +61,10 @@ fun AskScreen(
     var showPrivacyCoachMark by remember { mutableStateOf(false) }
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+
+    // User profile info for chat bubbles (simplified for now)
+    var userProfileImageUrl by remember { mutableStateOf<String?>(null) }
+    var userName by remember { mutableStateOf<String?>(null) }
 
     // Show privacy coach mark on first use
     LaunchedEffect(Unit) {
@@ -80,65 +88,63 @@ fun AskScreen(
                 .background(backgroundColor)
                 .padding(paddingValues)
         ) {
-            // Header
+            // Header - Minimal spacing
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        if (uiState.messages.size > 1) { // More than just welcome message
-                            viewModel.showChoiceModal()
-                        } else {
-                            navController.popBackStack()
-                        }
-                    }) {
+                    IconButton(
+                        onClick = {
+                            if (uiState.messages.size > 1) { // More than just welcome message
+                                viewModel.showChoiceModal()
+                            } else {
+                                navController.popBackStack()
+                            }
+                        },
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = textColor
+                            tint = textColor,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 },
                 actions = {
-                    Box {
-                        IconButton(onClick = { showPrivacyCoachMark = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Privacy",
-                                tint = textColor
-                            )
-                        }
-
-                        // Privacy coach mark
-                        if (showPrivacyCoachMark) {
-                            PrivacyCoachMark(
-                                onDismiss = {
-                                    showPrivacyCoachMark = false
-                                    viewModel.markPrivacyCoachMarkSeen()
-                                }
-                            )
-                        }
+                    IconButton(
+                        onClick = { showPrivacyCoachMark = true },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Privacy",
+                            tint = textColor,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = backgroundColor
                 ),
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
 
-            // Chat messages
+            // Chat messages - Minimal top spacing
             LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp)
             ) {
                 items(uiState.messages) { message ->
                     ChatBubble(
                         message = message,
-                        isDark = isDark
+                        isDark = isDark,
+                        userProfileImageUrl = userProfileImageUrl,
+                        userName = userName
                     )
                 }
 
@@ -162,6 +168,17 @@ fun AskScreen(
                 },
                 isDark = isDark,
                 modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        // Privacy coach mark overlay - now a proper chat bubble
+        if (showPrivacyCoachMark) {
+            PrivacyCoachMark(
+                onDismiss = {
+                    showPrivacyCoachMark = false
+                    viewModel.markPrivacyCoachMarkSeen()
+                },
+                isDark = isDark
             )
         }
 
@@ -191,7 +208,9 @@ fun AskScreen(
 @Composable
 fun ChatBubble(
     message: ChatMessage,
-    isDark: Boolean
+    isDark: Boolean,
+    userProfileImageUrl: String? = null,
+    userName: String? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -203,10 +222,10 @@ fun ChatBubble(
                 painter = painterResource(id = R.drawable.ic_orielle_drop),
                 contentDescription = "Orielle",
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(32.dp)
                     .clip(CircleShape)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(12.dp))
         }
 
         Card(
@@ -237,7 +256,41 @@ fun ChatBubble(
         }
 
         if (message.isFromUser) {
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            // User's avatar or initial
+            if (userProfileImageUrl != null && userProfileImageUrl.isNotBlank()) {
+                // Show user's actual profile image
+                AsyncImage(
+                    model = userProfileImageUrl,
+                    contentDescription = "You",
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape),
+                    placeholder = painterResource(id = R.drawable.ic_orielle_drop),
+                    error = painterResource(id = R.drawable.ic_orielle_drop)
+                )
+            } else if (!userName.isNullOrBlank()) {
+                // Show user's initial in a circle
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(
+                            color = if (isDark) DarkGray else SoftSand,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = userName.first().uppercase(),
+                        style = Typography.titleMedium,
+                        color = if (isDark) SoftSand else Charcoal,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            } else {
+                // Default chat bubble - no avatar
+                // This creates a more natural chat appearance
+            }
         }
     }
 }
@@ -253,10 +306,10 @@ fun TypingIndicator(isDark: Boolean) {
             painter = painterResource(id = R.drawable.ic_orielle_drop),
             contentDescription = "Orielle",
             modifier = Modifier
-                .size(28.dp)
+                .size(32.dp)
                 .clip(CircleShape)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
         Card(
             modifier = Modifier.widthIn(max = 120.dp),
@@ -317,7 +370,7 @@ fun TextInputBar(
     val hasText = messageText.isNotBlank()
 
     Card(
-        modifier = modifier.padding(16.dp),
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 20.dp),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) DarkGray else SoftSand
@@ -336,7 +389,7 @@ fun TextInputBar(
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
-                        text = "Ask Orielle anything...",
+                        text = "What's on your mind?",
                         style = Typography.bodyLarge,
                         color = if (isDark) SoftSand.copy(alpha = 0.6f) else Charcoal.copy(alpha = 0.6f)
                     )
@@ -390,7 +443,7 @@ fun TextInputBar(
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Send,
+                            imageVector = Icons.AutoMirrored.Filled.Send,
                             contentDescription = "Send message",
                             tint = WaterBlue
                         )
@@ -402,30 +455,46 @@ fun TextInputBar(
 }
 
 @Composable
-fun PrivacyCoachMark(onDismiss: () -> Unit) {
+fun PrivacyCoachMark(onDismiss: () -> Unit, isDark: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .clickable { onDismiss() },
         contentAlignment = Alignment.TopEnd
     ) {
+        // Chat bubble pointing to the lock icon
         Card(
             modifier = Modifier
-                .padding(top = 60.dp, end = 16.dp)
+                .padding(top = 80.dp, end = 16.dp)
                 .widthIn(max = 280.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = WaterBlue
+                containerColor = if (isDark) DarkGray else SoftSand
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Text(
-                text = "This lock is our promise. Your reflections here are always private and secure.",
-                modifier = Modifier.padding(16.dp),
-                style = Typography.bodyMedium,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                // Chat bubble tail pointing to lock icon
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .offset(y = (-8).dp)
+                        .size(16.dp)
+                        .background(
+                            color = if (isDark) DarkGray else SoftSand,
+                            shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
+                        )
+                )
+
+                Text(
+                    text = "This lock is our promise. Your reflections here are always private and secure.",
+                    style = Typography.bodyMedium,
+                    color = if (isDark) SoftSand else Charcoal,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }

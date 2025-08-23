@@ -81,6 +81,7 @@ import com.orielle.ui.components.BottomNavigation
 @Composable
 fun HomeScreen(
     navController: NavController,
+    themeManager: com.orielle.ui.theme.ThemeManager,
     viewModel: HomeViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -125,6 +126,7 @@ fun HomeScreen(
                 weeklyMoodView = uiState.weeklyMoodView,
                 navController = navController,
                 dashboardState = dashboardState,
+                themeManager = themeManager,
                 onCheckInTap = {
                     // Navigate to mood check-in screen instead of just changing state
                     navController.navigate("mood_check_in")
@@ -142,6 +144,7 @@ fun HomeDashboardScreen(
     weeklyMoodView: com.orielle.domain.model.WeeklyMoodView,
     navController: NavController,
     dashboardState: DashboardState,
+    themeManager: com.orielle.ui.theme.ThemeManager,
     onCheckInTap: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.background == DarkGray
@@ -202,7 +205,7 @@ fun HomeDashboardScreen(
         bottomBar = {
             BottomNavigation(
                 navController = navController,
-                currentRoute = "home_graph"
+                themeManager = themeManager
             )
         }
     ) { innerPadding ->
@@ -413,6 +416,7 @@ fun DashboardNavItem(icon: Int, label: String, selected: Boolean, onClick: () ->
 @Composable
 fun Preview_HomeDashboard_Initial_Light() {
     val fakeNavController = androidx.navigation.compose.rememberNavController()
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
     OrielleTheme(darkTheme = false) {
         HomeDashboardScreen(
             userName = "Mona",
@@ -427,6 +431,7 @@ fun Preview_HomeDashboard_Initial_Light() {
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Initial,
+            themeManager = fakeThemeManager,
             onCheckInTap = {}
         )
     }
@@ -436,6 +441,7 @@ fun Preview_HomeDashboard_Initial_Light() {
 @Composable
 fun Preview_HomeDashboard_Initial_Dark() {
     val fakeNavController = androidx.navigation.compose.rememberNavController()
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
     OrielleTheme(darkTheme = true) {
         HomeDashboardScreen(
             userName = "Mona",
@@ -450,6 +456,7 @@ fun Preview_HomeDashboard_Initial_Dark() {
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Initial,
+            themeManager = fakeThemeManager,
             onCheckInTap = {}
         )
     }
@@ -459,6 +466,7 @@ fun Preview_HomeDashboard_Initial_Dark() {
 @Composable
 fun Preview_HomeDashboard_Unfolded_Light() {
     val fakeNavController = androidx.navigation.compose.rememberNavController()
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
     OrielleTheme(darkTheme = false) {
         HomeDashboardScreen(
             userName = "Mona",
@@ -473,6 +481,7 @@ fun Preview_HomeDashboard_Unfolded_Light() {
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Unfolded,
+            themeManager = fakeThemeManager,
             onCheckInTap = {}
         )
     }
@@ -482,6 +491,7 @@ fun Preview_HomeDashboard_Unfolded_Light() {
 @Composable
 fun Preview_HomeDashboard_Unfolded_Dark() {
     val fakeNavController = androidx.navigation.compose.rememberNavController()
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
     OrielleTheme(darkTheme = true) {
         HomeDashboardScreen(
             userName = "Mona",
@@ -496,6 +506,7 @@ fun Preview_HomeDashboard_Unfolded_Dark() {
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
             navController = fakeNavController,
             dashboardState = DashboardState.Unfolded,
+            themeManager = fakeThemeManager,
             onCheckInTap = {}
         )
     }

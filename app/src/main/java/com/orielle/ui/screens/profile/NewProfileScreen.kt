@@ -22,6 +22,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.platform.LocalContext
 import com.orielle.ui.theme.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.orielle.ui.components.WaterDropLoading
 import com.orielle.ui.components.ProfileImageSelector
 
@@ -40,6 +41,9 @@ fun ProfileSettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
     val currentContext = LocalContext.current
+
+    // Get current theme state from ViewModel
+    val currentDarkTheme by viewModel.currentThemeState.collectAsState(initial = false)
 
     val backgroundColor = if (isDark) DarkGray else SoftSand
     val textColor = if (isDark) SoftSand else Charcoal
@@ -194,6 +198,16 @@ fun ProfileSettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             SettingsSection(title = "Account", cardColor = cardColor, textColor = textColor) {
+                SettingsToggleItem(
+                    icon = Icons.Default.DarkMode,
+                    title = "Dark Mode",
+                    subtitle = if (currentDarkTheme) "Enabled" else "Disabled",
+                    isEnabled = currentDarkTheme,
+                    textColor = textColor
+                ) { enabled ->
+                    viewModel.toggleDarkMode(enabled)
+                }
+
                 SettingsItem(
                     icon = Icons.Default.Logout,
                     title = "Sign Out",

@@ -2,7 +2,13 @@ package com.orielle.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -23,15 +29,23 @@ import com.orielle.ui.theme.*
 @Composable
 fun BottomNavigation(
     navController: NavController,
-    currentRoute: String
+    themeManager: com.orielle.ui.theme.ThemeManager
 ) {
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route ?: "home_graph"
+    val isDarkTheme by themeManager.isDarkTheme.collectAsState(initial = false)
+    val backgroundColor = if (isDarkTheme) {
+        Color(0xFF2A2A2A) // Dark gray background for dark mode
+    } else {
+        Color(0xFFF5F5F5) // Light gray background for light mode
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 16.dp),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF5F5F5) // Light gray background
+            containerColor = backgroundColor
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -46,25 +60,66 @@ fun BottomNavigation(
                 icon = R.drawable.ic_orielle_drop,
                 label = "Home",
                 selected = currentRoute == "home_graph",
-                onClick = { navController.navigate("home_graph") }
+                isDarkTheme = isDarkTheme,
+                onClick = {
+                    if (currentRoute != "home_graph") {
+                        navController.navigate("home_graph") {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
             )
             DashboardNavItem(
                 icon = R.drawable.reflect,
                 label = "Reflect",
                 selected = currentRoute == "reflect",
-                onClick = { navController.navigate("reflect") }
+                isDarkTheme = isDarkTheme,
+                onClick = {
+                    if (currentRoute != "reflect") {
+                        navController.navigate("reflect") {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
             )
             DashboardNavItem(
                 icon = R.drawable.ask,
                 label = "Ask",
                 selected = currentRoute == "ask",
-                onClick = { navController.navigate("ask") }
+                isDarkTheme = isDarkTheme,
+                onClick = {
+                    if (currentRoute != "ask") {
+                        navController.navigate("ask") {
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
             )
             DashboardNavItem(
                 icon = R.drawable.remember,
                 label = "Remember",
                 selected = currentRoute == "remember",
-                onClick = { navController.navigate("remember") }
+                isDarkTheme = isDarkTheme,
+                onClick = {
+                    if (currentRoute != "remember") {
+                        navController.navigate("remember") {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
             )
         }
     }
@@ -75,12 +130,18 @@ private fun DashboardNavItem(
     icon: Int,
     label: String,
     selected: Boolean,
+    isDarkTheme: Boolean,
     onClick: () -> Unit = {}
 ) {
+    val unselectedColor = if (isDarkTheme) Color(0xFFB0B0B0) else Charcoal
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .clickable { onClick() }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = rememberRipple(bounded = false, radius = 24.dp)
+            ) { onClick() }
             .padding(8.dp)
     ) {
         // Icon - no background, just the icon itself
@@ -96,7 +157,7 @@ private fun DashboardNavItem(
             Icon(
                 painter = painterResource(id = icon),
                 contentDescription = label,
-                tint = if (selected) WaterBlue else Charcoal,
+                tint = if (selected) WaterBlue else unselectedColor,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -111,7 +172,7 @@ private fun DashboardNavItem(
                 text = label,
                 fontSize = 12.sp,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                color = if (selected) WaterBlue else Charcoal,
+                color = if (selected) WaterBlue else unselectedColor,
                 textAlign = TextAlign.Center
             )
 

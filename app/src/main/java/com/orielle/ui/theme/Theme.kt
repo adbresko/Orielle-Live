@@ -8,6 +8,8 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
@@ -17,12 +19,16 @@ import androidx.core.view.WindowCompat
 private val DarkColorScheme = darkColorScheme(
     primary = StillwaterTeal,
     onPrimary = White,
+    primaryContainer = WaterBlue.copy(alpha = 0.2f), // Subtle blue tint
+    onPrimaryContainer = White,
     secondary = AuroraGold,
-    onSecondary = Charcoal,
+    onSecondary = DarkGray,
     background = DarkGray,
     onBackground = White,
-    surface = DarkGray,
+    surface = DarkSurface, // Distinct from background
     onSurface = White,
+    surfaceVariant = DarkGray.copy(alpha = 0.8f), // Slightly lighter variant
+    onSurfaceVariant = White.copy(alpha = 0.8f),
     error = ErrorRed,
     onError = White
 )
@@ -38,13 +44,15 @@ private val LightColorScheme = lightColorScheme(
     onBackground = Charcoal,      // Default text color on background is high-contrast
     surface = White,
     onSurface = Charcoal,         // Default text color on cards/surfaces is high-contrast
+    surfaceVariant = SoftSand.copy(alpha = 0.8f), // Slightly darker variant
+    onSurfaceVariant = Charcoal.copy(alpha = 0.8f),
     error = ErrorRed,
     onError = White
 )
 
 @Composable
 fun OrielleTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false, // Default to light theme
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -72,12 +80,28 @@ fun OrielleTheme(
     )
 }
 
-// Utility function to get card border for dark mode
+// Utility function to get card border based on theme
 @Composable
-fun getCardBorder(): BorderStroke? {
-    return if (isSystemInDarkTheme()) {
+fun getCardBorder(darkTheme: Boolean = false): BorderStroke? {
+    return if (darkTheme) {
         BorderStroke(1.dp, MediumGray)
     } else {
-        null
+        BorderStroke(1.dp, LightGray)
+    }
+}
+
+/**
+ * Composable that automatically observes the theme preference and applies it
+ * This should be used in MainActivity and other root-level composables
+ */
+@Composable
+fun OrielleThemeWithPreference(
+    themeManager: com.orielle.ui.theme.ThemeManager,
+    content: @Composable () -> Unit
+) {
+    val isDarkTheme by themeManager.isDarkTheme.collectAsState(initial = false)
+
+    OrielleTheme(darkTheme = isDarkTheme) {
+        content()
     }
 }

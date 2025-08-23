@@ -41,9 +41,12 @@ class RememberViewModel @Inject constructor(
 
     fun loadRememberData() {
         viewModelScope.launch {
+            // Show skeleton loading immediately for better UX
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             try {
+                // Add a small delay to show skeleton loading smoothly
+                kotlinx.coroutines.delay(300)
                 // Load journal entries and convert to activities
                 val journalEntries = journalRepository.getJournalEntries().first()
                 println("DEBUG: Loaded ${journalEntries.size} journal entries")

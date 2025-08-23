@@ -21,16 +21,21 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import com.orielle.ui.components.AvatarOption
+import com.orielle.ui.theme.ThemeManager
 
 @HiltViewModel
 class ProfileSettingsViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val auth: FirebaseAuth,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    val themeManager: ThemeManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileSettingsUiState())
     val uiState: StateFlow<ProfileSettingsUiState> = _uiState.asStateFlow()
+
+    // Expose theme state for UI
+    val currentThemeState = themeManager.isDarkTheme
 
     // Avatar library - curated selection of beautiful avatars
     private val avatarLibrary = listOf(
@@ -502,8 +507,9 @@ class ProfileSettingsViewModel @Inject constructor(
     fun toggleDarkMode(enabled: Boolean) {
         viewModelScope.launch {
             try {
-                // For now, just show a message since theme switching requires restart
-                showMessage("Theme preference saved. Please restart the app to apply changes.")
+                // Update theme preference using ThemeManager
+                themeManager.setDarkTheme(enabled)
+                showMessage(if (enabled) "Dark theme enabled" else "Light theme enabled")
 
             } catch (e: Exception) {
                 showMessage("Failed to update theme", isError = true)
@@ -670,6 +676,7 @@ data class ProfileSettingsUiState(
     val twoFactorEnabled: Boolean = false,
     val biometricsEnabled: Boolean = false,
     val notificationsEnabled: Boolean = true,
+    val isDarkTheme: Boolean = false,
 
     // UI state
     val isLoading: Boolean = true, // Add loading state

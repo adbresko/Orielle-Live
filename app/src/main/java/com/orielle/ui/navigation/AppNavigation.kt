@@ -56,6 +56,7 @@ import dagger.hilt.android.EntryPointAccessors
 fun AppNavigation(
     modifier: Modifier = Modifier,
     authViewModel: AuthViewModel = hiltViewModel(),
+    themeManager: com.orielle.ui.theme.ThemeManager
 ) {
     val navController = rememberNavController()
     val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
@@ -90,7 +91,7 @@ fun AppNavigation(
 
         // The main part of the app after login
         composable("home_graph") {
-            HomeScreen(navController = navController)
+            HomeScreen(navController = navController, themeManager = themeManager)
         }
 
         // Sanctuary screen
@@ -270,7 +271,7 @@ fun AppNavigation(
 
         // Reflect/Journal screens
         composable("reflect") {
-            ReflectScreen(navController = navController)
+            ReflectScreen(navController = navController, themeManager = themeManager)
         }
 
         composable(
@@ -330,7 +331,7 @@ fun AppNavigation(
 
         // Remember screen
         composable("remember") {
-            com.orielle.ui.screens.remember.RememberScreen(navController = navController)
+            com.orielle.ui.screens.remember.RememberScreen(navController = navController, themeManager = themeManager)
         }
 
         // Remember filter and search screen

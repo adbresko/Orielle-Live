@@ -8,7 +8,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,6 +38,7 @@ import java.util.*
 @Composable
 fun ReflectScreen(
     navController: NavController,
+    themeManager: com.orielle.ui.theme.ThemeManager,
     viewModel: ReflectViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -50,7 +52,7 @@ fun ReflectScreen(
         bottomBar = {
             BottomNavigation(
                 navController = navController,
-                currentRoute = "reflect"
+                themeManager = themeManager
             )
         }
     ) { paddingValues ->
@@ -61,57 +63,43 @@ fun ReflectScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header
+            // Header with book icon and menu
             ReflectHeader(
-                isDark = isDark,
                 textColor = textColor,
-                onSettingsClick = { navController.navigate("profile_settings") },
-                onJournalLogClick = { navController.navigate("journal_log") }
+                onSettingsClick = { navController.navigate("profile_settings") }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Content
             Column(
                 modifier = Modifier.padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                verticalArrangement = Arrangement.spacedBy(32.dp)
             ) {
-                // Today's Prompt Card
+                // Today's Prompt Card - Simplified and prominent
                 TodaysPromptCard(
                     prompt = uiState.todaysPrompt,
                     cardColor = cardColor,
                     textColor = textColor,
                     isDark = isDark,
-                    onClick = {
+                    onRespondToPrompt = {
                         navController.navigate("journal_editor?promptText=${uiState.todaysPrompt}")
                     }
                 )
 
-                // Action Cards Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    ActionCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Free write",
-                        subtitle = "Your blank canvas",
-                        icon = R.drawable.reflect,
-                        cardColor = cardColor,
-                        textColor = textColor,
-                        onClick = { navController.navigate("journal_editor") }
-                    )
-
-                    ActionCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Quick entry",
-                        subtitle = "A single thought",
-                        icon = R.drawable.remember,
-                        cardColor = cardColor,
-                        textColor = textColor,
-                        onClick = { navController.navigate("journal_editor?isQuickEntry=true") }
-                    )
-                }
+                // Alternative option - FREEWRITE pathway
+                Text(
+                    text = "Or, start with a blank page",
+                    style = Typography.bodyLarge.copy(
+                        color = WaterBlue,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { navController.navigate("journal_editor") }
+                        .padding(vertical = 8.dp)
+                )
 
                 // Look Back Module (only show if there's a past entry)
                 uiState.lookBackEntry?.let { entry ->
@@ -119,6 +107,7 @@ fun ReflectScreen(
                         entry = entry,
                         cardColor = cardColor,
                         textColor = textColor,
+                        isDark = isDark,
                         onClick = {
                             navController.navigate("journal_detail/${entry.id}")
                         }
@@ -133,44 +122,44 @@ fun ReflectScreen(
 
 @Composable
 private fun ReflectHeader(
-    isDark: Boolean,
     textColor: Color,
-    onSettingsClick: () -> Unit,
-    onJournalLogClick: () -> Unit
+    onSettingsClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
+            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "Note Your Thoughts",
-            style = Typography.headlineMedium.copy(
-                color = textColor,
-                fontWeight = FontWeight.Medium
-            )
-        )
-
+        // Left side - Book icon and title
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = textColor
+            Icon(
+                imageVector = Icons.Default.Book,
+                contentDescription = "Journal",
+                tint = StillwaterTeal,
+                modifier = Modifier.size(28.dp)
+            )
+            Text(
+                text = "Reflect",
+                style = Typography.headlineMedium.copy(
+                    color = textColor,
+                    fontWeight = FontWeight.Bold
                 )
-            }
+            )
+        }
 
-            IconButton(onClick = onJournalLogClick) {
-                Image(
-                    painter = painterResource(id = R.drawable.remember),
-                    contentDescription = "View Journal",
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+        // Right side - Menu icon
+        IconButton(onClick = onSettingsClick) {
+            Icon(
+                imageVector = Icons.Default.Menu,
+                contentDescription = "Menu",
+                tint = textColor,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
@@ -181,111 +170,63 @@ private fun TodaysPromptCard(
     cardColor: Color,
     textColor: Color,
     isDark: Boolean,
-    onClick: () -> Unit
+    onRespondToPrompt: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 4.dp)
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 8.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Prompt text - Simplified and prominent
+            Text(
+                text = prompt,
+                style = Typography.headlineSmall.copy(
+                    color = textColor,
+                    lineHeight = 32.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                textAlign = TextAlign.Center
+            )
+
+            // Prominent teal button
+            Button(
+                onClick = onRespondToPrompt,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = StillwaterTeal
+                ),
+                contentPadding = PaddingValues(vertical = 16.dp)
             ) {
                 Text(
-                    text = "✨",
-                    fontSize = 20.sp
-                )
-                Text(
-                    text = "Today's Prompt",
+                    text = "Respond to Prompt",
                     style = Typography.titleMedium.copy(
-                        color = textColor,
+                        color = Color.White,
                         fontWeight = FontWeight.SemiBold
                     )
                 )
             }
-
-            Text(
-                text = prompt,
-                style = Typography.bodyLarge.copy(
-                    color = textColor,
-                    lineHeight = 24.sp
-                )
-            )
         }
     }
 }
 
-@Composable
-private fun ActionCard(
-    modifier: Modifier = Modifier,
-    title: String,
-    subtitle: String,
-    icon: Int,
-    cardColor: Color,
-    textColor: Color,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = modifier.clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Image(
-                painter = painterResource(id = icon),
-                contentDescription = title,
-                modifier = Modifier.size(32.dp)
-            )
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = title,
-                    style = Typography.titleSmall.copy(
-                        color = textColor,
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    textAlign = TextAlign.Center
-                )
-
-                Text(
-                    text = subtitle,
-                    style = Typography.bodySmall.copy(
-                        color = textColor.copy(alpha = 0.7f)
-                    ),
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun LookBackModule(
     entry: JournalEntry,
     cardColor: Color,
     textColor: Color,
+    isDark: Boolean,
     onClick: () -> Unit
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
             text = "From Your Past",
@@ -301,7 +242,7 @@ private fun LookBackModule(
                 .clickable { onClick() },
             colors = CardDefaults.cardColors(containerColor = cardColor),
             shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 4.dp)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
@@ -319,7 +260,7 @@ private fun LookBackModule(
                     text = entry.content.take(150) + if (entry.content.length > 150) "..." else "",
                     style = Typography.bodyMedium.copy(
                         color = textColor,
-                        lineHeight = 20.sp
+                        lineHeight = 24.sp
                     )
                 )
             }
@@ -327,20 +268,20 @@ private fun LookBackModule(
     }
 }
 
-
-
 @Preview(showBackground = true)
 @Composable
 fun ReflectScreenLightPreview() {
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
     OrielleTheme(darkTheme = false) {
-        ReflectScreen(navController = rememberNavController())
+        ReflectScreen(navController = rememberNavController(), themeManager = fakeThemeManager)
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun ReflectScreenDarkPreview() {
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
     OrielleTheme(darkTheme = true) {
-        ReflectScreen(navController = rememberNavController())
+        ReflectScreen(navController = rememberNavController(), themeManager = fakeThemeManager)
     }
 }
