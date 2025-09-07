@@ -148,7 +148,7 @@ fun RememberScreen(
                         when (activity.activityType) {
                             ActivityType.REFLECT -> navController.navigate("journal_detail/${activity.relatedId}")
                             ActivityType.ASK -> navController.navigate("conversation_detail/${activity.relatedId}")
-                            ActivityType.CHECK_IN -> navController.navigate("mood_check_in")
+                            ActivityType.CHECK_IN -> { /* Ignore mood check-ins */ }
                         }
                     }
                 )
@@ -649,7 +649,7 @@ private fun CalendarDayCell(
             )
 
             // Activity indicators (dots) - positioned at bottom
-            if (day.hasReflectActivity || day.hasAskActivity || day.hasCheckInActivity) {
+            if (day.hasReflectActivity || day.hasAskActivity) {
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -673,16 +673,6 @@ private fun CalendarDayCell(
                                 .size(6.dp)
                                 .clip(CircleShape)
                                 .background(AuroraGold)
-                        )
-                    }
-
-                    // Check-in dot (blue/water blue)
-                    if (day.hasCheckInActivity) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(WaterBlue)
                         )
                     }
                 }
@@ -750,25 +740,6 @@ private fun ActivityLegend(textColor: Color) {
                     )
                     Text(
                         text = "Chat/Ask",
-                        fontFamily = NotoSans,
-                        fontSize = 12.sp,
-                        color = textColor
-                    )
-                }
-
-                // Check-in dot
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(WaterBlue)
-                    )
-                    Text(
-                        text = "Mood",
                         fontFamily = NotoSans,
                         fontSize = 12.sp,
                         color = textColor
@@ -877,14 +848,6 @@ private fun DailyGlimpsePanel(
                                 onClick = { onNavigateToDetail(activity) }
                             )
                         }
-
-                        // Show first Mood Check-in activity only
-                        groupedActivities[ActivityType.CHECK_IN]?.firstOrNull()?.let { activity ->
-                            GlimpseActivityItem(
-                                activity = activity,
-                                onClick = { onNavigateToDetail(activity) }
-                            )
-                        }
                     }
                 } else {
                     // Empty state
@@ -919,13 +882,13 @@ private fun GlimpseActivityItem(
     val activityColor = when (activity.activityType) {
         ActivityType.REFLECT -> StillwaterTeal
         ActivityType.ASK -> AuroraGold
-        ActivityType.CHECK_IN -> WaterBlue
+        ActivityType.CHECK_IN -> WaterBlue // Fallback color for mood check-ins (shouldn't be displayed)
     }
 
     val activityTitle = when (activity.activityType) {
         ActivityType.REFLECT -> "Your Reflection"
         ActivityType.ASK -> "Chat with Orielle"
-        ActivityType.CHECK_IN -> "Mood Check-in"
+        ActivityType.CHECK_IN -> "Mood Check-in" // Fallback title for mood check-ins (shouldn't be displayed)
     }
 
     Column(
@@ -958,7 +921,7 @@ private fun GlimpseActivityItem(
         val actionText = when (activity.activityType) {
             ActivityType.REFLECT -> "Read more..."
             ActivityType.ASK -> "View conversation..."
-            ActivityType.CHECK_IN -> "View details..."
+            ActivityType.CHECK_IN -> "View details..." // Fallback text for mood check-ins (shouldn't be displayed)
         }
 
         Text(

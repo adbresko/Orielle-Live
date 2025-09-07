@@ -90,48 +90,11 @@ class RememberViewModel @Inject constructor(
                     }
                 }
 
-                // Load mood check-ins and convert to activities
-                val currentUserId = sessionManager.currentUserId.first() ?: ""
-                println("DEBUG: Current user ID: $currentUserId")
-                val moodCheckInsResponse = moodCheckInRepository.getMoodCheckInsByUserId(currentUserId).first()
-                val moodCheckIns = when (moodCheckInsResponse) {
-                    is Response.Success -> {
-                        println("DEBUG: Loaded ${moodCheckInsResponse.data.size} mood check-ins")
-                        moodCheckInsResponse.data
-                    }
-                    else -> {
-                        println("DEBUG: Failed to load mood check-ins: ${moodCheckInsResponse}")
-                        emptyList()
-                    }
-                }
-
-                // Debug: Log mood check-ins specifically
-                println("DEBUG: Mood check-ins loaded: ${moodCheckIns.size}")
-                moodCheckIns.forEach { checkIn ->
-                    val cal = Calendar.getInstance()
-                    cal.time = checkIn.timestamp
-                    println("DEBUG: Mood check-in on ${cal.get(Calendar.MONTH) + 1}/${cal.get(Calendar.DAY_OF_MONTH)}/${cal.get(Calendar.YEAR)}: ${checkIn.id} - ${checkIn.mood}")
-                }
-
-                val moodActivities = moodCheckIns.map { checkIn ->
-                    UserActivity(
-                        id = checkIn.id,
-                        userId = checkIn.userId,
-                        activityType = ActivityType.CHECK_IN,
-                        timestamp = checkIn.timestamp,
-                        relatedId = checkIn.id,
-                        title = "Mood Check-in",
-                        preview = "Mood: ${checkIn.mood}",
-                        tags = checkIn.tags,
-                        mood = checkIn.mood
-                    )
-                }
-
-                // Combine all activities and deduplicate by ID
-                val allActivitiesList = journalActivities + conversationActivities + moodActivities
+                // Combine all activities and deduplicate by ID (excluding mood check-ins)
+                val allActivitiesList = journalActivities + conversationActivities
 
                 // Debug: Log before deduplication
-                println("DEBUG: Before deduplication - Journal: ${journalActivities.size}, Conversations: ${conversationActivities.size}, Mood: ${moodActivities.size}")
+                println("DEBUG: Before deduplication - Journal: ${journalActivities.size}, Conversations: ${conversationActivities.size}")
                 println("DEBUG: Total before deduplication: ${allActivitiesList.size}")
 
                 // More aggressive deduplication - check for same day, same type, same user
@@ -238,11 +201,10 @@ class RememberViewModel @Inject constructor(
 
             val hasReflect = dayActivities.any { it.activityType == ActivityType.REFLECT }
             val hasAsk = dayActivities.any { it.activityType == ActivityType.ASK }
-            val hasCheckIn = dayActivities.any { it.activityType == ActivityType.CHECK_IN }
 
             // Debug: Log the boolean flags
             if (dayActivities.isNotEmpty()) {
-                println("DEBUG: Day ${month + 1}/${day}/${year} flags: reflect=$hasReflect, ask=$hasAsk, checkIn=$hasCheckIn")
+                println("DEBUG: Day ${month + 1}/${day}/${year} flags: reflect=$hasReflect, ask=$hasAsk")
             }
 
             calendarDays.add(CalendarDay(
@@ -252,7 +214,7 @@ class RememberViewModel @Inject constructor(
                 activities = dayActivities,
                 hasReflectActivity = hasReflect,
                 hasAskActivity = hasAsk,
-                hasCheckInActivity = hasCheckIn
+                hasCheckInActivity = false
             ))
         }
 
@@ -265,7 +227,7 @@ class RememberViewModel @Inject constructor(
         println("DEBUG: Generated ${calendarDays.size} calendar days")
         println("DEBUG: Today is ${todayMonth + 1}/${todayDay}/${todayYear}")
         calendarDays.filter { it.activities.isNotEmpty() }.forEach { day ->
-            println("DEBUG: Calendar day ${day.dayOfMonth} has ${day.activities.size} activities, flags: reflect=${day.hasReflectActivity}, ask=${day.hasAskActivity}, checkIn=${day.hasCheckInActivity}")
+            println("DEBUG: Calendar day ${day.dayOfMonth} has ${day.activities.size} activities, flags: reflect=${day.hasReflectActivity}, ask=${day.hasAskActivity}")
         }
     }
 

@@ -81,21 +81,24 @@ fun JournalDetailScreen(
     Scaffold(
         containerColor = backgroundColor,
         topBar = {
-            JournalDetailTopBar(
-                textColor = textColor,
-                onBackClick = { navController.popBackStack() },
-                onMoreClick = { showMenu = true },
-                showMenu = showMenu,
-                onDismissMenu = { showMenu = false },
-                onEditClick = {
-                    showMenu = false
-                    navController.navigate("journal_editor?entryId=$entryId")
-                },
-                onDeleteClick = {
-                    showMenu = false
-                    viewModel.showDeleteDialog()
-                }
-            )
+            uiState.entry?.let { entry ->
+                JournalDetailTopBar(
+                    entry = entry,
+                    textColor = textColor,
+                    onBackClick = { navController.popBackStack() },
+                    onMoreClick = { showMenu = true },
+                    showMenu = showMenu,
+                    onDismissMenu = { showMenu = false },
+                    onEditClick = {
+                        showMenu = false
+                        navController.navigate("journal_editor?entryId=$entryId")
+                    },
+                    onDeleteClick = {
+                        showMenu = false
+                        viewModel.showDeleteDialog()
+                    }
+                )
+            }
         }
     ) { paddingValues ->
         if (uiState.isLoading) {
@@ -151,6 +154,7 @@ fun JournalDetailScreen(
 
 @Composable
 private fun JournalDetailTopBar(
+    entry: JournalEntry,
     textColor: Color,
     onBackClick: () -> Unit,
     onMoreClick: () -> Unit,
@@ -172,6 +176,30 @@ private fun JournalDetailTopBar(
                 contentDescription = "Back",
                 tint = textColor
             )
+        }
+
+        // Center content - Date and Location
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
+            Text(
+                text = dateFormat.format(entry.timestamp),
+                style = Typography.titleLarge.copy(
+                    color = textColor,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+
+            if (entry.location != null) {
+                Text(
+                    text = entry.location,
+                    style = Typography.bodyMedium.copy(
+                        color = textColor,
+                        fontWeight = FontWeight.Normal
+                    )
+                )
+            }
         }
 
         Box {
@@ -224,163 +252,51 @@ private fun JournalDetailContent(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Metadata Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = cardColor),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Date and time
-                val dateFormat = SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault())
-                val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-
-                Text(
-                    text = dateFormat.format(entry.timestamp),
-                    style = Typography.titleMedium.copy(
-                        color = textColor,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-
-                Text(
-                    text = timeFormat.format(entry.timestamp),
-                    style = Typography.bodyMedium.copy(
-                        color = textColor.copy(alpha = 0.7f)
-                    )
-                )
-
-                // Location if available
-                if (entry.location != null) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = "Location",
-                            tint = textColor.copy(alpha = 0.7f),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = entry.location,
-                            style = Typography.bodyMedium.copy(
-                                color = textColor.copy(alpha = 0.7f)
-                            )
-                        )
-                    }
-                }
-            }
-        }
-
-        // Prompt text if this was a prompt-based entry
-        if (entry.promptText != null) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = WaterBlue.copy(alpha = 0.1f)),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "✨ Prompt",
-                        style = Typography.titleSmall.copy(
-                            color = WaterBlue,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    )
-                    Text(
-                        text = entry.promptText,
-                        style = Typography.bodyMedium.copy(
-                            color = textColor,
-                            lineHeight = 20.sp
-                        )
-                    )
-                }
-            }
-        }
-
-        // Main content
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = cardColor),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Text(
-                text = entry.content,
-                modifier = Modifier.padding(20.dp),
-                style = Typography.bodyLarge.copy(
-                    color = textColor,
-                    lineHeight = 24.sp
-                )
+        // Main content - simple text display
+        Text(
+            text = entry.content,
+            style = Typography.bodyLarge.copy(
+                color = textColor,
+                lineHeight = 24.sp
             )
-        }
+        )
 
         // Tags if available
         if (entry.tags.isNotEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = cardColor),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Tags",
-                        style = Typography.titleSmall.copy(
-                            color = textColor,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                Text(
+                    text = "Tags",
+                    style = Typography.bodyMedium.copy(
+                        color = textColor,
+                        fontWeight = FontWeight.Bold
                     )
+                )
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        entry.tags.forEach { tag ->
-                            Surface(
-                                color = WaterBlue.copy(alpha = 0.2f),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Text(
-                                    text = tag,
-                                    style = Typography.bodySmall.copy(
-                                        color = WaterBlue,
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                )
-                            }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    entry.tags.forEach { tag ->
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+                        ) {
+                            Text(
+                                text = tag,
+                                style = Typography.bodySmall.copy(
+                                    color = textColor,
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
                         }
                     }
                 }
             }
         }
-
-        // Entry type indicator
-        val entryTypeText = when (entry.entryType) {
-            JournalEntryType.PROMPT -> "Prompt-based reflection"
-            JournalEntryType.FREE_WRITE -> "Free writing"
-            JournalEntryType.QUICK_ENTRY -> "Quick thought"
-        }
-
-        Text(
-            text = entryTypeText,
-            style = Typography.bodySmall.copy(
-                color = textColor.copy(alpha = 0.5f)
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }
 

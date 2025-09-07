@@ -83,7 +83,7 @@ class RememberSearchViewModel @Inject constructor(
                 }
                 allActivities.addAll(chatActivities)
 
-                // Load mood check-ins and convert to activities
+                // Load mood check-ins to get mood context for Ask/Reflect entries
                 val currentUserId = sessionManager.currentUserId.first() ?: ""
                 val moodCheckInsResponse = moodCheckInRepository.getMoodCheckInsByUserId(currentUserId).first()
                 val moodCheckIns = when (moodCheckInsResponse) {
@@ -91,48 +91,44 @@ class RememberSearchViewModel @Inject constructor(
                     else -> emptyList()
                 }
 
-                // Deduplicate mood check-ins by grouping by date and keeping only the most recent one per day
-                val deduplicatedMoodCheckIns = moodCheckIns
+                // Create a map of dates to moods for context lookup
+                val moodContextMap = moodCheckIns
                     .groupBy { checkIn ->
-                        // Group by date (year, month, day) to avoid duplicates on the same day
                         val calendar = java.util.Calendar.getInstance()
                         calendar.time = checkIn.timestamp
                         Triple(calendar.get(java.util.Calendar.YEAR), calendar.get(java.util.Calendar.MONTH), calendar.get(java.util.Calendar.DAY_OF_MONTH))
                     }
                     .mapValues { (_, checkIns) ->
-                        // Keep the most recent check-in for each day
-                        checkIns.maxByOrNull { it.timestamp }
+                        // Keep the most recent mood for each day
+                        checkIns.maxByOrNull { it.timestamp }?.mood
                     }
-                    .values
-                    .filterNotNull()
+                    .filterValues { it != null }
+                    .mapValues { (_, mood) -> mood!! }
 
-                val moodActivities = deduplicatedMoodCheckIns.map { checkIn ->
-                    UserActivity(
-                        id = checkIn.id,
-                        userId = checkIn.userId,
-                        activityType = ActivityType.CHECK_IN,
-                        timestamp = checkIn.timestamp,
-                        relatedId = checkIn.id,
-                        title = "Mood Check-in",
-                        preview = "Mood: ${checkIn.mood}",
-                        tags = checkIn.tags,
-                        mood = checkIn.mood
-                    )
+                // Add mood context to Ask/Reflect activities
+                val activitiesWithMoodContext = allActivities.map { activity ->
+                    val calendar = java.util.Calendar.getInstance()
+                    calendar.time = activity.timestamp
+                    val dateKey = Triple(calendar.get(java.util.Calendar.YEAR), calendar.get(java.util.Calendar.MONTH), calendar.get(java.util.Calendar.DAY_OF_MONTH))
+                    val moodContext = moodContextMap[dateKey]
+
+                    activity.copy(mood = moodContext)
                 }
-                allActivities.addAll(moodActivities)
 
                 // Sort all activities by timestamp (newest first)
-                val sortedActivities = allActivities.sortedByDescending { it.timestamp }
+                val sortedActivities = activitiesWithMoodContext.sortedByDescending { it.timestamp }
 
-                // Extract available moods and tags for filters
-                val availableMoods = moodActivities.mapNotNull { it.mood }.distinct().sorted()
+                // Define all available moods (not just from user's data)
+                val allAvailableMoods = listOf("Happy", "Sad", "Angry", "Peaceful", "Playful", "Scared", "Shy", "Surprised", "Frustrated")
+
+                // Extract available tags for filters
                 val availableTags = allActivities.flatMap { it.tags }.distinct().sorted()
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     allActivities = sortedActivities,
                     filteredResults = sortedActivities,
-                    availableMoods = availableMoods,
+                    availableMoods = allAvailableMoods,
                     availableTags = availableTags
                 )
 
@@ -188,24 +184,28 @@ class RememberSearchViewModel @Inject constructor(
         val query = currentState.searchQuery.lowercase().trim()
 
         val filtered = currentState.allActivities.filter { activity ->
+            // Only show Ask and Reflect activities (exclude mood check-ins)
+            if (activity.activityType == ActivityType.CHECK_IN) {
+                return@filter false
+            }
+
             // Apply text search filter
             val matchesQuery = if (query.isEmpty()) {
                 true
             } else {
                 activity.title?.lowercase()?.contains(query) == true ||
                         activity.preview?.lowercase()?.contains(query) == true ||
-                        activity.tags.any { it.lowercase().contains(query) } ||
-                        activity.mood?.lowercase()?.contains(query) == true
+                        activity.tags.any { it.lowercase().contains(query) }
             }
 
-            // Apply type filter
+            // Apply type filter (only Ask and Reflect)
             val matchesType = if (currentState.selectedTypes.isEmpty()) {
                 true
             } else {
                 currentState.selectedTypes.contains(activity.activityType)
             }
 
-            // Apply mood filter
+            // Apply mood filter - check if the activity was created on a day with the selected mood
             val matchesMood = if (currentState.selectedMoods.isEmpty()) {
                 true
             } else {

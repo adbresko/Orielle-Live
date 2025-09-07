@@ -28,6 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
 import com.orielle.ui.theme.*
 import com.orielle.domain.model.UserActivity
 import com.orielle.domain.model.ActivityType
@@ -116,7 +117,7 @@ fun RememberSearchScreen(
                             when (activity.activityType) {
                                 ActivityType.REFLECT -> navController.navigate("journal_detail/${activity.relatedId}")
                                 ActivityType.ASK -> navController.navigate("conversation_detail/${activity.relatedId}")
-                                ActivityType.CHECK_IN -> navController.navigate("mood_detail")
+                                ActivityType.CHECK_IN -> { /* Ignore mood check-ins */ }
                             }
                         }
                     )
@@ -253,11 +254,6 @@ private fun FilterSection(
                         isSelected = selectedTypes.contains(ActivityType.ASK),
                         onClick = { onTypeToggle(ActivityType.ASK) }
                     )
-                    TypeFilterChip(
-                        type = ActivityType.CHECK_IN,
-                        isSelected = selectedTypes.contains(ActivityType.CHECK_IN),
-                        onClick = { onTypeToggle(ActivityType.CHECK_IN) }
-                    )
                 }
             }
         )
@@ -335,27 +331,21 @@ private fun TypeFilterChip(
     val (text, color) = when (type) {
         ActivityType.REFLECT -> "Reflection" to StillwaterTeal
         ActivityType.ASK -> "Chat" to AuroraGold
-        ActivityType.CHECK_IN -> "Check-in" to WaterBlue
+        ActivityType.CHECK_IN -> "Check-in" to WaterBlue // Fallback (shouldn't be displayed)
     }
 
-    Card(
+    Surface(
         modifier = Modifier.clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) color.copy(alpha = 0.15f) else Color.White
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = if (isSelected)
-            androidx.compose.foundation.BorderStroke(2.dp, color)
-        else
-            androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+        color = if (isSelected) color else Color.Transparent,
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
     ) {
         Text(
             text = text,
             fontFamily = NotoSans,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = if (isSelected) color else Charcoal,
+            color = if (isSelected) Color.White else Charcoal,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
     }
@@ -518,13 +508,13 @@ private fun SearchResultCard(
     val activityColor = when (activity.activityType) {
         ActivityType.REFLECT -> StillwaterTeal
         ActivityType.ASK -> AuroraGold
-        ActivityType.CHECK_IN -> WaterBlue
+        ActivityType.CHECK_IN -> WaterBlue // Fallback (shouldn't be displayed)
     }
 
     val activityTypeText = when (activity.activityType) {
         ActivityType.REFLECT -> "Reflection"
         ActivityType.ASK -> "Chat"
-        ActivityType.CHECK_IN -> "Check-in"
+        ActivityType.CHECK_IN -> "Check-in" // Fallback (shouldn't be displayed)
     }
 
     Card(
@@ -640,26 +630,27 @@ private fun SearchResultCard(
 private fun EmptySearchResults() {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxSize()
+            .padding(vertical = 80.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "No results found",
-            fontFamily = NotoSans,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF666666),
-            textAlign = TextAlign.Center
+        // Water drop icon
+        Image(
+            painter = painterResource(id = R.drawable.ic_orielle_drop),
+            contentDescription = "Water Drop",
+            modifier = Modifier.size(64.dp)
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(
-            text = "Try adjusting your search or filters",
+            text = "No Memories Found",
             fontFamily = NotoSans,
-            fontSize = 14.sp,
-            color = Color(0xFF999999),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp)
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Charcoal,
+            textAlign = TextAlign.Center
         )
     }
 }
