@@ -22,6 +22,7 @@ data class AskUiState(
     val messages: List<com.orielle.domain.model.ChatMessage> = emptyList(),
     val isTyping: Boolean = false,
     val showChoiceModal: Boolean = false,
+    val showTaggingModal: Boolean = false,
     val currentTags: List<String> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
@@ -236,6 +237,14 @@ class AskViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun showTaggingModal() {
+        _uiState.value = _uiState.value.copy(showTaggingModal = true)
+    }
+
+    fun hideTaggingModal() {
+        _uiState.value = _uiState.value.copy(showTaggingModal = false)
     }
 
     fun isFirstTimeUser(): Boolean {

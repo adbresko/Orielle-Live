@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.orielle.ui.util.ScreenUtils
 
 // Defines the typography for the Orielle Theme, using the custom Lora and NotoSans fonts.
 val Typography = Typography(
@@ -53,55 +54,33 @@ val Typography = Typography(
     )
 )
 
-// Responsive typography that scales based on screen size while preserving Pixel 9 Pro experience
+// Responsive typography that scales based on screen size
 @Composable
 fun getResponsiveTypography(): Typography {
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp
-    val screenHeight = configuration.screenHeightDp
-
-    // Scale factor based on screen size - Pixel 9 Pro keeps current size (1.0f)
-    val scaleFactor = when {
-        screenWidth < 360 || screenHeight < 640 -> 0.85f // Pixel 3/4 (U14/U15) - smaller
-        screenWidth < 480 || screenHeight < 800 -> 1.0f  // Pixel 9 Pro (U16) - current size (preserved)
-        screenWidth < 600 -> 1.05f                       // Large phones - slightly larger
-        else -> 1.1f                                     // Tablets - larger
-    }
+    val scaleFactor = ScreenUtils.getTextScaleFactor()
 
     return Typography(
-        displayLarge = TextStyle(
-            fontFamily = Lora,
-            fontWeight = FontWeight.Bold,
+        displayLarge = Typography.displayLarge.copy(
             fontSize = (32 * scaleFactor).sp,
             lineHeight = (40 * scaleFactor).sp
         ),
-        headlineLarge = TextStyle(
-            fontFamily = Lora,
-            fontWeight = FontWeight.Bold,
+        headlineLarge = Typography.headlineLarge.copy(
             fontSize = (28 * scaleFactor).sp,
             lineHeight = (36 * scaleFactor).sp
         ),
-        titleLarge = TextStyle(
-            fontFamily = NotoSans,
-            fontWeight = FontWeight.Bold,
+        titleLarge = Typography.titleLarge.copy(
             fontSize = (22 * scaleFactor).sp,
             lineHeight = (28 * scaleFactor).sp
         ),
-        bodyLarge = TextStyle(
-            fontFamily = NotoSans,
-            fontWeight = FontWeight.Normal,
+        bodyLarge = Typography.bodyLarge.copy(
             fontSize = (16 * scaleFactor).sp,
             lineHeight = (24 * scaleFactor).sp,
             letterSpacing = (0.5 * scaleFactor).sp
         ),
-        labelLarge = TextStyle(
-            fontFamily = NotoSans,
-            fontWeight = FontWeight.Medium,
+        labelLarge = Typography.labelLarge.copy(
             fontSize = (16 * scaleFactor).sp
         ),
-        bodyMedium = TextStyle(
-            fontFamily = NotoSans,
-            fontWeight = FontWeight.Normal,
+        bodyMedium = Typography.bodyMedium.copy(
             fontSize = (14 * scaleFactor).sp,
             lineHeight = (20 * scaleFactor).sp
         )

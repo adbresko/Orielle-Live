@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -63,9 +64,9 @@ fun ProfileSettingsScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 WaterDropLoading(
                     size = 80,
-                    modifier = Modifier.size(80.dp)
+                    modifier = Modifier.size(ScreenUtils.responsiveImageSize(80.dp))
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
                 Text(
                     text = "Loading your settings...",
                     style = Typography.bodyMedium.copy(color = textColor)
@@ -82,7 +83,7 @@ fun ProfileSettingsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
+                    .padding(start = ScreenUtils.responsivePadding(), end = ScreenUtils.responsivePadding() * 1.5f, top = ScreenUtils.responsiveSpacing(), bottom = ScreenUtils.responsiveSpacing()),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { navController.popBackStack() }) {
@@ -93,7 +94,7 @@ fun ProfileSettingsScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(ScreenUtils.responsiveSpacing()))
 
                 Text(
                     text = "Settings",
@@ -110,18 +111,18 @@ fun ProfileSettingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = ScreenUtils.responsivePadding() * 1.5f)
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
 
             // Profile Info Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = cardColor),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(ScreenUtils.responsivePadding())
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(ScreenUtils.responsivePadding() * 1.5f),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Profile Image Selector
@@ -135,7 +136,7 @@ fun ProfileSettingsScreen(
                         onImageRemove = { viewModel.removeProfileImage(currentContext) },
                         avatarLibrary = viewModel.getAvatarLibrary(),
                         isPremiumUser = uiState.isPremium ?: false,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding())
                     )
 
                     Text(
@@ -157,7 +158,7 @@ fun ProfileSettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 2))
 
             // Settings Items
             SettingsSection(title = "Profile", cardColor = cardColor, textColor = textColor) {
@@ -176,7 +177,7 @@ fun ProfileSettingsScreen(
                 ) { viewModel.showEditEmailDialog() }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
 
             SettingsSection(title = "Security", cardColor = cardColor, textColor = textColor) {
                 SettingsItem(
@@ -195,7 +196,7 @@ fun ProfileSettingsScreen(
                 ) { viewModel.toggleTwoFactor(it) }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
 
             SettingsSection(title = "Account", cardColor = cardColor, textColor = textColor) {
                 SettingsToggleItem(
@@ -223,7 +224,7 @@ fun ProfileSettingsScreen(
                 ) { viewModel.showDeleteAccountConfirmation() }
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 2.5f))
         }
     }
 
@@ -244,7 +245,7 @@ private fun SettingsSection(
             color = textColor,
             fontWeight = FontWeight.SemiBold
         ),
-        modifier = Modifier.padding(bottom = 12.dp)
+        modifier = Modifier.padding(bottom = ScreenUtils.responsiveSpacing() * 1.5f)
     )
 
     Card(
@@ -268,7 +269,7 @@ private fun SettingsItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(20.dp),
+            .padding(ScreenUtils.responsivePadding() * 1.25f),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -317,7 +318,7 @@ private fun SettingsToggleItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(20.dp),
+            .padding(ScreenUtils.responsivePadding() * 1.25f),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

@@ -17,6 +17,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.orielle.R
 import com.orielle.ui.theme.Lora // Make sure to import your Lora font family
+import com.orielle.ui.util.ScreenUtils
 
 @Composable
 fun OrielleLogo(modifier: Modifier = Modifier) {
@@ -28,10 +29,10 @@ fun OrielleLogo(modifier: Modifier = Modifier) {
         Image(
             painter = painterResource(id = R.drawable.ic_orielle_drop),
             contentDescription = "Orielle Logo",
-            modifier = Modifier.size(60.dp)
+            modifier = Modifier.size(ScreenUtils.responsiveImageSize(60.dp))
             // No colorFilter - using native colors for consistency
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
         Text(
             text = "ORIELLE",
             fontFamily = Lora, // Using the custom Lora font for the wordmark

@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -47,6 +48,7 @@ fun ReflectScreen(
     val backgroundColor = if (isDark) DarkGray else SoftSand
     val textColor = if (isDark) SoftSand else Charcoal
     val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
+    val buttonColor = if (isDark) StillwaterTeal else StillwaterTeal
 
     Scaffold(
         bottomBar = {
@@ -63,18 +65,19 @@ fun ReflectScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header with book icon and menu
+            // Header with book icon and profile
             ReflectHeader(
                 textColor = textColor,
-                onSettingsClick = { navController.navigate("profile_settings") }
+                onProfileClick = { navController.navigate("profile_settings") },
+                onBookClick = { navController.navigate("journal_editor") }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 2))
 
             // Content
             Column(
-                modifier = Modifier.padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(32.dp)
+                modifier = Modifier.padding(horizontal = ScreenUtils.responsivePadding() * 1.5f),
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 2)
             ) {
                 // Today's Prompt Card - Simplified and prominent
                 TodaysPromptCard(
@@ -91,14 +94,14 @@ fun ReflectScreen(
                 Text(
                     text = "Or, start with a blank page",
                     style = Typography.bodyLarge.copy(
-                        color = WaterBlue,
+                        color = if (isDark) WaterBlue else Charcoal.copy(alpha = 0.7f),
                         fontWeight = FontWeight.Medium
                     ),
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { navController.navigate("journal_editor") }
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = ScreenUtils.responsiveSpacing())
                 )
 
                 // Look Back Module (only show if there's a past entry)
@@ -114,7 +117,7 @@ fun ReflectScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
             }
         }
     }
@@ -123,42 +126,32 @@ fun ReflectScreen(
 @Composable
 private fun ReflectHeader(
     textColor: Color,
-    onSettingsClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onBookClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 8.dp),
+            .padding(start = ScreenUtils.responsivePadding() * 1.5f, end = ScreenUtils.responsivePadding() * 1.5f, top = ScreenUtils.responsivePadding(), bottom = ScreenUtils.responsiveSpacing()),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left side - Book icon and title
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Book,
-                contentDescription = "Journal",
-                tint = StillwaterTeal,
-                modifier = Modifier.size(28.dp)
-            )
-            Text(
-                text = "Reflect",
-                style = Typography.headlineMedium.copy(
-                    color = textColor,
-                    fontWeight = FontWeight.Bold
-                )
+        // Left side - Journal icon (clickable for free writing)
+        IconButton(onClick = onBookClick) {
+            Image(
+                painter = painterResource(id = R.drawable.reflect),
+                contentDescription = "Write without prompt",
+                modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
             )
         }
 
-        // Right side - Menu icon
-        IconButton(onClick = onSettingsClick) {
+        // Right side - Profile icon
+        IconButton(onClick = onProfileClick) {
             Icon(
-                imageVector = Icons.Default.Menu,
-                contentDescription = "Menu",
+                imageVector = Icons.Default.Person,
+                contentDescription = "Profile",
                 tint = textColor,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
             )
         }
     }
@@ -175,12 +168,12 @@ private fun TodaysPromptCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.25f),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 8.dp)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            modifier = Modifier.padding(ScreenUtils.responsivePadding() * 1.5f),
+            verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 1.5f)
         ) {
             // Prompt text - Simplified and prominent
             Text(
@@ -197,7 +190,7 @@ private fun TodaysPromptCard(
             Button(
                 onClick = onRespondToPrompt,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = StillwaterTeal
                 ),
@@ -226,7 +219,7 @@ private fun LookBackModule(
     onClick: () -> Unit
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
     ) {
         Text(
             text = "From Your Past",
@@ -241,12 +234,12 @@ private fun LookBackModule(
                 .fillMaxWidth()
                 .clickable { onClick() },
             colors = CardDefaults.cardColors(containerColor = cardColor),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
             elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 4.dp)
         ) {
             Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.padding(ScreenUtils.responsivePadding() * 1.25f),
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing() * 1.5f)
             ) {
                 val dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
                 Text(
@@ -268,7 +261,7 @@ private fun LookBackModule(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Reflect Screen - Light")
 @Composable
 fun ReflectScreenLightPreview() {
     val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
@@ -277,7 +270,7 @@ fun ReflectScreenLightPreview() {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Reflect Screen - Dark")
 @Composable
 fun ReflectScreenDarkPreview() {
     val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)

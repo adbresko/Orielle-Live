@@ -187,6 +187,43 @@ class JournalEditorViewModel @Inject constructor(
         )
     }
 
+    fun updateTagsFromTaggingScreen(tags: List<String>) {
+        _uiState.value = _uiState.value.copy(
+            tags = tags,
+            hasUnsavedChanges = true
+        )
+    }
+
+    fun updateNewTagInput(input: String) {
+        _uiState.value = _uiState.value.copy(newTagInput = input)
+    }
+
+    fun addCurrentTag() {
+        val newTag = _uiState.value.newTagInput.trim()
+        if (newTag.isNotEmpty() && !_uiState.value.tags.contains(newTag)) {
+            _uiState.value = _uiState.value.copy(
+                tags = _uiState.value.tags + newTag,
+                newTagInput = "",
+                hasUnsavedChanges = true
+            )
+        }
+    }
+
+    fun removeTag(tag: String) {
+        _uiState.value = _uiState.value.copy(
+            tags = _uiState.value.tags - tag,
+            hasUnsavedChanges = true
+        )
+    }
+
+    fun showTaggingModal() {
+        _uiState.value = _uiState.value.copy(showTaggingModal = true)
+    }
+
+    fun hideTaggingModal() {
+        _uiState.value = _uiState.value.copy(showTaggingModal = false)
+    }
+
     private fun showMessage(message: String) {
         _uiState.value = _uiState.value.copy(error = message)
     }
@@ -200,6 +237,7 @@ data class JournalEditorUiState(
     val timestamp: Date = Date(),
     val location: String? = null,
     val tags: List<String> = emptyList(),
+    val newTagInput: String = "",
     val photoUrl: String? = null,
     val promptText: String? = null,
     val entryType: JournalEntryType = JournalEntryType.FREE_WRITE,
@@ -207,5 +245,6 @@ data class JournalEditorUiState(
     val hasUnsavedChanges: Boolean = false,
     val showDiscardDialog: Boolean = false,
     val showSavedMessage: Boolean = false,
+    val showTaggingModal: Boolean = false,
     val error: String? = null
 )

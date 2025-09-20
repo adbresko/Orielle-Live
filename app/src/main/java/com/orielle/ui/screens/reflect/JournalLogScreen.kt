@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -83,8 +84,8 @@ fun JournalLogScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(horizontal = ScreenUtils.responsivePadding() * 1.5f, vertical = ScreenUtils.responsivePadding()),
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
             ) {
                 val groupedEntries = uiState.filteredEntries.groupBy { entry ->
                     SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(entry.timestamp)
@@ -121,7 +122,7 @@ private fun JournalLogTopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
+            .padding(start = ScreenUtils.responsivePadding(), end = ScreenUtils.responsivePadding() * 1.5f, top = ScreenUtils.responsiveSpacing(), bottom = ScreenUtils.responsiveSpacing()),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -162,7 +163,7 @@ private fun DateHeader(
             color = textColor,
             fontWeight = FontWeight.SemiBold
         ),
-        modifier = Modifier.padding(vertical = 8.dp)
+        modifier = Modifier.padding(vertical = ScreenUtils.responsiveSpacing())
     )
 }
 
@@ -178,12 +179,12 @@ private fun JournalEntryCard(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(ScreenUtils.responsiveSpacing() * 1.5f),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(ScreenUtils.responsivePadding()),
+            verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
         ) {
             // Header with location and time
             Row(
@@ -194,7 +195,7 @@ private fun JournalEntryCard(
                 if (entry.location != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveTextSpacing())
                     ) {
                         Text(
                             text = "📍",
@@ -210,7 +211,7 @@ private fun JournalEntryCard(
                         )
                     }
                 } else {
-                    Spacer(modifier = Modifier.width(1.dp))
+                    Spacer(modifier = Modifier.width(ScreenUtils.responsiveTextSpacing() / 2))
                 }
 
                 Text(
@@ -235,13 +236,13 @@ private fun JournalEntryCard(
             // Tags (if any)
             if (entry.tags.isNotEmpty()) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(top = 4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                    modifier = Modifier.padding(top = ScreenUtils.responsiveTextSpacing())
                 ) {
                     entry.tags.take(3).forEach { tag ->
                         Surface(
                             color = WaterBlue.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(ScreenUtils.responsiveSpacing() * 1.5f)
                         ) {
                             Text(
                                 text = tag,
@@ -249,7 +250,7 @@ private fun JournalEntryCard(
                                     color = WaterBlue,
                                     fontWeight = FontWeight.Medium
                                 ),
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = ScreenUtils.responsiveSpacing(), vertical = ScreenUtils.responsiveTextSpacing())
                             )
                         }
                     }
@@ -282,7 +283,7 @@ private fun EmptyJournalState(
             fontSize = 48.sp
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
 
         Text(
             text = "Your journal is empty",
@@ -292,7 +293,7 @@ private fun EmptyJournalState(
             )
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing()))
 
         Text(
             text = "Start reflecting on your thoughts and experiences",
@@ -317,7 +318,7 @@ private fun FilterDialog(
         title = { Text("Filter Entries") },
         text = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
             ) {
                 Text(
                     text = "Filter by Date",
@@ -325,7 +326,7 @@ private fun FilterDialog(
                 )
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
                 ) {
                     FilterChip(
                         selected = selectedDateFilter == "today",

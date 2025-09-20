@@ -7,10 +7,14 @@ import android.location.LocationManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -24,10 +28,12 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -45,6 +51,7 @@ fun JournalEditorScreen(
     promptText: String? = null,
     isQuickEntry: Boolean = false,
     entryId: String? = null, // For editing existing entries
+    tags: String? = null, // Tags from tagging screen
     viewModel: JournalEditorViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -56,13 +63,19 @@ fun JournalEditorScreen(
     val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
 
     // Initialize the editor with prompt text or existing entry
-    LaunchedEffect(promptText, entryId) {
+    LaunchedEffect(promptText, entryId, tags) {
         if (entryId != null) {
             viewModel.loadEntry(entryId)
         } else if (promptText != null) {
             viewModel.setPromptText(promptText)
         }
         viewModel.setQuickEntry(isQuickEntry)
+
+        // Handle tags from tagging screen
+        if (tags != null && tags.isNotEmpty()) {
+            val tagsList = tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            viewModel.updateTagsFromTaggingScreen(tagsList)
+        }
     }
 
     // Handle location permission
@@ -117,6 +130,20 @@ fun JournalEditorScreen(
         }
     }
 
+    // Show tagging modal
+    if (uiState.showTaggingModal) {
+        TaggingModal(
+            currentTags = uiState.tags,
+            onDismiss = { viewModel.hideTaggingModal() },
+            onSaveTags = { tags ->
+                viewModel.addTags(tags)
+                viewModel.hideTaggingModal()
+            },
+            textColor = textColor,
+            cardColor = cardColor
+        )
+    }
+
     Scaffold(
         containerColor = backgroundColor,
         topBar = {
@@ -137,26 +164,25 @@ fun JournalEditorScreen(
             )
         },
         bottomBar = {
-            if (!isQuickEntry) {
-                JournalEditorBottomBar(
-                    textColor = textColor,
-                    backgroundColor = backgroundColor,
-                    onPhotoClick = { /* TODO: Implement photo picker */ },
-                    onTagClick = { navController.navigate("journal_tagging/${uiState.tempEntryId}") },
-                    onBoldClick = { viewModel.toggleBold() }
-                )
-            }
+            JournalEditorBottomBar(
+                textColor = textColor,
+                backgroundColor = backgroundColor,
+                onPhotoClick = { /* TODO: Implement photo picker */ },
+                onTagClick = { viewModel.showTaggingModal() },
+                onBoldClick = { viewModel.toggleBold() },
+                hasTags = uiState.tags.isNotEmpty()
+            )
         },
         snackbarHost = {
             if (uiState.showSavedMessage) {
                 Card(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(ScreenUtils.responsivePadding()),
                     colors = CardDefaults.cardColors(containerColor = WaterBlue),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
                 ) {
                     Text(
                         text = "✨ Saved to your Reflect journal",
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(ScreenUtils.responsivePadding()),
                         color = Color.White,
                         style = Typography.bodyMedium
                     )
@@ -175,7 +201,7 @@ fun JournalEditorScreen(
                 timestamp = uiState.timestamp,
                 location = uiState.location,
                 textColor = textColor,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                modifier = Modifier.padding(horizontal = ScreenUtils.responsivePadding() * 1.5f, vertical = ScreenUtils.responsivePadding())
             )
 
             // Prompt Text (if applicable)
@@ -183,13 +209,13 @@ fun JournalEditorScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
+                        .padding(horizontal = ScreenUtils.responsivePadding() * 1.5f),
                     colors = CardDefaults.cardColors(containerColor = cardColor),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(ScreenUtils.responsiveSpacing() * 1.5f)
                 ) {
                     Text(
                         text = uiState.promptText!!,
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(ScreenUtils.responsivePadding()),
                         style = Typography.bodyMedium.copy(
                             color = textColor.copy(alpha = 0.8f),
                             lineHeight = 20.sp
@@ -197,24 +223,64 @@ fun JournalEditorScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
+            }
+
+            // Tags display (if any) - simplified
+            if (uiState.tags.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = ScreenUtils.responsivePadding() * 1.5f),
+                    colors = CardDefaults.cardColors(containerColor = cardColor),
+                    shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
+                ) {
+                    Row(
+                        modifier = Modifier.padding(ScreenUtils.responsivePadding()),
+                        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                    ) {
+                        Text(
+                            text = "Tags:",
+                            style = Typography.bodySmall.copy(
+                                color = textColor.copy(alpha = 0.7f),
+                                fontWeight = FontWeight.Medium
+                            )
+                        )
+                        uiState.tags.forEach { tag ->
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = StillwaterTeal.copy(alpha = 0.1f)),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = tag,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    style = Typography.bodySmall.copy(
+                                        color = StillwaterTeal,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
             }
 
             // Main Text Input
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = ScreenUtils.responsivePadding() * 1.5f)
                     .weight(1f),
                 colors = CardDefaults.cardColors(containerColor = cardColor),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(ScreenUtils.responsiveSpacing() * 1.5f)
             ) {
                 BasicTextField(
                     value = uiState.content,
                     onValueChange = { viewModel.updateContent(it) },
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(20.dp),
+                        .padding(ScreenUtils.responsivePadding() * 1.25f),
                     textStyle = Typography.bodyLarge.copy(
                         color = textColor,
                         lineHeight = 24.sp
@@ -239,7 +305,7 @@ fun JournalEditorScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
         }
     }
 }
@@ -253,7 +319,7 @@ private fun JournalEditorTopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
+            .padding(start = ScreenUtils.responsivePadding(), end = ScreenUtils.responsivePadding() * 1.5f, top = ScreenUtils.responsiveSpacing(), bottom = ScreenUtils.responsiveSpacing()),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -271,7 +337,7 @@ private fun JournalEditorTopBar(
                 containerColor = WaterBlue,
                 contentColor = Color.White
             ),
-            shape = RoundedCornerShape(20.dp)
+            shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.25f)
         ) {
             Text(
                 text = "Done",
@@ -330,7 +396,8 @@ private fun JournalEditorBottomBar(
     backgroundColor: Color,
     onPhotoClick: () -> Unit,
     onTagClick: () -> Unit,
-    onBoldClick: () -> Unit
+    onBoldClick: () -> Unit,
+    hasTags: Boolean = false
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -356,7 +423,7 @@ private fun JournalEditorBottomBar(
                 Icon(
                     imageVector = Icons.Default.Tag,
                     contentDescription = "Add Tags",
-                    tint = textColor
+                    tint = if (hasTags) StillwaterTeal else textColor
                 )
             }
 
@@ -371,7 +438,7 @@ private fun JournalEditorBottomBar(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Journal Editor - Light")
 @Composable
 fun JournalEditorScreenLightPreview() {
     OrielleTheme(darkTheme = false) {
@@ -382,13 +449,188 @@ fun JournalEditorScreenLightPreview() {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Journal Editor - Dark")
 @Composable
 fun JournalEditorScreenDarkPreview() {
     OrielleTheme(darkTheme = true) {
         JournalEditorScreen(
             navController = rememberNavController(),
             isQuickEntry = true
+        )
+    }
+}
+
+@Composable
+private fun TaggingModal(
+    currentTags: List<String>,
+    onDismiss: () -> Unit,
+    onSaveTags: (List<String>) -> Unit,
+    textColor: Color,
+    cardColor: Color
+) {
+    var selectedTags by remember { mutableStateOf(currentTags.toSet()) }
+    var customTagInput by remember { mutableStateOf("") }
+
+    val suggestedTags = listOf(
+        "gratitude", "reflection", "growth", "challenge", "joy",
+        "anxiety", "peace", "love", "work", "family", "friends",
+        "health", "goals", "dreams", "memories", "learning"
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Add Tags",
+                style = Typography.titleLarge.copy(color = textColor)
+            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
+            ) {
+                // Custom tag input
+                OutlinedTextField(
+                    value = customTagInput,
+                    onValueChange = { customTagInput = it },
+                    placeholder = {
+                        Text(
+                            text = "Add custom tag...",
+                            color = textColor.copy(alpha = 0.5f)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = StillwaterTeal,
+                        unfocusedBorderColor = textColor.copy(alpha = 0.3f),
+                        cursorColor = StillwaterTeal
+                    ),
+                    textStyle = Typography.bodyMedium.copy(color = textColor),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            if (customTagInput.trim().isNotEmpty()) {
+                                selectedTags = selectedTags + customTagInput.trim()
+                                customTagInput = ""
+                            }
+                        }
+                    ),
+                    singleLine = true
+                )
+
+                // Suggested tags
+                Text(
+                    text = "Suggested Tags:",
+                    style = Typography.bodyMedium.copy(
+                        color = textColor,
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                    contentPadding = PaddingValues(vertical = 4.dp)
+                ) {
+                    items(suggestedTags) { tag ->
+                        val isSelected = selectedTags.contains(tag)
+                        Card(
+                            modifier = Modifier.clickable {
+                                selectedTags = if (isSelected) {
+                                    selectedTags - tag
+                                } else {
+                                    selectedTags + tag
+                                }
+                            },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) StillwaterTeal else cardColor
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(
+                                text = tag,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                style = Typography.bodySmall.copy(
+                                    color = if (isSelected) Color.White else textColor,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Selected tags display
+                if (selectedTags.isNotEmpty()) {
+                    Text(
+                        text = "Selected Tags:",
+                        style = Typography.bodyMedium.copy(
+                            color = textColor,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                        contentPadding = PaddingValues(vertical = 4.dp)
+                    ) {
+                        items(selectedTags.toList()) { tag ->
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = StillwaterTeal.copy(alpha = 0.1f)),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = tag,
+                                        style = Typography.bodySmall.copy(
+                                            color = StillwaterTeal,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    )
+                                    IconButton(
+                                        onClick = { selectedTags = selectedTags - tag },
+                                        modifier = Modifier.size(16.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Remove tag",
+                                            tint = StillwaterTeal,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSaveTags(selectedTags.toList()) },
+                colors = ButtonDefaults.buttonColors(containerColor = StillwaterTeal)
+            ) {
+                Text("Save Tags", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = textColor)
+            }
+        }
+    )
+}
+
+@Preview(showBackground = true, name = "Journal Editor - With Tags")
+@Composable
+fun JournalEditorScreenWithTagsPreview() {
+    OrielleTheme(darkTheme = false) {
+        JournalEditorScreen(
+            navController = rememberNavController(),
+            promptText = "What is one thing on your mind today?",
+            tags = "gratitude,reflection,growth"
         )
     }
 }

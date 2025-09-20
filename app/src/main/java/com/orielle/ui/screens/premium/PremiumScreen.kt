@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.theme.OrielleTheme
@@ -47,7 +48,7 @@ fun PremiumScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
+                .padding(ScreenUtils.responsivePadding() * 1.5f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Header
@@ -58,7 +59,7 @@ fun PremiumScreen(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
 
             Text(
                 text = "Unlock all features and enhance your journaling experience",
@@ -67,7 +68,7 @@ fun PremiumScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 2))
 
             // Premium Features
             PremiumFeature(
@@ -95,7 +96,7 @@ fun PremiumScreen(
                 description = "Get help when you need it most"
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 2))
 
             // Subscription Options
             if (uiState.products.isNotEmpty()) {
@@ -105,11 +106,11 @@ fun PremiumScreen(
                         isSelected = uiState.selectedProductId == product.productId,
                         onSelect = { viewModel.selectProduct(product.productId) }
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing() * 1.5f))
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
 
             // Upgrade Button
             OriellePrimaryButton(
@@ -120,14 +121,14 @@ fun PremiumScreen(
                 if (uiState.isLoading) {
                     WaterDropLoading(
                         size = 20,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(ScreenUtils.responsiveIconSize(20.dp))
                     )
                 } else {
                     Text("Upgrade Now")
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
 
             // Restore Purchases
             TextButton(
@@ -137,7 +138,7 @@ fun PremiumScreen(
                 Text("Restore Purchases")
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
 
             // Terms
             Text(

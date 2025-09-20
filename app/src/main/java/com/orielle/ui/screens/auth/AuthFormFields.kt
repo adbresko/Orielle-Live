@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 
 @Composable
 fun AuthFormFields(
@@ -36,7 +37,7 @@ fun AuthFormFields(
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                 singleLine = true
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing()))
         }
 
         OutlinedTextField(

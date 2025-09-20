@@ -13,6 +13,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.compose.ui.unit.sp
 import com.orielle.R
 import com.orielle.ui.components.OrielleScreenHeader
@@ -29,17 +30,17 @@ fun MoodFinalScreen(
             .background(Color(0xFFF8F7F3)),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(80.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 5))
         OrielleScreenHeader(
             text = "Saved for today"
         )
         Card(
-            shape = RoundedCornerShape(32.dp),
+            shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 2),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             modifier = Modifier
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = ScreenUtils.responsivePadding() * 1.5f)
                 .fillMaxWidth()
-                .height(220.dp),
+                .height(ScreenUtils.responsivePadding() * 13.75f),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
@@ -53,28 +54,28 @@ fun MoodFinalScreen(
                     color = Color(0xFF222222),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = ScreenUtils.responsivePadding())
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
                 Text(
                     text = "Abraham Lincoln",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFF888888),
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
                 Image(
                     painter = painterResource(id = R.drawable.ic_orielle_drop),
                     contentDescription = "Orielle Drop",
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(ScreenUtils.responsiveIconSize(32.dp))
                     // No colorFilter - using native colors for consistency
                 )
             }
         }
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 3))
         Button(
             onClick = onDone,
-            shape = RoundedCornerShape(32.dp),
+            shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 2),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8EC6C6)),
             modifier = Modifier
                 .width(180.dp)

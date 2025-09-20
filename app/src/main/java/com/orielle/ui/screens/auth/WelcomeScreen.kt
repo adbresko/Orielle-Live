@@ -91,7 +91,7 @@ fun WelcomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
-                    .padding(top = if (ScreenUtils.isSmallScreen()) 40.dp else 60.dp),
+                    .padding(top = ScreenUtils.responsivePadding() * 3.75f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 OrielleLogo()
@@ -112,10 +112,10 @@ fun WelcomeScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(
-                                top = if (ScreenUtils.isSmallScreen()) 80.dp else 100.dp,
-                                start = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
-                                end = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
-                                bottom = if (ScreenUtils.isSmallScreen()) 24.dp else 32.dp
+                                top = ScreenUtils.responsivePadding() * 6.25f,
+                                start = ScreenUtils.responsivePadding() * 1.5f,
+                                end = ScreenUtils.responsivePadding() * 1.5f,
+                                bottom = ScreenUtils.responsivePadding() * 2
                             ),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Top // Key change: Content starts from the top
@@ -125,7 +125,7 @@ fun WelcomeScreen(
                             style = MaterialTheme.typography.headlineLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(Modifier.height(32.dp))
+                        Spacer(Modifier.height(ScreenUtils.responsivePadding() * 2))
 
                         OriellePrimaryButton(
                             onClick = onNavigateToEmailSignUp,
@@ -133,7 +133,7 @@ fun WelcomeScreen(
                         ) {
                             Text("Create a Free Account")
                         }
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(ScreenUtils.responsivePadding()))
 
                         OrielleOutlinedButton(
                             onClick = onNavigateToSignIn,

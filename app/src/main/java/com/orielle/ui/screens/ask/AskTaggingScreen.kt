@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.navigation.NavController
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -39,12 +40,18 @@ import com.orielle.ui.theme.*
 fun AskTaggingScreen(
     navController: NavController,
     conversationId: String? = null,
+    tempEntryId: String? = null,
     viewModel: AskTaggingViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
 
     // Set conversation ID in ViewModel
     LaunchedEffect(conversationId) {
         conversationId?.let { viewModel.setConversationId(it) }
+    }
+
+    // Set temp entry ID for journal entries
+    LaunchedEffect(tempEntryId) {
+        tempEntryId?.let { viewModel.setTempEntryId(it) }
     }
     val uiState by viewModel.uiState.collectAsState()
     val isDark = MaterialTheme.colorScheme.background == DarkGray
@@ -57,7 +64,7 @@ fun AskTaggingScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
-            .padding(16.dp)
+            .padding(ScreenUtils.responsivePadding())
     ) {
         // Header
         TopAppBar(
@@ -82,14 +89,14 @@ fun AskTaggingScreen(
             )
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
 
         // Description
         Text(
             text = "Add tags to help you find this conversation later. You can select from suggestions or create your own.",
             style = Typography.bodyLarge,
             color = if (isDark) SoftSand.copy(alpha = 0.8f) else Charcoal.copy(alpha = 0.8f),
-            modifier = Modifier.padding(bottom = 24.dp)
+            modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding() * 1.5f)
         )
 
         // Suggested tags
@@ -98,12 +105,12 @@ fun AskTaggingScreen(
                 text = "Suggested Tags",
                 style = Typography.titleMedium,
                 color = textColor,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(bottom = ScreenUtils.responsiveSpacing() * 1.5f)
             )
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
+                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                contentPadding = PaddingValues(bottom = ScreenUtils.responsivePadding())
             ) {
                 items(uiState.suggestedTags) { tag ->
                     SuggestedTagChip(
@@ -122,12 +129,12 @@ fun AskTaggingScreen(
                 text = "Your Tags",
                 style = Typography.titleMedium,
                 color = textColor,
-                modifier = Modifier.padding(bottom = 12.dp, top = 16.dp)
+                modifier = Modifier.padding(bottom = ScreenUtils.responsiveSpacing() * 1.5f, top = ScreenUtils.responsivePadding())
             )
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
+                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                contentPadding = PaddingValues(bottom = ScreenUtils.responsivePadding())
             ) {
                 items(uiState.selectedTags) { tag ->
                     SelectedTagChip(
@@ -189,7 +196,7 @@ fun AskTaggingScreen(
         // Save button
         Button(
             onClick = {
-                viewModel.saveConversation()
+                viewModel.saveConversation(navController)
                 navController.navigate("home_graph") {
                     popUpTo("ask_tagging") { inclusive = true }
                 }
@@ -300,9 +307,14 @@ class AskTaggingViewModel @Inject constructor(
     val uiState: StateFlow<AskTaggingUiState> = _uiState.asStateFlow()
 
     private var conversationId: String? = null
+    private var tempEntryId: String? = null
 
     fun setConversationId(id: String) {
         conversationId = id
+    }
+
+    fun setTempEntryId(id: String) {
+        tempEntryId = id
     }
 
     fun toggleSuggestedTag(tag: String) {
@@ -327,19 +339,31 @@ class AskTaggingViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(selectedTags = currentTags - tag)
     }
 
-    fun saveConversation() {
+    fun saveConversation(navController: NavController) {
         val convId = conversationId
-        if (convId == null) {
-            Timber.e("No conversation ID set for saving")
+        val entryId = tempEntryId
+
+        if (convId == null && entryId == null) {
+            Timber.e("No conversation ID or entry ID set for saving")
             return
         }
 
         viewModelScope.launch {
             try {
+                // If this is for a journal entry, just navigate back with tags
+                if (entryId != null) {
+                    // For journal entries, we'll pass the tags back via navigation
+                    // The JournalEditorViewModel will handle updating the tags
+                    val tagsString = _uiState.value.selectedTags.joinToString(",")
+                    navController.navigate("journal_editor?tags=$tagsString") {
+                        popUpTo("journal_editor") { inclusive = true }
+                    }
+                    return@launch
+                }
                 _uiState.value = _uiState.value.copy(isLoading = true)
 
                 // Update conversation saved status
-                val savedResult = chatRepository.updateConversationSavedStatus(convId, true)
+                val savedResult = chatRepository.updateConversationSavedStatus(convId.toString(), true)
                 when (savedResult) {
                     is com.orielle.domain.model.Response.Success -> {
                         Timber.d("Successfully marked conversation as saved: $convId")

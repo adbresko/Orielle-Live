@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -71,9 +72,9 @@ fun ConversationDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
+                .padding(horizontal = ScreenUtils.responsivePadding()),
+            verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding()),
+            contentPadding = PaddingValues(vertical = ScreenUtils.responsivePadding())
         ) {
             items(
                 items = uiState.messages,
@@ -108,14 +109,14 @@ private fun MessageBubble(message: ChatMessage) {
                 painter = painterResource(id = R.drawable.ic_orielle_drop),
                 contentDescription = "Orielle",
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(ScreenUtils.responsiveIconSize(24.dp))
                     .padding(end = 8.dp, top = 4.dp)
             )
         }
 
         Card(
-            modifier = Modifier.widthIn(max = 280.dp),
-            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.widthIn(max = ScreenUtils.responsivePadding() * 17.5f),
+            shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
             colors = CardDefaults.cardColors(
                 containerColor = if (isUser) WaterBlue else Color.White
             ),
@@ -127,7 +128,7 @@ private fun MessageBubble(message: ChatMessage) {
                 fontSize = 14.sp,
                 color = if (isUser) Color.White else Charcoal,
                 lineHeight = 20.sp,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(ScreenUtils.responsivePadding())
             )
         }
     }

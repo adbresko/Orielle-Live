@@ -275,7 +275,7 @@ fun AppNavigation(
         }
 
         composable(
-            "journal_editor?promptText={promptText}&isQuickEntry={isQuickEntry}&entryId={entryId}",
+            "journal_editor?promptText={promptText}&isQuickEntry={isQuickEntry}&entryId={entryId}&tags={tags}",
             arguments = listOf(
                 navArgument("promptText") {
                     type = NavType.StringType
@@ -290,18 +290,25 @@ fun AppNavigation(
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
+                },
+                navArgument("tags") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 }
             )
         ) { backStackEntry ->
             val promptText = backStackEntry.arguments?.getString("promptText")
             val isQuickEntry = backStackEntry.arguments?.getBoolean("isQuickEntry") ?: false
             val entryId = backStackEntry.arguments?.getString("entryId")
+            val tags = backStackEntry.arguments?.getString("tags")
 
             JournalEditorScreen(
                 navController = navController,
                 promptText = promptText,
                 isQuickEntry = isQuickEntry,
-                entryId = entryId
+                entryId = entryId,
+                tags = tags
             )
         }
 
@@ -326,7 +333,7 @@ fun AppNavigation(
         ) { backStackEntry ->
             val tempEntryId = backStackEntry.arguments?.getString("tempEntryId") ?: ""
             // Reuse the Ask tagging screen for journal entries
-            AskTaggingScreen(navController = navController)
+            AskTaggingScreen(navController = navController, tempEntryId = tempEntryId)
         }
 
         // Remember screen

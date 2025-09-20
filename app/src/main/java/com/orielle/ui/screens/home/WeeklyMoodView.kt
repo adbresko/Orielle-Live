@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import com.orielle.R
 import com.orielle.domain.model.DayMoodData
 import com.orielle.domain.model.MoodType
@@ -58,7 +59,7 @@ fun WeeklyMoodView(
             style = Typography.bodyMedium.copy(color = if (isDark) SoftSand else Charcoal),
             textAlign = TextAlign.Center
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(ScreenUtils.responsivePadding()))
 
         if (weeklyView.days.isEmpty()) {
             // Temporary fallback - generate basic week structure with correct today calculation
@@ -88,10 +89,10 @@ fun WeeklyMoodView(
                             text = dayLabel,
                             style = Typography.bodyMedium.copy(color = if (isDark) SoftSand else Charcoal)
                         )
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(ScreenUtils.responsiveTextSpacing()))
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(ScreenUtils.responsiveIconSize(40.dp))
                                 .background(
                                     color = if (index == todayIndex) WaterBlue.copy(alpha = 0.25f) else androidx.compose.ui.graphics.Color.Transparent,
                                     shape = CircleShape
@@ -100,7 +101,7 @@ fun WeeklyMoodView(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(20.dp)
+                                    .size(ScreenUtils.responsiveIconSize(20.dp))
                                     .background(
                                         color = if (isDark) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f) else Charcoal.copy(alpha = 0.2f),
                                         shape = CircleShape
@@ -143,10 +144,10 @@ private fun WeeklyMoodDayItem(
             text = dayData.dayLabel,
             style = Typography.bodyMedium.copy(color = if (isDark) SoftSand else Charcoal)
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(ScreenUtils.responsiveTextSpacing()))
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(ScreenUtils.responsiveIconSize(40.dp))
                 .scale(breathingScale),
             contentAlignment = Alignment.Center
         ) {
@@ -154,7 +155,7 @@ private fun WeeklyMoodDayItem(
             if (isToday) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(ScreenUtils.responsiveIconSize(40.dp))
                         .background(
                             color = WaterBlue.copy(alpha = 0.25f),
                             shape = CircleShape
@@ -171,7 +172,7 @@ private fun WeeklyMoodDayItem(
                 Image(
                     painter = painterResource(id = iconRes),
                     contentDescription = "Mood: ${dayData.moodCheckIn.mood}",
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
                 )
             } else {
                 // Show empty state indicator
@@ -192,7 +193,7 @@ private fun EmptyDayIndicator(
     // Show a subtle indicator for days without check-ins
     Box(
         modifier = Modifier
-            .size(20.dp)
+            .size(ScreenUtils.responsiveIconSize(20.dp))
             .background(
                 color = if (isToday) {
                     // For today, show a more prominent empty state

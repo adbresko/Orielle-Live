@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.compose.ui.unit.sp
 import com.orielle.R
 import androidx.compose.foundation.Image
@@ -82,17 +83,17 @@ fun MoodReflectionScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(reflectionUi.color)
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = ScreenUtils.responsivePadding() * 1.5f),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 3))
         OrielleScreenHeader(
             text = "You're feeling $moodName"
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(ScreenUtils.responsiveImageSize(120.dp))
                 .clip(CircleShape)
                 .background(Color(0xFFE3F2FD)),
             contentAlignment = Alignment.Center
@@ -100,10 +101,10 @@ fun MoodReflectionScreen(
             Image(
                 painter = painterResource(id = moodIconRes),
                 contentDescription = moodName,
-                modifier = Modifier.size(80.dp)
+                modifier = Modifier.size(ScreenUtils.responsiveImageSize(80.dp))
             )
         }
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
         Text(
             text = "What might be behind this feeling?",
             style = MaterialTheme.typography.bodyLarge,
@@ -115,10 +116,10 @@ fun MoodReflectionScreen(
                 text = "You can only select up to 3.",
                 color = Color(0xFFB00020),
                 style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                modifier = Modifier.padding(top = ScreenUtils.responsiveTextSpacing(), bottom = ScreenUtils.responsiveSpacing())
             )
         } else {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing() * 1.5f))
         }
         ReflectionOptionsGrid(
             options = reflectionUi.options,
@@ -132,7 +133,7 @@ fun MoodReflectionScreen(
                 }
             }
         )
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
         OutlinedTextField(
             value = notes,
             onValueChange = { notes = it },
@@ -154,7 +155,7 @@ fun MoodReflectionScreen(
         ) {
             Text("Save & Continue", fontWeight = FontWeight.Bold, fontSize = 18.sp)
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
         Text(
             text = "← Back to moods",
             style = MaterialTheme.typography.bodyMedium,

@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -130,7 +131,7 @@ fun EmailSignUpScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
-                    .padding(top = 60.dp),
+                    .padding(top = ScreenUtils.responsivePadding() * 3.75f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 OrielleLogo()
@@ -147,13 +148,13 @@ fun EmailSignUpScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 80.dp, start = 24.dp, end = 24.dp, bottom = 24.dp)
+                        .padding(top = ScreenUtils.responsivePadding() * 5f, start = ScreenUtils.responsivePadding() * 1.5f, end = ScreenUtils.responsivePadding() * 1.5f, bottom = ScreenUtils.responsivePadding() * 1.5f)
                         .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Top
                 ) {
                     Text("Create your account", style = MaterialTheme.typography.headlineLarge)
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(ScreenUtils.responsivePadding() * 1.25f))
 
                     OutlinedTextField(
                         value = firstName,
@@ -163,7 +164,7 @@ fun EmailSignUpScreen(
                         singleLine = true
                     )
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(ScreenUtils.responsivePadding()))
 
                     OutlinedTextField(
                         value = email,
@@ -241,7 +242,7 @@ fun EmailSignUpScreen(
                         checked = hasAgreedToTerms,
                         onCheckedChange = viewModel::onTermsAgreementChange
                     )
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(ScreenUtils.responsivePadding() * 1.25f))
 
                     OriellePrimaryButton(
                         onClick = viewModel::signUp,
@@ -251,7 +252,7 @@ fun EmailSignUpScreen(
                         Text("Create Account")
                     }
 
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(ScreenUtils.responsivePadding() * 1.25f))
 
                     SocialLoginOptions(
                         onGoogleSignInClick = { googleSignInLauncher.launch(googleSignInClient.signInIntent) },
@@ -299,21 +300,21 @@ private fun EmailInUseSupportingText(
 private fun PasswordStrengthIndicator(strength: PasswordStrength) {
     if (strength !is PasswordStrength.None) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = ScreenUtils.responsiveSpacing()),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier.weight(1f).height(4.dp).clip(CircleShape)
+                modifier = Modifier.weight(1f).height(ScreenUtils.responsiveTextSpacing()).clip(CircleShape)
                     .background(if (strength is PasswordStrength.Weak || strength is PasswordStrength.Medium || strength is PasswordStrength.Strong) MaterialTheme.colorScheme.primary else Color.LightGray)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Box(
-                modifier = Modifier.weight(1f).height(4.dp).clip(CircleShape)
+                modifier = Modifier.weight(1f).height(ScreenUtils.responsiveTextSpacing()).clip(CircleShape)
                     .background(if (strength is PasswordStrength.Medium || strength is PasswordStrength.Strong) MaterialTheme.colorScheme.primary else Color.LightGray)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Box(
-                modifier = Modifier.weight(1f).height(4.dp).clip(CircleShape)
+                modifier = Modifier.weight(1f).height(ScreenUtils.responsiveTextSpacing()).clip(CircleShape)
                     .background(if (strength is PasswordStrength.Strong) MaterialTheme.colorScheme.primary else Color.LightGray)
             )
             Text(

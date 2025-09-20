@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -120,7 +121,7 @@ fun JournalDetailScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                         .verticalScroll(rememberScrollState())
-                        .padding(24.dp)
+                        .padding(ScreenUtils.responsivePadding() * 1.5f)
                 )
             } ?: run {
                 // Entry not found
@@ -132,7 +133,7 @@ fun JournalDetailScreen(
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
                     ) {
                         Text(
                             text = "📝",
@@ -166,7 +167,7 @@ private fun JournalDetailTopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
+            .padding(start = ScreenUtils.responsivePadding(), end = ScreenUtils.responsivePadding() * 1.5f, top = ScreenUtils.responsiveSpacing(), bottom = ScreenUtils.responsiveSpacing()),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -250,7 +251,7 @@ private fun JournalDetailContent(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 1.5f)
     ) {
         // Main content - simple text display
         Text(
@@ -264,7 +265,7 @@ private fun JournalDetailContent(
         // Tags if available
         if (entry.tags.isNotEmpty()) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing() * 1.5f)
             ) {
                 Text(
                     text = "Tags",
@@ -275,12 +276,12 @@ private fun JournalDetailContent(
                 )
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     entry.tags.forEach { tag ->
                         Card(
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
                             colors = CardDefaults.cardColors(containerColor = Color.White),
                             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
                         ) {
@@ -290,7 +291,7 @@ private fun JournalDetailContent(
                                     color = textColor,
                                     fontWeight = FontWeight.Medium
                                 ),
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                modifier = Modifier.padding(horizontal = ScreenUtils.responsiveSpacing() * 1.5f, vertical = ScreenUtils.responsiveTextSpacing() * 1.5f)
                             )
                         }
                     }

@@ -108,7 +108,7 @@ fun OnboardingScreen(onNavigateToAuth: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = if (ScreenUtils.isSmallScreen()) 32.dp else 50.dp),
+                        .padding(top = ScreenUtils.responsivePadding() * 2),
                     contentAlignment = Alignment.TopCenter
                 ) {
                     Box(

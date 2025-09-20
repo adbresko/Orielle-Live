@@ -100,10 +100,10 @@ fun HomeScreen(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 WaterDropLoading(
-                    size = if (ScreenUtils.isSmallScreen()) 60 else 80,
-                    modifier = Modifier.size(if (ScreenUtils.isSmallScreen()) 60.dp else 80.dp)
+                    size = ScreenUtils.responsiveImageSize(60.dp).value.toInt(),
+                    modifier = Modifier.size(ScreenUtils.responsiveImageSize(60.dp))
                 )
-                Spacer(modifier = Modifier.height(if (ScreenUtils.isSmallScreen()) 12.dp else 16.dp))
+                Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing() * 2))
                 Text(
                     text = if (uiState.isInitializing) "Loading your dashboard..." else "Preparing your day...",
                     style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground),
@@ -253,7 +253,7 @@ fun HomeDashboardScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(64.dp)
+                                .size(ScreenUtils.responsiveImageSize(64.dp))
                                 .scale(breathingScale)
                         ) {
                             Image(
@@ -263,14 +263,14 @@ fun HomeDashboardScreen(
                                 // No colorFilter - using native colors for consistency
                             )
                         }
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(ScreenUtils.responsivePadding()))
                         Text(
                             text = "How is your inner weather ?",
                             style = Typography.titleLarge.copy(color = textColor),
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(ScreenUtils.responsiveSpacing()))
                         Text(
                             text = "Tap here to begin your check-in.",
                             style = Typography.bodyLarge.copy(color = if (isDark) SoftSand else Charcoal),
@@ -292,12 +292,12 @@ fun HomeDashboardScreen(
                     Text(
                         text = "Good morning, ${userName ?: "User"}.",
                         style = Typography.headlineLarge.copy(color = textColor),
-                        modifier = Modifier.padding(bottom = if (ScreenUtils.isSmallScreen()) 54.dp else 72.dp)
+                        modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding() * 4.5f)
                     )
                     Text(
                         text = "${dateFormat.format(today)} • waxing crescent 311 • Day 204",
                         style = Typography.bodySmall.copy(color = if (isDark) SoftSand else Charcoal),
-                        modifier = Modifier.padding(bottom = if (ScreenUtils.isSmallScreen()) 63.dp else 84.dp)
+                        modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding() * 5.25f)
                     )
                     // Inner Weather Card
                     var weatherPressed by remember { mutableStateOf(false) }

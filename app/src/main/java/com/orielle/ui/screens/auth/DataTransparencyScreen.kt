@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import com.orielle.ui.components.OriellePrimaryButton
 
 @Composable
@@ -24,7 +25,7 @@ fun DataTransparencyScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(32.dp),
+                .padding(ScreenUtils.responsivePadding() * 2),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -34,7 +35,7 @@ fun DataTransparencyScreen(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 2))
 
             PrivacyPoint(text = "End-to-end encryption")
             PrivacyPoint(text = "No data sold or shared")
@@ -49,7 +50,7 @@ fun DataTransparencyScreen(
             ) {
                 Text("Start First Entry")
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing()))
             TextButton(
                 onClick = { uriHandler.openUri("https://orielle.app/privacy") },
                 modifier = Modifier.fillMaxWidth()
@@ -65,7 +66,7 @@ private fun PrivacyPoint(text: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = ScreenUtils.responsiveSpacing()),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -73,7 +74,7 @@ private fun PrivacyPoint(text: String) {
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary
         )
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(ScreenUtils.responsivePadding()))
         Text(text = text, style = MaterialTheme.typography.bodyLarge)
     }
 }

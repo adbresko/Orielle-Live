@@ -20,10 +20,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.min
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +36,7 @@ import com.orielle.ui.theme.*
 import com.orielle.domain.model.UserActivity
 import com.orielle.domain.model.ActivityType
 import com.orielle.R
+import com.orielle.ui.util.ScreenUtils
 import java.util.Date
 
 @Composable
@@ -57,9 +61,9 @@ fun RememberSearchScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = ScreenUtils.responsivePadding()),
+            contentPadding = PaddingValues(top = 8.dp, bottom = ScreenUtils.responsiveIconSize()),
+            verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
         ) {
             item {
                 // Search Input
@@ -70,7 +74,7 @@ fun RememberSearchScreen(
             }
 
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
             }
 
             item {
@@ -88,7 +92,7 @@ fun RememberSearchScreen(
             }
 
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
             }
 
             // Results Section
@@ -172,17 +176,17 @@ private fun SearchInput(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = ScreenUtils.responsivePadding(), vertical = ScreenUtils.responsiveSpacing()),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Search",
                 tint = Charcoal,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(ScreenUtils.responsiveIconSize())
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(ScreenUtils.responsiveSpacing()))
 
             Box(modifier = Modifier.weight(1f)) {
                 BasicTextField(
@@ -208,16 +212,16 @@ private fun SearchInput(
             }
 
             if (query.isNotEmpty()) {
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(ScreenUtils.responsiveSpacing()))
                 IconButton(
                     onClick = { onQueryChange("") },
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(ScreenUtils.responsiveIconSize(ScreenUtils.responsiveIconSize()))
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Clear",
                         tint = Color(0xFF999999),
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(ScreenUtils.responsiveIconSize(ScreenUtils.responsivePadding()))
                     )
                 }
             }
@@ -242,7 +246,9 @@ private fun FilterSection(
             title = "Type",
             content = {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(
+                        (min(LocalConfiguration.current.screenWidthDp, LocalConfiguration.current.screenHeightDp) * 0.03f).dp.coerceIn(8.dp, ScreenUtils.responsivePadding())
+                    )
                 ) {
                     TypeFilterChip(
                         type = ActivityType.REFLECT,
@@ -258,7 +264,7 @@ private fun FilterSection(
             }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
 
         // Mood Filter
         if (availableMoods.isNotEmpty()) {
@@ -266,7 +272,9 @@ private fun FilterSection(
                 title = "Mood",
                 content = {
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(
+                            ScreenUtils.responsiveSpacing()
+                        )
                     ) {
                         items(availableMoods) { mood ->
                             MoodFilterChip(
@@ -279,7 +287,7 @@ private fun FilterSection(
                 }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
         }
 
         // Tags Filter
@@ -328,6 +336,17 @@ private fun TypeFilterChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+    val baseSize = min(screenWidth.value, screenHeight.value).dp
+
+    // Responsive sizing for type chips
+    val fontSize = (baseSize.value * 0.035f).coerceIn(12f, 16f).sp
+    val horizontalPadding = (baseSize.value * 0.04f).coerceIn(12f, 20f).dp
+    val verticalPadding = (baseSize.value * 0.02f).coerceIn(6f, 10f).dp
+    val cornerRadius = (baseSize.value * 0.05f).coerceIn(16f, 24f).dp
+
     val (text, color) = when (type) {
         ActivityType.REFLECT -> "Reflection" to StillwaterTeal
         ActivityType.ASK -> "Chat" to AuroraGold
@@ -336,19 +355,24 @@ private fun TypeFilterChip(
 
     Surface(
         modifier = Modifier.clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(cornerRadius.value),
         color = if (isSelected) color else Color.Transparent,
         border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
     ) {
         Text(
             text = text,
             fontFamily = NotoSans,
-            fontSize = 14.sp,
+            fontSize = fontSize,
             fontWeight = FontWeight.Medium,
             color = if (isSelected) Color.White else Charcoal,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding)
         )
     }
+}
+
+@Composable
+private fun getResponsiveSizes(): Pair<Dp, Dp> {
+    return ScreenUtils.getResponsiveSizes()
 }
 
 @Composable
@@ -357,17 +381,34 @@ private fun MoodFilterChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val (containerSize, iconSize) = getResponsiveSizes()
+
+    // Color mapping similar to mood check-in screen
+    val moodColors = mapOf(
+        "happy" to Color(0xFFFFF59D),
+        "sad" to Color(0xFF90A4AE),
+        "angry" to Color(0xFF90A4AE),
+        "frustrated" to Color(0xFFFFAB91),
+        "scared" to Color(0xFFB3E5FC),
+        "surprised" to Color(0xFFE1BEE7),
+        "playful" to Color(0xFFFFF59D),
+        "shy" to Color(0xFFE1BEE7),
+        "peaceful" to Color(0xFFFFF59D)
+    )
+
+    val backgroundColor = moodColors[mood.lowercase()] ?: Color(0xFFF5F5F5)
+
     Box(
         modifier = Modifier
-            .size(40.dp)
+            .size(containerSize)
             .clip(CircleShape)
             .border(
-                width = if (isSelected) 2.dp else 1.dp,
+                width = if (isSelected) (containerSize * 0.05f).coerceAtLeast(2.dp) else (containerSize * 0.017f).coerceAtLeast(1.dp),
                 color = if (isSelected) WaterBlue else Color(0xFFE0E0E0),
                 shape = CircleShape
             )
             .background(
-                color = if (isSelected) WaterBlue.copy(alpha = 0.1f) else Color.White,
+                color = if (isSelected) backgroundColor.copy(alpha = 0.3f) else backgroundColor.copy(alpha = 0.2f),
                 shape = CircleShape
             )
             .clickable { onClick() },
@@ -379,55 +420,55 @@ private fun MoodFilterChip(
                 painter = painterResource(id = R.drawable.ic_happy),
                 contentDescription = "Happy",
                 tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(iconSize)
             )
             "sad" -> Icon(
                 painter = painterResource(id = R.drawable.ic_sad),
                 contentDescription = "Sad",
                 tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(iconSize)
             )
             "angry" -> Icon(
                 painter = painterResource(id = R.drawable.ic_angry),
                 contentDescription = "Angry",
                 tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(iconSize)
             )
             "peaceful" -> Icon(
                 painter = painterResource(id = R.drawable.ic_peaceful),
                 contentDescription = "Peaceful",
                 tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(iconSize)
             )
             "playful" -> Icon(
                 painter = painterResource(id = R.drawable.ic_playful),
                 contentDescription = "Playful",
                 tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(iconSize)
             )
             "scared" -> Icon(
                 painter = painterResource(id = R.drawable.ic_scared),
                 contentDescription = "Scared",
                 tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(iconSize)
             )
             "shy" -> Icon(
                 painter = painterResource(id = R.drawable.ic_shy),
                 contentDescription = "Shy",
                 tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(iconSize)
             )
             "surprised" -> Icon(
                 painter = painterResource(id = R.drawable.ic_surprised),
                 contentDescription = "Surprised",
                 tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(iconSize)
             )
             "frustrated" -> Icon(
                 painter = painterResource(id = R.drawable.ic_frustrated),
                 contentDescription = "Frustrated",
                 tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(iconSize)
             )
             else -> Text(
                 text = mood.take(2).uppercase(),
@@ -449,7 +490,7 @@ private fun TagFilterChip(
 ) {
     Card(
         modifier = Modifier.clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) WaterBlue.copy(alpha = 0.15f) else Color.White
         ),
@@ -465,7 +506,7 @@ private fun TagFilterChip(
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = if (isSelected) WaterBlue else Charcoal,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+            modifier = Modifier.padding(horizontal = ScreenUtils.responsiveSpacing(), vertical = 6.dp)
         )
     }
 }
@@ -485,11 +526,11 @@ private fun ResultsList(
         fontSize = 16.sp,
         fontWeight = FontWeight.Bold,
         color = Charcoal,
-        modifier = Modifier.padding(bottom = 12.dp)
+        modifier = Modifier.padding(bottom = ScreenUtils.responsiveSpacing())
     )
 
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
     ) {
         items(results) { activity ->
             SearchResultCard(
@@ -521,12 +562,12 @@ private fun SearchResultCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(ScreenUtils.responsiveSpacing()),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(ScreenUtils.responsivePadding())
         ) {
             // Header with type and date
             Row(
@@ -539,11 +580,11 @@ private fun SearchResultCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
+                            .size(ScreenUtils.responsiveIconSize(8.dp))
                             .background(activityColor, CircleShape)
                     )
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(ScreenUtils.responsiveSpacing()))
 
                     Text(
                         text = activityTypeText,
@@ -597,7 +638,7 @@ private fun SearchResultCard(
                             modifier = Modifier
                                 .background(
                                     color = activityColor.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(12.dp)
+                                    shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
                                 )
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
@@ -639,10 +680,10 @@ private fun EmptySearchResults() {
         Image(
             painter = painterResource(id = R.drawable.ic_orielle_drop),
             contentDescription = "Water Drop",
-            modifier = Modifier.size(64.dp)
+            modifier = Modifier.size(ScreenUtils.responsiveImageSize())
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
 
         Text(
             text = "No Memories Found",
@@ -692,14 +733,14 @@ fun RememberSearchScreenPreview() {
         )
 
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(ScreenUtils.responsivePadding())
         ) {
             SearchInput(
                 query = "",
                 onQueryChange = {}
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsiveIconSize()))
 
             FilterSection(
                 selectedTypes = setOf(ActivityType.REFLECT),

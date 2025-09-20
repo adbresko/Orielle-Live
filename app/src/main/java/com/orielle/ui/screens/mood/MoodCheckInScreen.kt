@@ -86,7 +86,7 @@ fun MoodCheckInScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
-            .padding(if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp),
+            .padding(ScreenUtils.responsivePadding() * 1.5f),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -100,7 +100,7 @@ fun MoodCheckInScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = if (ScreenUtils.isSmallScreen()) 24.dp else 32.dp)
+                .padding(bottom = ScreenUtils.responsivePadding() * 2)
         )
 
         // Emotion Selection Grid (3x3)
@@ -112,7 +112,7 @@ fun MoodCheckInScreen(
             }
         )
 
-        Spacer(modifier = Modifier.height(if (ScreenUtils.isSmallScreen()) 36.dp else 48.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 3))
 
         // Show Continue button when mood is selected
         if (selectedMood != null) {
@@ -132,7 +132,7 @@ fun MoodCheckInScreen(
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing() * 1.5f))
         }
         // Always show Skip for now option under Continue or in original place
         Text(
@@ -141,7 +141,7 @@ fun MoodCheckInScreen(
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             modifier = Modifier
                 .clickable { onSkip() }
-                .padding(8.dp)
+                .padding(ScreenUtils.responsiveSpacing())
                 .align(Alignment.CenterHorizontally)
         )
     }
@@ -175,11 +175,11 @@ private fun EmotionGrid(
     var selectedMood by remember { mutableStateOf<String?>(null) }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
     ) {
         // Row 1
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
         ) {
             emotions.take(3).forEach { emotion ->
                 EmotionButton(
@@ -202,7 +202,7 @@ private fun EmotionGrid(
         }
         // Row 2
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
         ) {
             emotions.slice(3..5).forEach { emotion ->
                 EmotionButton(
@@ -225,7 +225,7 @@ private fun EmotionGrid(
         }
         // Row 3
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
         ) {
             emotions.takeLast(3).forEach { emotion ->
                 EmotionButton(

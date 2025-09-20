@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import coil.compose.AsyncImage
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Person
@@ -41,6 +43,7 @@ import com.orielle.R
 import com.orielle.ui.theme.*
 import com.orielle.domain.model.ChatMessage
 import com.orielle.domain.manager.SessionManager
+import com.orielle.ui.util.ScreenUtils
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -100,33 +103,33 @@ fun AskScreen(
                                 navController.popBackStack()
                             }
                         },
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(ScreenUtils.responsiveIconSize(48.dp))
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = textColor,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
                         )
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = { showPrivacyCoachMark = true },
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(ScreenUtils.responsiveIconSize(48.dp))
                     ) {
                         Icon(
                             imageVector = Icons.Default.Lock,
                             contentDescription = "Privacy",
                             tint = textColor,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = backgroundColor
                 ),
-                modifier = Modifier.padding(horizontal = 8.dp)
+                modifier = Modifier.padding(horizontal = ScreenUtils.responsiveSpacing())
             )
 
             // Chat messages - Minimal top spacing
@@ -135,9 +138,9 @@ fun AskScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-                contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp)
+                    .padding(horizontal = ScreenUtils.responsivePadding()),
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 1.25f),
+                contentPadding = PaddingValues(top = ScreenUtils.responsiveTextSpacing(), bottom = ScreenUtils.responsivePadding() * 1.25f)
             ) {
                 items(uiState.messages) { message ->
                     ChatBubble(
@@ -187,12 +190,7 @@ fun AskScreen(
             ChoiceModal(
                 onSaveConversation = {
                     viewModel.hideChoiceModal()
-                    val conversationId = viewModel.getCurrentConversationId()
-                    if (conversationId != null) {
-                        navController.navigate("ask_tagging?conversationId=$conversationId")
-                    } else {
-                        navController.navigate("ask_tagging")
-                    }
+                    viewModel.showTaggingModal()
                 },
                 onLetItGo = {
                     viewModel.letItGo()
@@ -200,6 +198,22 @@ fun AskScreen(
                     // TODO: Show toast "Your thoughts have been released."
                 },
                 isDark = isDark
+            )
+        }
+
+        // Tagging modal
+        if (uiState.showTaggingModal) {
+            val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
+            TaggingModal(
+                currentTags = uiState.currentTags,
+                onDismiss = { viewModel.hideTaggingModal() },
+                onSaveTags = { tags ->
+                    viewModel.addTags(tags)
+                    viewModel.hideTaggingModal()
+                    navController.popBackStack()
+                },
+                textColor = textColor,
+                cardColor = cardColor
             )
         }
     }
@@ -222,16 +236,16 @@ fun ChatBubble(
                 painter = painterResource(id = R.drawable.ic_orielle_drop),
                 contentDescription = "Orielle",
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(ScreenUtils.responsiveIconSize(32.dp))
                     .clip(CircleShape)
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(ScreenUtils.responsiveSpacing() * 1.5f))
         }
 
         Card(
             modifier = Modifier
-                .widthIn(max = 280.dp),
-            shape = RoundedCornerShape(16.dp),
+                .widthIn(max = ScreenUtils.responsivePadding() * 17.5f),
+            shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
             colors = CardDefaults.cardColors(
                 containerColor = if (message.isFromUser) {
                     WaterBlue
@@ -245,7 +259,7 @@ fun ChatBubble(
         ) {
             Text(
                 text = message.content,
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(ScreenUtils.responsivePadding()),
                 style = Typography.bodyLarge,
                 color = if (message.isFromUser) {
                     Color.White
@@ -256,7 +270,7 @@ fun ChatBubble(
         }
 
         if (message.isFromUser) {
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(ScreenUtils.responsiveSpacing() * 1.5f))
             // User's avatar or initial
             if (userProfileImageUrl != null && userProfileImageUrl.isNotBlank()) {
                 // Show user's actual profile image
@@ -264,7 +278,7 @@ fun ChatBubble(
                     model = userProfileImageUrl,
                     contentDescription = "You",
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(ScreenUtils.responsiveIconSize(32.dp))
                         .clip(CircleShape),
                     placeholder = painterResource(id = R.drawable.ic_orielle_drop),
                     error = painterResource(id = R.drawable.ic_orielle_drop)
@@ -273,7 +287,7 @@ fun ChatBubble(
                 // Show user's initial in a circle
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(ScreenUtils.responsiveIconSize(32.dp))
                         .background(
                             color = if (isDark) DarkGray else SoftSand,
                             shape = CircleShape
@@ -306,14 +320,14 @@ fun TypingIndicator(isDark: Boolean) {
             painter = painterResource(id = R.drawable.ic_orielle_drop),
             contentDescription = "Orielle",
             modifier = Modifier
-                .size(32.dp)
+                .size(ScreenUtils.responsiveIconSize(32.dp))
                 .clip(CircleShape)
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(ScreenUtils.responsiveSpacing() * 1.5f))
 
         Card(
-            modifier = Modifier.widthIn(max = 120.dp),
-            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.widthIn(max = ScreenUtils.responsivePadding() * 7.5f),
+            shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
             colors = CardDefaults.cardColors(
                 containerColor = if (isDark) DarkGray else SoftSand
             ),
@@ -322,8 +336,8 @@ fun TypingIndicator(isDark: Boolean) {
             )
         ) {
             Row(
-                modifier = Modifier.padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.padding(ScreenUtils.responsivePadding()),
+                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveTextSpacing())
             ) {
                 repeat(3) { index ->
                     TypingDot(
@@ -350,7 +364,7 @@ fun TypingDot(delay: Long, color: Color) {
 
     Box(
         modifier = Modifier
-            .size(6.dp)
+            .size(ScreenUtils.responsiveIconSize(6.dp))
             .background(
                 color = color.copy(alpha = alpha),
                 shape = CircleShape
@@ -370,8 +384,8 @@ fun TextInputBar(
     val hasText = messageText.isNotBlank()
 
     Card(
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 20.dp),
-        shape = RoundedCornerShape(24.dp),
+        modifier = modifier.padding(horizontal = ScreenUtils.responsivePadding(), vertical = ScreenUtils.responsivePadding() * 1.25f),
+        shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.5f),
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) DarkGray else SoftSand
         ),
@@ -380,7 +394,7 @@ fun TextInputBar(
         )
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = ScreenUtils.responsivePadding(), vertical = ScreenUtils.responsiveSpacing()),
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextField(
@@ -409,11 +423,11 @@ fun TextInputBar(
                 maxLines = 3
             )
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(ScreenUtils.responsiveSpacing()))
 
             // Mic/Send button with animation
             Box(
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(ScreenUtils.responsiveIconSize(40.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 androidx.compose.animation.AnimatedVisibility(
@@ -709,6 +723,169 @@ fun Preview_ChoiceModal_Light() {
             isDark = false
         )
     }
+}
+
+@Composable
+private fun TaggingModal(
+    currentTags: List<String>,
+    onDismiss: () -> Unit,
+    onSaveTags: (List<String>) -> Unit,
+    textColor: Color,
+    cardColor: Color
+) {
+    var selectedTags by remember { mutableStateOf(currentTags.toSet()) }
+    var customTagInput by remember { mutableStateOf("") }
+
+    val suggestedTags = listOf(
+        "gratitude", "reflection", "growth", "challenge", "joy",
+        "anxiety", "peace", "love", "work", "family", "friends",
+        "health", "goals", "dreams", "memories", "learning"
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Add Tags",
+                style = Typography.titleLarge.copy(color = textColor)
+            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
+            ) {
+                // Custom tag input
+                OutlinedTextField(
+                    value = customTagInput,
+                    onValueChange = { customTagInput = it },
+                    placeholder = {
+                        Text(
+                            text = "Add custom tag...",
+                            color = textColor.copy(alpha = 0.5f)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = StillwaterTeal,
+                        unfocusedBorderColor = textColor.copy(alpha = 0.3f),
+                        cursorColor = StillwaterTeal
+                    ),
+                    textStyle = Typography.bodyMedium.copy(color = textColor),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            if (customTagInput.trim().isNotEmpty()) {
+                                selectedTags = selectedTags + customTagInput.trim()
+                                customTagInput = ""
+                            }
+                        }
+                    ),
+                    singleLine = true
+                )
+
+                // Suggested tags
+                Text(
+                    text = "Suggested Tags:",
+                    style = Typography.bodyMedium.copy(
+                        color = textColor,
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                    contentPadding = PaddingValues(vertical = 4.dp)
+                ) {
+                    items(suggestedTags) { tag ->
+                        val isSelected = selectedTags.contains(tag)
+                        Card(
+                            modifier = Modifier.clickable {
+                                selectedTags = if (isSelected) {
+                                    selectedTags - tag
+                                } else {
+                                    selectedTags + tag
+                                }
+                            },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) StillwaterTeal else cardColor
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(
+                                text = tag,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                style = Typography.bodySmall.copy(
+                                    color = if (isSelected) Color.White else textColor,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Selected tags display
+                if (selectedTags.isNotEmpty()) {
+                    Text(
+                        text = "Selected Tags:",
+                        style = Typography.bodyMedium.copy(
+                            color = textColor,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                        contentPadding = PaddingValues(vertical = 4.dp)
+                    ) {
+                        items(selectedTags.toList()) { tag ->
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = StillwaterTeal.copy(alpha = 0.1f)),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = tag,
+                                        style = Typography.bodySmall.copy(
+                                            color = StillwaterTeal,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    )
+                                    IconButton(
+                                        onClick = { selectedTags = selectedTags - tag },
+                                        modifier = Modifier.size(16.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Remove tag",
+                                            tint = StillwaterTeal,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSaveTags(selectedTags.toList()) },
+                colors = ButtonDefaults.buttonColors(containerColor = StillwaterTeal)
+            ) {
+                Text("Save Tags", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = textColor)
+            }
+        }
+    )
 }
 
 @Preview(name = "Choice Modal - Dark", showBackground = true, backgroundColor = 0xFF1A1A1A)

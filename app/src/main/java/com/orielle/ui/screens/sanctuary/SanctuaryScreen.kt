@@ -63,7 +63,7 @@ fun SanctuaryScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp),
+                    .padding(horizontal = ScreenUtils.responsivePadding() * 1.5f),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {

@@ -22,6 +22,7 @@ import com.orielle.ui.components.OriellePrimaryButton
 import com.orielle.ui.components.SocialLoginOptions
 import com.orielle.ui.theme.OrielleTheme
 import com.orielle.ui.util.UiEvent
+import com.orielle.ui.util.ScreenUtils
 import kotlinx.coroutines.flow.collectLatest
 import android.app.Activity
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -101,7 +102,7 @@ fun SignInScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
-                    .padding(top = 60.dp), // Slightly reduced top padding for the logo
+                    .padding(top = ScreenUtils.responsivePadding() * 3.75f), // Slightly reduced top padding for the logo
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 OrielleLogo()
@@ -119,12 +120,12 @@ fun SignInScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 80.dp, start = 24.dp, end = 24.dp, bottom = 24.dp), // CORRECTED: Adjusted padding
+                        .padding(top = ScreenUtils.responsivePadding() * 5f, start = ScreenUtils.responsivePadding() * 1.5f, end = ScreenUtils.responsivePadding() * 1.5f, bottom = ScreenUtils.responsivePadding() * 1.5f), // CORRECTED: Adjusted padding
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Top
                 ) {
                     Text("Welcome Back", style = MaterialTheme.typography.headlineLarge)
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(ScreenUtils.responsivePadding()))
 
                     AuthFormFields(
                         displayName = "",
@@ -140,7 +141,7 @@ fun SignInScreen(
                         text = "Forgot My Password?",
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .padding(top = 8.dp)
+                            .padding(top = ScreenUtils.responsiveSpacing())
                             .clickable { showForgotDialog = true }
                     )
 
@@ -170,7 +171,7 @@ fun SignInScreen(
                         )
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(ScreenUtils.responsivePadding()))
 
                     OriellePrimaryButton(
                         onClick = { viewModel.signIn() },
@@ -179,7 +180,7 @@ fun SignInScreen(
                         Text("Sign In")
                     }
 
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
 
                     SocialLoginOptions(
                         onGoogleSignInClick = { googleSignInLauncher.launch(googleSignInClient.signInIntent) },

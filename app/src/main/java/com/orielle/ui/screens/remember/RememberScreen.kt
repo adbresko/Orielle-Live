@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.orielle.ui.util.ScreenUtils
 import androidx.compose.ui.unit.sp
 
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -91,7 +92,7 @@ fun RememberScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = ScreenUtils.responsivePadding() * 1.25f)
             ) {
                 // Calendar Section
                 CalendarSection(
@@ -125,7 +126,7 @@ fun RememberScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(20.dp),
+                        .padding(ScreenUtils.responsivePadding() * 1.25f),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -170,7 +171,7 @@ private fun RememberHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(backgroundColor)
-            .padding(20.dp)
+            .padding(ScreenUtils.responsivePadding() * 1.25f)
     ) {
         // Title
         Text(
@@ -179,7 +180,7 @@ private fun RememberHeader(
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             color = textColor,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding())
         )
 
         // Search Bar
@@ -208,21 +209,21 @@ private fun SearchBar(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onNavigateToSearch() },
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.25f),
         colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = ScreenUtils.responsivePadding(), vertical = ScreenUtils.responsiveSpacing() * 1.25f),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Search",
                 tint = textColor,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
             )
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -701,7 +702,7 @@ private fun ActivityLegend(textColor: Color) {
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = textColor,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding())
             )
 
             Row(
@@ -780,7 +781,7 @@ private fun DailyGlimpsePanel(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = ScreenUtils.responsivePadding() * 1.25f)
                     .padding(top = 12.dp)
             ) {
                 // Grabber
@@ -818,7 +819,7 @@ private fun DailyGlimpsePanel(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
                             tint = textColor,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
                         )
                     }
                 }
@@ -956,7 +957,7 @@ private fun SkeletonLoading() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(ScreenUtils.responsivePadding() * 1.25f)
         ) {
             // Title skeleton
             Box(
