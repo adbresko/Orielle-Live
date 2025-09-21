@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 import androidx.navigation.NavController
+import com.orielle.util.DateUtils
 
 data class HomeUiState(
     val isGuest: Boolean = true,
@@ -39,7 +40,7 @@ data class HomeUiState(
     val userName: String? = null, // Added userName property
     val isPremium: Boolean = false, // Added isPremium property
     val needsMoodCheckIn: Boolean = false, // Added mood check-in status
-    val weeklyMoodView: WeeklyMoodView = WeeklyMoodView(emptyList(), 0) // Added weekly mood view
+    val weeklyMoodView: WeeklyMoodView = WeeklyMoodView(emptyList(), 0), // Added weekly mood view
 )
 
 // Dashboard state for UI
@@ -246,7 +247,8 @@ class HomeViewModel @Inject constructor(
             try {
                 val userId = sessionManager.currentUserId.first()
                 if (userId != null) {
-                    val today = java.util.Date()
+                    // Use current calendar day for proper daily reset logic
+                    val today = DateUtils.getCurrentCalendarDay()
                     val result = hasMoodCheckInForDateUseCase(userId, today)
 
                     when (result) {
@@ -270,7 +272,8 @@ class HomeViewModel @Inject constructor(
             try {
                 val userId = sessionManager.currentUserId.first()
                 if (userId != null) {
-                    val today = java.util.Date()
+                    // Use current calendar day for proper daily reset logic
+                    val today = DateUtils.getCurrentCalendarDay()
                     val result = hasMoodCheckInForDateUseCase(userId, today)
 
                     when (result) {
@@ -316,6 +319,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+
     fun refreshHomeData() {
         println("HomeViewModel: Refreshing home data after screen return")
         viewModelScope.launch(coroutineExceptionHandler) {
@@ -323,7 +327,6 @@ class HomeViewModel @Inject constructor(
             val dashboardJob = launch { checkDashboardState() }
             val moodViewJob = launch { fetchWeeklyMoodView() }
             val moodCheckJob = launch { checkMoodCheckInStatus() }
-
             // Wait for all critical data to complete
             dashboardJob.join()
             moodViewJob.join()

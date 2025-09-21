@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.orielle.R
 import com.orielle.ui.theme.*
+import com.orielle.ui.util.ScreenUtils
 
 @Composable
 fun BottomNavigation(
@@ -33,17 +34,13 @@ fun BottomNavigation(
 ) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route ?: "home_graph"
     val isDarkTheme by themeManager.isDarkTheme.collectAsState(initial = false)
-    val backgroundColor = if (isDarkTheme) {
-        Color(0xFF2A2A2A) // Dark gray background for dark mode
-    } else {
-        Color(0xFFF5F5F5) // Light gray background for light mode
-    }
+    val backgroundColor = MaterialTheme.colorScheme.surface
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        shape = RoundedCornerShape(24.dp),
+            .padding(horizontal = ScreenUtils.responsivePadding() * 1.25f, vertical = ScreenUtils.responsivePadding()),
+        shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.5f),
         colors = CardDefaults.cardColors(
             containerColor = backgroundColor
         ),
@@ -52,7 +49,7 @@ fun BottomNavigation(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = ScreenUtils.responsivePadding() * 1.25f, vertical = ScreenUtils.responsivePadding()),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -133,16 +130,16 @@ private fun DashboardNavItem(
     isDarkTheme: Boolean,
     onClick: () -> Unit = {}
 ) {
-    val unselectedColor = if (isDarkTheme) Color(0xFFB0B0B0) else Charcoal
+    val unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(bounded = false, radius = 24.dp)
+                indication = rememberRipple(bounded = false, radius = ScreenUtils.responsivePadding() * 1.5f)
             ) { onClick() }
-            .padding(8.dp)
+            .padding(ScreenUtils.responsiveSpacing())
     ) {
         // Icon - no background, just the icon itself
         // Special handling for water drop icon to keep its native color
@@ -151,18 +148,18 @@ private fun DashboardNavItem(
                 painter = painterResource(id = icon),
                 contentDescription = label,
                 tint = if (selected) WaterBlue else WaterBlue, // Always keep water drop color
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
             )
         } else {
             Icon(
                 painter = painterResource(id = icon),
                 contentDescription = label,
                 tint = if (selected) WaterBlue else unselectedColor,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
             )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsiveTextSpacing()))
 
         // Text with optional underline for selected state
         Column(
@@ -178,12 +175,12 @@ private fun DashboardNavItem(
 
             // Underline for selected state
             if (selected) {
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(ScreenUtils.responsiveTextSpacing() * 0.5f))
                 Box(
                     modifier = Modifier
-                        .width(16.dp)
-                        .height(2.dp)
-                        .background(WaterBlue, RoundedCornerShape(1.dp))
+                        .width(ScreenUtils.responsiveSpacing() * 2)
+                        .height(ScreenUtils.responsiveTextSpacing() * 0.5f)
+                        .background(WaterBlue, RoundedCornerShape(ScreenUtils.responsiveTextSpacing() * 0.25f))
                 )
             }
         }

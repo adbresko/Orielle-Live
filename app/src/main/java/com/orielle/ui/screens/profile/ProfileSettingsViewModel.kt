@@ -22,6 +22,11 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import com.orielle.ui.components.AvatarOption
 import com.orielle.ui.theme.ThemeManager
+import id.zelory.compressor.Compressor
+import id.zelory.compressor.constraint.format
+import id.zelory.compressor.constraint.quality
+import id.zelory.compressor.constraint.resolution
+import id.zelory.compressor.constraint.size
 
 @HiltViewModel
 class ProfileSettingsViewModel @Inject constructor(
@@ -37,17 +42,27 @@ class ProfileSettingsViewModel @Inject constructor(
     // Expose theme state for UI
     val currentThemeState = themeManager.isDarkTheme
 
-    // Avatar library - curated selection of beautiful avatars
+    // Avatar library - using your actual mood icons!
     private val avatarLibrary = listOf(
-        AvatarOption("nature_1", "Forest Spirit", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
-        AvatarOption("nature_2", "Ocean Wave", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
-        AvatarOption("nature_3", "Mountain Peak", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
-        AvatarOption("nature_4", "Sunset Glow", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
-        AvatarOption("nature_5", "Moonlight", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
-        AvatarOption("nature_6", "Starlight", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", false),
-        AvatarOption("premium_1", "Crystal Essence", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", true),
-        AvatarOption("premium_2", "Golden Aura", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", true),
-        AvatarOption("premium_3", "Diamond Light", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", true)
+        // Happy & Joyful Moods
+        AvatarOption("happy", "Happy", imageUrl = "drawable://ic_happy", isPremium = false),
+        AvatarOption("playful", "Playful", imageUrl = "drawable://ic_playful", isPremium = false),
+        AvatarOption("surprised", "Surprised", imageUrl = "drawable://ic_surprised", isPremium = false),
+
+        // Calm & Peaceful Moods
+        AvatarOption("peaceful", "Peaceful", imageUrl = "drawable://ic_peaceful", isPremium = false),
+        AvatarOption("shy", "Shy", imageUrl = "drawable://ic_shy", isPremium = false),
+
+        // Challenging Moods
+        AvatarOption("sad", "Sad", imageUrl = "drawable://ic_sad", isPremium = false),
+        AvatarOption("angry", "Angry", imageUrl = "drawable://ic_angry", isPremium = false),
+        AvatarOption("frustrated", "Frustrated", imageUrl = "drawable://ic_frustrated", isPremium = false),
+        AvatarOption("scared", "Scared", imageUrl = "drawable://ic_scared", isPremium = false),
+
+        // Premium Mood Combinations (using existing icons creatively)
+        AvatarOption("premium_happy_playful", "Joyful Spirit", imageUrl = "drawable://ic_happy", isPremium = true),
+        AvatarOption("premium_peaceful_surprised", "Zen Wonder", imageUrl = "drawable://ic_peaceful", isPremium = true),
+        AvatarOption("premium_playful_surprised", "Magical Joy", imageUrl = "drawable://ic_playful", isPremium = true)
     )
 
     // Get avatar library
@@ -208,20 +223,19 @@ class ProfileSettingsViewModel @Inject constructor(
                 // Save image locally first
                 val localImagePath = saveImageLocally(context, imageUri, userId)
 
-                // Upload to Firebase Storage
-                val storageRef = FirebaseStorage.getInstance().reference.child("profile_images/$userId.jpg")
-                val uploadTask = storageRef.putFile(imageUri)
-                uploadTask.await()
+                // TODO: Cloud Storage - Upload to Firebase Storage
+                // val storageRef = FirebaseStorage.getInstance().reference.child("profile_images/$userId.jpg")
+                // val uploadTask = storageRef.putFile(imageUri)
+                // uploadTask.await()
+                // val downloadUrl = storageRef.downloadUrl.await().toString()
 
-                val downloadUrl = storageRef.downloadUrl.await().toString()
+                // TODO: Cloud Storage - Save to Firestore when cloud upload is enabled
+                // firestore.collection("users").document(userId)
+                //     .update("profileImageUrl", downloadUrl).await()
 
-                // Save to Firestore
-                firestore.collection("users").document(userId)
-                    .update("profileImageUrl", downloadUrl).await()
-
-                // Update UI state with both local and remote URLs
+                // Update UI state with local image path
                 _uiState.value = _uiState.value.copy(
-                    profileImageUrl = downloadUrl,
+                    profileImageUrl = null, // No cloud storage yet
                     localImagePath = localImagePath,
                     isUploadingImage = false
                 )
@@ -229,7 +243,7 @@ class ProfileSettingsViewModel @Inject constructor(
                 // Update cached profile data
                 sessionManager.updateCachedUserProfile(
                     userId = userId,
-                    profileImageUrl = downloadUrl
+                    profileImageUrl = null // No cloud storage yet
                 )
 
                 showMessage("Profile image updated successfully!")
@@ -244,18 +258,36 @@ class ProfileSettingsViewModel @Inject constructor(
     }
 
     // Save image locally for offline access
-    private fun saveImageLocally(context: Context, imageUri: Uri, userId: String): String {
+    private suspend fun saveImageLocally(context: Context, imageUri: Uri, userId: String): String {
         return try {
+            // First, save the original image temporarily
+            val tempFile = File(context.cacheDir, "temp_profile_$userId.jpg")
             val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
-            val file = File(context.filesDir, "profile_image_$userId.jpg")
 
             inputStream?.use { input ->
-                FileOutputStream(file).use { output ->
+                FileOutputStream(tempFile).use { output ->
                     input.copyTo(output)
                 }
             }
 
-            file.absolutePath
+            // Compress the image with size and quality constraints
+            val compressedFile = Compressor.compress(context, tempFile) {
+                resolution(512, 512) // Max 512x512 pixels
+                quality(80) // 80% quality
+                format(android.graphics.Bitmap.CompressFormat.JPEG)
+                size(2_097_152) // Max 2MB file size
+            }
+
+            // Move compressed file to final location
+            val finalFile = File(context.filesDir, "profile_image_$userId.jpg")
+            compressedFile.copyTo(finalFile, overwrite = true)
+
+            // Clean up temp file
+            tempFile.delete()
+            compressedFile.delete()
+
+            Timber.d("✅ Image compressed and saved locally: ${finalFile.absolutePath}")
+            finalFile.absolutePath
         } catch (e: Exception) {
             Timber.e(e, "❌ Failed to save image locally")
             ""

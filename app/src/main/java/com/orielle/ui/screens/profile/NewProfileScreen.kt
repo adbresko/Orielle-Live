@@ -40,15 +40,15 @@ fun ProfileSettingsScreen(
     viewModel: ProfileSettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
+    val themeColors = getThemeColors()
     val currentContext = LocalContext.current
 
     // Get current theme state from ViewModel
     val currentDarkTheme by viewModel.currentThemeState.collectAsState(initial = false)
 
-    val backgroundColor = if (isDark) DarkGray else SoftSand
-    val textColor = if (isDark) SoftSand else Charcoal
-    val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
+    val backgroundColor = themeColors.background
+    val textColor = themeColors.onBackground
+    val cardColor = themeColors.surface
 
     // Initialize with current data
     LaunchedEffect(Unit) {

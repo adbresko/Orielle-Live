@@ -43,14 +43,48 @@ fun ReflectScreen(
     viewModel: ReflectViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
-
-    val backgroundColor = if (isDark) DarkGray else SoftSand
-    val textColor = if (isDark) SoftSand else Charcoal
-    val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
-    val buttonColor = if (isDark) StillwaterTeal else StillwaterTeal
+    val themeColors = getThemeColors()
+    val backgroundColor = themeColors.background
+    val textColor = themeColors.onBackground
+    val cardColor = themeColors.surface
+    val buttonColor = themeColors.primary
 
     Scaffold(
+        containerColor = backgroundColor,
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                        end = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                        top = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp,
+                        bottom = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left side - Journal icon (clickable for free writing)
+                Image(
+                    painter = painterResource(id = R.drawable.reflect),
+                    contentDescription = "Write without prompt",
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable { navController.navigate("journal_editor") }
+                )
+
+                Spacer(Modifier.weight(1f))
+
+                // Right side - Profile icon
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Profile",
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable { navController.navigate("profile_settings") },
+                    tint = textColor
+                )
+            }
+        },
         bottomBar = {
             BottomNavigation(
                 navController = navController,
@@ -65,12 +99,6 @@ fun ReflectScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header with book icon and profile
-            ReflectHeader(
-                textColor = textColor,
-                onProfileClick = { navController.navigate("profile_settings") },
-                onBookClick = { navController.navigate("journal_editor") }
-            )
 
             Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 2))
 
@@ -84,7 +112,7 @@ fun ReflectScreen(
                     prompt = uiState.todaysPrompt,
                     cardColor = cardColor,
                     textColor = textColor,
-                    isDark = isDark,
+                    isDark = themeColors.isDark,
                     onRespondToPrompt = {
                         navController.navigate("journal_editor?promptText=${uiState.todaysPrompt}")
                     }
@@ -94,7 +122,7 @@ fun ReflectScreen(
                 Text(
                     text = "Or, start with a blank page",
                     style = Typography.bodyLarge.copy(
-                        color = if (isDark) WaterBlue else Charcoal.copy(alpha = 0.7f),
+                        color = themeColors.primary.copy(alpha = 0.7f),
                         fontWeight = FontWeight.Medium
                     ),
                     textAlign = TextAlign.Center,
@@ -110,7 +138,7 @@ fun ReflectScreen(
                         entry = entry,
                         cardColor = cardColor,
                         textColor = textColor,
-                        isDark = isDark,
+                        isDark = themeColors.isDark,
                         onClick = {
                             navController.navigate("journal_detail/${entry.id}")
                         }
@@ -123,39 +151,6 @@ fun ReflectScreen(
     }
 }
 
-@Composable
-private fun ReflectHeader(
-    textColor: Color,
-    onProfileClick: () -> Unit,
-    onBookClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = ScreenUtils.responsivePadding() * 1.5f, end = ScreenUtils.responsivePadding() * 1.5f, top = ScreenUtils.responsivePadding(), bottom = ScreenUtils.responsiveSpacing()),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Left side - Journal icon (clickable for free writing)
-        IconButton(onClick = onBookClick) {
-            Image(
-                painter = painterResource(id = R.drawable.reflect),
-                contentDescription = "Write without prompt",
-                modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
-            )
-        }
-
-        // Right side - Profile icon
-        IconButton(onClick = onProfileClick) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Profile",
-                tint = textColor,
-                modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
-            )
-        }
-    }
-}
 
 @Composable
 private fun TodaysPromptCard(
@@ -165,11 +160,12 @@ private fun TodaysPromptCard(
     isDark: Boolean,
     onRespondToPrompt: () -> Unit
 ) {
+    val themeColors = getThemeColors()
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = cardColor),
         shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.25f),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (themeColors.isDark) 0.dp else 8.dp)
     ) {
         Column(
             modifier = Modifier.padding(ScreenUtils.responsivePadding() * 1.5f),
@@ -218,6 +214,7 @@ private fun LookBackModule(
     isDark: Boolean,
     onClick: () -> Unit
 ) {
+    val themeColors = getThemeColors()
     Column(
         verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
     ) {
@@ -235,7 +232,7 @@ private fun LookBackModule(
                 .clickable { onClick() },
             colors = CardDefaults.cardColors(containerColor = cardColor),
             shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = if (themeColors.isDark) 0.dp else 4.dp)
         ) {
             Column(
                 modifier = Modifier.padding(ScreenUtils.responsivePadding() * 1.25f),

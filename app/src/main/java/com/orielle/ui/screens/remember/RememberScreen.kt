@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -57,11 +58,10 @@ fun RememberScreen(
     viewModel: RememberViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
-
-    val backgroundColor = if (isDark) DarkGray else SoftSand
-    val textColor = if (isDark) SoftSand else Charcoal
-    val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
+    val themeColors = getThemeColors()
+    val backgroundColor = themeColors.background
+    val textColor = themeColors.onBackground
+    val cardColor = themeColors.surface
 
     LaunchedEffect(Unit) {
         viewModel.loadRememberData()
@@ -143,7 +143,7 @@ fun RememberScreen(
                     day = uiState.selectedDay!!,
                     cardColor = cardColor,
                     textColor = textColor,
-                    isDark = isDark,
+                    isDark = themeColors.isDark,
                     onDismiss = { viewModel.onDayDetailDismiss() },
                     onNavigateToDetail = { activity ->
                         when (activity.activityType) {
@@ -173,15 +173,36 @@ private fun RememberHeader(
             .background(backgroundColor)
             .padding(ScreenUtils.responsivePadding() * 1.25f)
     ) {
-        // Title
-        Text(
-            text = "Remember",
-            fontFamily = Lora,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = textColor,
-            modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding())
-        )
+        // Top row with title and three dots icon
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Title
+            Text(
+                text = "Remember",
+                fontFamily = Lora,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = textColor
+            )
+
+            // Three dots icon (ellipsis) - top right corner
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "More options",
+                modifier = Modifier
+                    .size(28.dp)
+                    .clickable {
+                        // TODO: Add functionality for three dots menu
+                    },
+                tint = textColor
+            )
+        }
+
+        // Add bottom padding to maintain spacing
+        Spacer(Modifier.height(ScreenUtils.responsivePadding()))
 
         // Search Bar
         SearchBar(
@@ -201,9 +222,9 @@ private fun SearchBar(
     onClearSearch: () -> Unit,
     onNavigateToSearch: () -> Unit
 ) {
-    val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
-    val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
-    val textColor = if (isDark) SoftSand else Charcoal
+    val themeColors = getThemeColors()
+    val cardColor = themeColors.surface
+    val textColor = themeColors.onBackground
 
     Card(
         modifier = Modifier
@@ -279,7 +300,7 @@ private fun CalendarSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight(), // Let content determine height
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
             colors = CardDefaults.cardColors(containerColor = cardColor),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
@@ -478,7 +499,7 @@ private fun MonthSelector(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         LazyColumn(
-            modifier = Modifier.heightIn(max = 200.dp),
+            modifier = Modifier.heightIn(max = ScreenUtils.responsivePadding() * 12.5f),
             state = rememberLazyListState(initialFirstVisibleItemIndex = maxOf(0, currentSelectedMonth - 2))
         ) {
             items(months.size) { index ->
@@ -533,7 +554,7 @@ private fun YearSelector(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         LazyColumn(
-            modifier = Modifier.heightIn(max = 200.dp),
+            modifier = Modifier.heightIn(max = ScreenUtils.responsivePadding() * 12.5f),
             state = rememberLazyListState(initialFirstVisibleItemIndex = maxOf(0, selectedIndex - 2))
         ) {
             items(years.size) { index ->
@@ -760,6 +781,7 @@ private fun DailyGlimpsePanel(
     onDismiss: () -> Unit,
     onNavigateToDetail: (UserActivity) -> Unit
 ) {
+    val themeColors = getThemeColors()
 
     Box(
         modifier = Modifier
@@ -863,7 +885,7 @@ private fun DailyGlimpsePanel(
                             text = "No activities on this day",
                             fontFamily = NotoSans,
                             fontSize = 16.sp,
-                            color = if (isDark) Color(0xFFAAAAAA) else Color(0xFF999999),
+                            color = themeColors.onBackground.copy(alpha = 0.6f),
                             textAlign = TextAlign.Center
                         )
                     }
@@ -878,7 +900,7 @@ private fun GlimpseActivityItem(
     activity: UserActivity,
     onClick: () -> Unit
 ) {
-    val isDark = MaterialTheme.colorScheme.background == DarkGray
+    val themeColors = getThemeColors()
 
     val activityColor = when (activity.activityType) {
         ActivityType.REFLECT -> StillwaterTeal
@@ -912,7 +934,7 @@ private fun GlimpseActivityItem(
                 text = activity.preview,
                 fontFamily = NotoSans,
                 fontSize = 16.sp,
-                color = if (isDark) SoftSand else Charcoal,
+                color = themeColors.onBackground,
                 maxLines = 3,
                 modifier = Modifier.padding(top = 8.dp)
             )
@@ -989,7 +1011,7 @@ private fun SkeletonLoading() {
         // Calendar skeleton
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
             colors = CardDefaults.cardColors(containerColor = White)
         ) {
             Column(

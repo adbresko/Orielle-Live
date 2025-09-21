@@ -22,12 +22,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
+import com.orielle.R
 import com.orielle.ui.components.AvatarOption
 
 @Composable
@@ -157,7 +160,7 @@ private fun AvatarItem(
             .clickable(enabled = isClickable) { onClick() }
             .alpha(if (isClickable) 1f else 0.5f)
     ) {
-        // Avatar image
+        // Avatar image or emoji
         Box(
             modifier = Modifier
                 .size(80.dp)
@@ -175,12 +178,56 @@ private fun AvatarItem(
                     }
                 )
         ) {
-            Image(
-                painter = rememberAsyncImagePainter(avatar.imageUrl),
-                contentDescription = avatar.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (avatar.emoji != null) {
+                // Display emoji
+                Text(
+                    text = avatar.emoji,
+                    fontSize = 40.sp,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            } else if (avatar.imageUrl != null) {
+                // Check if it's a drawable resource
+                if (avatar.imageUrl.startsWith("drawable://")) {
+                    val drawableName = avatar.imageUrl.removePrefix("drawable://")
+                    val resourceId = getDrawableResourceId(drawableName)
+                    if (resourceId != null) {
+                        Image(
+                            painter = painterResource(id = resourceId),
+                            contentDescription = avatar.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        // Fallback to default icon
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = avatar.name,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .align(Alignment.Center),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    // Display URL image
+                    Image(
+                        painter = rememberAsyncImagePainter(avatar.imageUrl),
+                        contentDescription = avatar.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            } else {
+                // Fallback to default icon
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = avatar.name,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .align(Alignment.Center),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             // Premium badge
             if (avatar.isPremium) {
@@ -214,5 +261,21 @@ private fun AvatarItem(
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+// Helper function to get drawable resource ID
+private fun getDrawableResourceId(drawableName: String): Int? {
+    return when (drawableName) {
+        "ic_happy" -> R.drawable.ic_happy
+        "ic_playful" -> R.drawable.ic_playful
+        "ic_surprised" -> R.drawable.ic_surprised
+        "ic_peaceful" -> R.drawable.ic_peaceful
+        "ic_shy" -> R.drawable.ic_shy
+        "ic_sad" -> R.drawable.ic_sad
+        "ic_angry" -> R.drawable.ic_angry
+        "ic_frustrated" -> R.drawable.ic_frustrated
+        "ic_scared" -> R.drawable.ic_scared
+        else -> null
     }
 }

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.orielle.R
 import com.orielle.ui.theme.OrielleTheme
+import com.orielle.ui.theme.getThemeColors
 import androidx.compose.foundation.Image
 import com.orielle.ui.components.OrielleScreenHeader
 import com.orielle.ui.components.AccountRequiredModal
@@ -47,17 +48,18 @@ fun MoodCheckInScreen(
     var showAccountModal by remember { mutableStateOf(false) }
     var selectedMood by remember { mutableStateOf<String?>(null) }
 
-    // Color mapping for mood backgrounds
+    // Theme-aware mood colors that work in both light and dark mode
+    val themeColors = getThemeColors()
     val moodColors = mapOf(
-        "Happy" to Color(0xFFFFF9E6),
-        "Sad" to Color(0xFFF2F6F8),
-        "Angry" to Color(0xFFF0F2F5),
-        "Frustrated" to Color(0xFFFFF4F2),
-        "Scared" to Color(0xFFF6F5F9),
-        "Surprised" to Color(0xFFF8F7FC),
-        "Playful" to Color(0xFFFFFCEC),
-        "Shy" to Color(0xFFF9F5F8),
-        "Peaceful" to Color(0xFFFEFBF0)
+        "Happy" to if (themeColors.isDark) Color(0xFF2D2B1A) else Color(0xFFFFF9E6),
+        "Sad" to if (themeColors.isDark) Color(0xFF1A1F24) else Color(0xFFF2F6F8),
+        "Angry" to if (themeColors.isDark) Color(0xFF1F1F1F) else Color(0xFFF0F2F5),
+        "Frustrated" to if (themeColors.isDark) Color(0xFF2A1F1C) else Color(0xFFFFF4F2),
+        "Scared" to if (themeColors.isDark) Color(0xFF1F1A24) else Color(0xFFF6F5F9),
+        "Surprised" to if (themeColors.isDark) Color(0xFF1F1C24) else Color(0xFFF8F7FC),
+        "Playful" to if (themeColors.isDark) Color(0xFF2D2A1A) else Color(0xFFFFFCEC),
+        "Shy" to if (themeColors.isDark) Color(0xFF241A1F) else Color(0xFFF9F5F8),
+        "Peaceful" to if (themeColors.isDark) Color(0xFF2A2A1A) else Color(0xFFFEFBF0)
     )
 
     // Animate background color based on selected mood
@@ -96,7 +98,7 @@ fun MoodCheckInScreen(
         Text(
             text = "Tap on the weather that feels most like you.",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color(0xFF222222),
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
@@ -161,16 +163,17 @@ private fun EmotionGrid(
             context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
     }
+    val themeColors = getThemeColors()
     val emotions = listOf(
-        EmotionData("Surprised", R.drawable.ic_surprised, Color(0xFFE1BEE7)),
-        EmotionData("Happy", R.drawable.ic_happy, Color(0xFFFFF59D)),
-        EmotionData("Sad", R.drawable.ic_sad, Color(0xFF90A4AE)),
-        EmotionData("Playful", R.drawable.ic_playful, Color(0xFFFFF59D)),
-        EmotionData("Angry", R.drawable.ic_angry, Color(0xFF90A4AE)),
-        EmotionData("Shy", R.drawable.ic_shy, Color(0xFFE1BEE7)),
-        EmotionData("Frustrated", R.drawable.ic_frustrated, Color(0xFFFFAB91)),
-        EmotionData("Scared", R.drawable.ic_scared, Color(0xFFB3E5FC)),
-        EmotionData("Peaceful", R.drawable.ic_peaceful, Color(0xFFFFF59D))
+        EmotionData("Surprised", R.drawable.ic_surprised, if (themeColors.isDark) Color(0xFF2A1F2A) else Color(0xFFE1BEE7)),
+        EmotionData("Happy", R.drawable.ic_happy, if (themeColors.isDark) Color(0xFF2A2A1A) else Color(0xFFFFF59D)),
+        EmotionData("Sad", R.drawable.ic_sad, if (themeColors.isDark) Color(0xFF1A1F24) else Color(0xFF90A4AE)),
+        EmotionData("Playful", R.drawable.ic_playful, if (themeColors.isDark) Color(0xFF2A2A1A) else Color(0xFFFFF59D)),
+        EmotionData("Angry", R.drawable.ic_angry, if (themeColors.isDark) Color(0xFF1A1F24) else Color(0xFF90A4AE)),
+        EmotionData("Shy", R.drawable.ic_shy, if (themeColors.isDark) Color(0xFF2A1F2A) else Color(0xFFE1BEE7)),
+        EmotionData("Frustrated", R.drawable.ic_frustrated, if (themeColors.isDark) Color(0xFF2A1F1A) else Color(0xFFFFAB91)),
+        EmotionData("Scared", R.drawable.ic_scared, if (themeColors.isDark) Color(0xFF1A1F2A) else Color(0xFFB3E5FC)),
+        EmotionData("Peaceful", R.drawable.ic_peaceful, if (themeColors.isDark) Color(0xFF2A2A1A) else Color(0xFFFFF59D))
     )
     var selectedMood by remember { mutableStateOf<String?>(null) }
     Column(
@@ -269,11 +272,11 @@ private fun EmotionButton(
     )
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(4.dp)
+        modifier = Modifier.padding(ScreenUtils.responsiveTextSpacing())
     ) {
         Box(
             modifier = Modifier
-                .size(80.dp)
+                .size(ScreenUtils.responsiveImageSize(80.dp))
                 .graphicsLayer {
                     scaleX = scale;
                     scaleY = scale;
@@ -296,11 +299,11 @@ private fun EmotionButton(
                 Image(
                     painter = painterResource(id = emotion.iconRes),
                     contentDescription = emotion.name,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(ScreenUtils.responsiveIconSize(48.dp))
                 )
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing()))
         Text(
             text = emotion.name,
             style = MaterialTheme.typography.bodyMedium,

@@ -27,7 +27,7 @@ fun MoodFinalScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F7F3)),
+            .background(MaterialTheme.colorScheme.background),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 5))
@@ -36,7 +36,7 @@ fun MoodFinalScreen(
         )
         Card(
             shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 2),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             modifier = Modifier
                 .padding(horizontal = ScreenUtils.responsivePadding() * 1.5f)
                 .fillMaxWidth()
@@ -51,7 +51,7 @@ fun MoodFinalScreen(
                 Text(
                     text = "The best way to predict the future is to create it.",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = Color(0xFF222222),
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = ScreenUtils.responsivePadding())
@@ -60,7 +60,7 @@ fun MoodFinalScreen(
                 Text(
                     text = "Abraham Lincoln",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF888888),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
@@ -76,7 +76,7 @@ fun MoodFinalScreen(
         Button(
             onClick = onDone,
             shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 2),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8EC6C6)),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             modifier = Modifier
                 .width(180.dp)
                 .height(44.dp)
@@ -87,7 +87,7 @@ fun MoodFinalScreen(
         Text(
             text = "Share your insight  ➔",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF8EC6C6),
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .clickable { onShare() }
                 .padding(8.dp)

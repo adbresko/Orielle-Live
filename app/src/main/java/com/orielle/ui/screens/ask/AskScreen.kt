@@ -57,9 +57,9 @@ fun AskScreen(
     viewModel: AskViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isDark = MaterialTheme.colorScheme.background == DarkGray
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val textColor = MaterialTheme.colorScheme.onBackground
+    val themeColors = getThemeColors()
+    val backgroundColor = themeColors.background
+    val textColor = themeColors.onBackground
 
     var showPrivacyCoachMark by remember { mutableStateOf(false) }
     var messageText by remember { mutableStateOf("") }
@@ -69,12 +69,7 @@ fun AskScreen(
     var userProfileImageUrl by remember { mutableStateOf<String?>(null) }
     var userName by remember { mutableStateOf<String?>(null) }
 
-    // Show privacy coach mark on first use
-    LaunchedEffect(Unit) {
-        if (viewModel.isFirstTimeUser()) {
-            showPrivacyCoachMark = true
-        }
-    }
+    // Privacy coach mark will only show when user taps the lock icon
 
     // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(uiState.messages.size) {
@@ -84,6 +79,48 @@ fun AskScreen(
     }
 
     Scaffold(
+        containerColor = backgroundColor,
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                        end = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                        top = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp,
+                        bottom = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left side - Back arrow icon
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable {
+                            if (uiState.messages.size > 1) { // More than just welcome message
+                                viewModel.showChoiceModal()
+                            } else {
+                                navController.popBackStack()
+                            }
+                        },
+                    tint = textColor
+                )
+
+                Spacer(Modifier.weight(1f))
+
+                // Right side - Lock icon
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Privacy",
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable { showPrivacyCoachMark = true },
+                    tint = textColor
+                )
+            }
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -91,46 +128,6 @@ fun AskScreen(
                 .background(backgroundColor)
                 .padding(paddingValues)
         ) {
-            // Header - Minimal spacing
-            TopAppBar(
-                title = { },
-                navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            if (uiState.messages.size > 1) { // More than just welcome message
-                                viewModel.showChoiceModal()
-                            } else {
-                                navController.popBackStack()
-                            }
-                        },
-                        modifier = Modifier.size(ScreenUtils.responsiveIconSize(48.dp))
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = textColor,
-                            modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { showPrivacyCoachMark = true },
-                        modifier = Modifier.size(ScreenUtils.responsiveIconSize(48.dp))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Privacy",
-                            tint = textColor,
-                            modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = backgroundColor
-                ),
-                modifier = Modifier.padding(horizontal = ScreenUtils.responsiveSpacing())
-            )
 
             // Chat messages - Minimal top spacing
             LazyColumn(
@@ -145,7 +142,7 @@ fun AskScreen(
                 items(uiState.messages) { message ->
                     ChatBubble(
                         message = message,
-                        isDark = isDark,
+                        isDark = themeColors.isDark,
                         userProfileImageUrl = userProfileImageUrl,
                         userName = userName
                     )
@@ -154,7 +151,7 @@ fun AskScreen(
                 // Typing indicator
                 if (uiState.isTyping) {
                     item {
-                        TypingIndicator(isDark = isDark)
+                        TypingIndicator(isDark = themeColors.isDark)
                     }
                 }
             }
@@ -169,7 +166,7 @@ fun AskScreen(
                         messageText = ""
                     }
                 },
-                isDark = isDark,
+                isDark = themeColors.isDark,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -181,7 +178,7 @@ fun AskScreen(
                     showPrivacyCoachMark = false
                     viewModel.markPrivacyCoachMarkSeen()
                 },
-                isDark = isDark
+                isDark = themeColors.isDark
             )
         }
 
@@ -197,13 +194,13 @@ fun AskScreen(
                     navController.popBackStack()
                     // TODO: Show toast "Your thoughts have been released."
                 },
-                isDark = isDark
+                isDark = themeColors.isDark
             )
         }
 
         // Tagging modal
         if (uiState.showTaggingModal) {
-            val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
+            val cardColor = themeColors.surface
             TaggingModal(
                 currentTags = uiState.currentTags,
                 onDismiss = { viewModel.hideTaggingModal() },
@@ -226,6 +223,7 @@ fun ChatBubble(
     userProfileImageUrl: String? = null,
     userName: String? = null
 ) {
+    val themeColors = getThemeColors()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (message.isFromUser) Arrangement.End else Arrangement.Start
@@ -250,11 +248,11 @@ fun ChatBubble(
                 containerColor = if (message.isFromUser) {
                     WaterBlue
                 } else {
-                    if (isDark) DarkGray else SoftSand
+                    themeColors.surface
                 }
             ),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = if (isDark) 0.dp else 4.dp
+                defaultElevation = if (themeColors.isDark) 0.dp else 4.dp
             )
         ) {
             Text(
@@ -264,7 +262,7 @@ fun ChatBubble(
                 color = if (message.isFromUser) {
                     Color.White
                 } else {
-                    if (isDark) SoftSand else Charcoal
+                    themeColors.onBackground
                 }
             )
         }
@@ -289,7 +287,7 @@ fun ChatBubble(
                     modifier = Modifier
                         .size(ScreenUtils.responsiveIconSize(32.dp))
                         .background(
-                            color = if (isDark) DarkGray else SoftSand,
+                            color = themeColors.surface,
                             shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
@@ -297,7 +295,7 @@ fun ChatBubble(
                     Text(
                         text = userName.first().uppercase(),
                         style = Typography.titleMedium,
-                        color = if (isDark) SoftSand else Charcoal,
+                        color = themeColors.onBackground,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -311,6 +309,7 @@ fun ChatBubble(
 
 @Composable
 fun TypingIndicator(isDark: Boolean) {
+    val themeColors = getThemeColors()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Start
@@ -329,10 +328,10 @@ fun TypingIndicator(isDark: Boolean) {
             modifier = Modifier.widthIn(max = ScreenUtils.responsivePadding() * 7.5f),
             shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
             colors = CardDefaults.cardColors(
-                containerColor = if (isDark) DarkGray else SoftSand
+                containerColor = themeColors.surface
             ),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = if (isDark) 0.dp else 4.dp
+                defaultElevation = if (themeColors.isDark) 0.dp else 4.dp
             )
         ) {
             Row(
@@ -342,7 +341,7 @@ fun TypingIndicator(isDark: Boolean) {
                 repeat(3) { index ->
                     TypingDot(
                         delay = index * 200L,
-                        color = if (isDark) SoftSand else Charcoal
+                        color = themeColors.onBackground
                     )
                 }
             }
@@ -381,16 +380,17 @@ fun TextInputBar(
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val themeColors = getThemeColors()
     val hasText = messageText.isNotBlank()
 
     Card(
         modifier = modifier.padding(horizontal = ScreenUtils.responsivePadding(), vertical = ScreenUtils.responsivePadding() * 1.25f),
         shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.5f),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) DarkGray else SoftSand
+            containerColor = themeColors.surface
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isDark) 0.dp else 4.dp
+            defaultElevation = if (themeColors.isDark) 0.dp else 4.dp
         )
     ) {
         Row(
@@ -405,7 +405,7 @@ fun TextInputBar(
                     Text(
                         text = "What's on your mind?",
                         style = Typography.bodyLarge,
-                        color = if (isDark) SoftSand.copy(alpha = 0.6f) else Charcoal.copy(alpha = 0.6f)
+                        color = themeColors.onBackground.copy(alpha = 0.6f)
                     )
                 },
                 colors = TextFieldDefaults.colors(
@@ -413,8 +413,8 @@ fun TextInputBar(
                     unfocusedContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = if (isDark) SoftSand else Charcoal,
-                    unfocusedTextColor = if (isDark) SoftSand else Charcoal
+                    focusedTextColor = themeColors.onBackground,
+                    unfocusedTextColor = themeColors.onBackground
                 ),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(
@@ -442,7 +442,7 @@ fun TextInputBar(
                         Icon(
                             imageVector = Icons.Default.Mic,
                             contentDescription = "Voice message",
-                            tint = if (isDark) SoftSand else Charcoal
+                            tint = themeColors.onBackground
                         )
                     }
                 }
@@ -470,6 +470,7 @@ fun TextInputBar(
 
 @Composable
 fun PrivacyCoachMark(onDismiss: () -> Unit, isDark: Boolean) {
+    val themeColors = getThemeColors()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -483,29 +484,17 @@ fun PrivacyCoachMark(onDismiss: () -> Unit, isDark: Boolean) {
                 .widthIn(max = 280.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (isDark) DarkGray else SoftSand
+                containerColor = themeColors.surface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 8.dp)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
-                // Chat bubble tail pointing to lock icon
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .offset(y = (-8).dp)
-                        .size(16.dp)
-                        .background(
-                            color = if (isDark) DarkGray else SoftSand,
-                            shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
-                        )
-                )
-
                 Text(
                     text = "This lock is our promise. Your reflections here are always private and secure.",
                     style = Typography.bodyMedium,
-                    color = if (isDark) SoftSand else Charcoal,
+                    color = themeColors.onBackground,
                     textAlign = TextAlign.Center
                 )
             }
@@ -519,6 +508,7 @@ fun ChoiceModal(
     onLetItGo: () -> Unit,
     isDark: Boolean
 ) {
+    val themeColors = getThemeColors()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -532,10 +522,10 @@ fun ChoiceModal(
                 .fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (isDark) DarkGray else SoftSand
+                containerColor = themeColors.surface
             ),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = if (isDark) 0.dp else 8.dp
+                defaultElevation = if (themeColors.isDark) 0.dp else 8.dp
             )
         ) {
             Column(
@@ -546,7 +536,7 @@ fun ChoiceModal(
                 Text(
                     text = "How would you like to end this session?",
                     style = Typography.titleLarge,
-                    color = if (isDark) SoftSand else Charcoal,
+                    color = themeColors.onBackground,
                     textAlign = TextAlign.Center
                 )
 
@@ -577,7 +567,7 @@ fun ChoiceModal(
                     Text(
                         text = "Let it go for now",
                         style = Typography.labelLarge,
-                        color = if (isDark) SoftSand else Charcoal
+                        color = themeColors.onBackground
                     )
                 }
             }

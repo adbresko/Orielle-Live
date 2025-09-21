@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android) // Kotlin version managed in libs.versions.toml (now 2.1.20)
+    alias(libs.plugins.kotlinx.serialization) // Kotlinx Serialization plugin
     id("kotlin-kapt")
     alias(libs.plugins.hilt.android.plugin)
     alias(libs.plugins.ksp) // Apply the KSP plugin using its alias
@@ -123,6 +124,9 @@ dependencies {
     // JSON Serialization for Room TypeConverters
     implementation(libs.gson)
 
+    // Kotlinx Serialization for JSON parsing
+    implementation(libs.kotlinx.serialization.json)
+
     // Firebase
     implementation(platform(libs.firebase.bom)) // Import the BOM for all Firebase libs
     implementation(libs.firebase.auth)
@@ -153,6 +157,9 @@ dependencies {
     implementation(libs.timber)
     implementation(libs.jakewharton.threetenabp)
     implementation(libs.coil.compose)
+
+    // Image compression
+    implementation("id.zelory:compressor:3.0.1")
 }
 
 // Allow references to generated code

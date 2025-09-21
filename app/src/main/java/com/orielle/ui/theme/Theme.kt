@@ -52,7 +52,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun OrielleTheme(
-    darkTheme: Boolean = false, // Default to light theme
+    darkTheme: Boolean = isSystemInDarkTheme(), // Use system preference by default
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -62,13 +62,16 @@ fun OrielleTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // Make status bar transparent for edge-to-edge
-            window.statusBarColor = Color.Transparent.toArgb()
-            window.navigationBarColor = Color.Transparent.toArgb()
+            // Set status bar and navigation bar colors (API 21+)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                // Make status bar transparent for edge-to-edge
+                window.statusBarColor = Color.Transparent.toArgb()
+                window.navigationBarColor = Color.Transparent.toArgb()
 
-            // Set status bar icons to dark or light based on theme
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
+                // Set status bar icons to dark or light based on theme
+                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+                WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
+            }
         }
     }
 
@@ -82,8 +85,9 @@ fun OrielleTheme(
 
 // Utility function to get card border based on theme
 @Composable
-fun getCardBorder(darkTheme: Boolean = false): BorderStroke? {
-    return if (darkTheme) {
+fun getCardBorder(): BorderStroke? {
+    val isDark = isDarkTheme()
+    return if (isDark) {
         BorderStroke(1.dp, MediumGray)
     } else {
         BorderStroke(1.dp, LightGray)
@@ -105,3 +109,47 @@ fun OrielleThemeWithPreference(
         content()
     }
 }
+
+/**
+ * Utility function to consistently detect if the current theme is dark mode
+ * This replaces all the inconsistent dark mode detection patterns across screens
+ */
+@Composable
+fun isDarkTheme(): Boolean {
+    return MaterialTheme.colorScheme.background == DarkGray
+}
+
+/**
+ * Utility function to get theme-aware colors consistently
+ * This replaces manual color calculations across screens
+ */
+@Composable
+fun getThemeColors(): ThemeColors {
+    val isDark = isDarkTheme()
+    return ThemeColors(
+        background = MaterialTheme.colorScheme.background,
+        onBackground = MaterialTheme.colorScheme.onBackground,
+        surface = MaterialTheme.colorScheme.surface,
+        onSurface = MaterialTheme.colorScheme.onSurface,
+        primary = MaterialTheme.colorScheme.primary,
+        onPrimary = MaterialTheme.colorScheme.onPrimary,
+        secondary = MaterialTheme.colorScheme.secondary,
+        onSecondary = MaterialTheme.colorScheme.onSecondary,
+        isDark = isDark
+    )
+}
+
+/**
+ * Data class to hold all theme-aware colors for consistent usage
+ */
+data class ThemeColors(
+    val background: Color,
+    val onBackground: Color,
+    val surface: Color,
+    val onSurface: Color,
+    val primary: Color,
+    val onPrimary: Color,
+    val secondary: Color,
+    val onSecondary: Color,
+    val isDark: Boolean
+)

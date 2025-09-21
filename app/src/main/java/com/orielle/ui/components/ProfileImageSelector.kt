@@ -25,6 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
@@ -107,15 +108,58 @@ fun ProfileImageSelector(
                         )
                     }
                     else -> {
-                        // Default avatar
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Default Avatar",
-                            modifier = Modifier
-                                .size(50.dp)
-                                .align(Alignment.Center),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        // Check if there's a selected avatar
+                        val selectedAvatar = avatarLibrary.find { it.id == selectedAvatarId }
+                        if (selectedAvatar?.emoji != null) {
+                            // Display selected emoji avatar
+                            Text(
+                                text = selectedAvatar.emoji,
+                                fontSize = 50.sp,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        } else if (selectedAvatar?.imageUrl != null) {
+                            // Check if it's a drawable resource
+                            if (selectedAvatar.imageUrl.startsWith("drawable://")) {
+                                val drawableName = selectedAvatar.imageUrl.removePrefix("drawable://")
+                                val resourceId = getDrawableResourceId(drawableName)
+                                if (resourceId != null) {
+                                    Image(
+                                        painter = painterResource(id = resourceId),
+                                        contentDescription = selectedAvatar.name,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                } else {
+                                    // Fallback to default icon
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = "Default Avatar",
+                                        modifier = Modifier
+                                            .size(50.dp)
+                                            .align(Alignment.Center),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            } else {
+                                // Display URL image
+                                Image(
+                                    painter = rememberAsyncImagePainter(selectedAvatar.imageUrl),
+                                    contentDescription = selectedAvatar.name,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        } else {
+                            // Default avatar
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Default Avatar",
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .align(Alignment.Center),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
@@ -359,5 +403,21 @@ private fun ImageOptionsDialog(
                 }
             }
         }
+    }
+}
+
+// Helper function to get drawable resource ID
+private fun getDrawableResourceId(drawableName: String): Int? {
+    return when (drawableName) {
+        "ic_happy" -> R.drawable.ic_happy
+        "ic_playful" -> R.drawable.ic_playful
+        "ic_surprised" -> R.drawable.ic_surprised
+        "ic_peaceful" -> R.drawable.ic_peaceful
+        "ic_shy" -> R.drawable.ic_shy
+        "ic_sad" -> R.drawable.ic_sad
+        "ic_angry" -> R.drawable.ic_angry
+        "ic_frustrated" -> R.drawable.ic_frustrated
+        "ic_scared" -> R.drawable.ic_scared
+        else -> null
     }
 }

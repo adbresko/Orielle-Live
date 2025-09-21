@@ -23,43 +23,44 @@ import com.orielle.R
 import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.alpha
 import com.orielle.ui.components.OrielleScreenHeader
+import com.orielle.ui.theme.getThemeColors
 
-// Data for each mood
-val moodReflectionData = mapOf(
+// Data for each mood - theme-aware colors
+fun getMoodReflectionData(isDark: Boolean) = mapOf(
     "Happy" to MoodReflectionUi(
-        color = Color(0xFFFFF8E1),
+        color = if (isDark) Color(0xFF2A2A1A) else Color(0xFFFFF8E1),
         options = listOf("Grateful", "Inspired", "Proud", "Loved", "Connected", "Confident")
     ),
     "Sad" to MoodReflectionUi(
-        color = Color(0xFFF7FAFC),
+        color = if (isDark) Color(0xFF1A1F24) else Color(0xFFF7FAFC),
         options = listOf("Tired", "Lonely", "Let down", "Rejected", "Grieving", "Hopeless")
     ),
     "Angry" to MoodReflectionUi(
-        color = Color(0xFFF7FAFC),
+        color = if (isDark) Color(0xFF1F1F1F) else Color(0xFFF7FAFC),
         options = listOf("Frustrated", "Unheard", "Irritated", "Judged", "Annoyed", "Controlled")
     ),
     "Surprised" to MoodReflectionUi(
-        color = Color(0xFFF7FAFC),
+        color = if (isDark) Color(0xFF1F1C24) else Color(0xFFF7FAFC),
         options = listOf("Shocked", "Confused", "Curious", "Alert", "Delighted", "Intrigued")
     ),
     "Playful" to MoodReflectionUi(
-        color = Color(0xFFFFF8E1),
+        color = if (isDark) Color(0xFF2A2A1A) else Color(0xFFFFF8E1),
         options = listOf("Silly", "Creative", "Energetic", "Curious", "Alive", "Fresh")
     ),
     "Shy" to MoodReflectionUi(
-        color = Color(0xFFF7FAFC),
+        color = if (isDark) Color(0xFF241A1F) else Color(0xFFF7FAFC),
         options = listOf("Insecure", "Vulnerable", "Hesitant", "Nervous", "Small", "Quiet")
     ),
     "Frustrated" to MoodReflectionUi(
-        color = Color(0xFFFFF3F0),
+        color = if (isDark) Color(0xFF2A1F1A) else Color(0xFFFFF3F0),
         options = listOf("Blocked", "Tense", "Pressured", "Unseen", "Stuck", "Ignored")
     ),
     "Scared" to MoodReflectionUi(
-        color = Color(0xFFF7FAFC),
+        color = if (isDark) Color(0xFF1A1F2A) else Color(0xFFF7FAFC),
         options = listOf("Unsafe", "Anxious", "Nervous", "Trapped", "Alone", "Frozen")
     ),
     "Peaceful" to MoodReflectionUi(
-        color = Color(0xFFFFF8E1),
+        color = if (isDark) Color(0xFF2A2A1A) else Color(0xFFFFF8E1),
         options = listOf("Calm", "Grounded", "Present", "Safe", "Aligned", "Relaxed")
     )
 )
@@ -73,7 +74,8 @@ fun MoodReflectionScreen(
     onSave: (String, List<String>, String) -> Unit,
     onBack: () -> Unit
 ) {
-    val reflectionUi = moodReflectionData[moodName] ?: moodReflectionData["Happy"]!!
+    val themeColors = getThemeColors()
+    val reflectionUi = getMoodReflectionData(themeColors.isDark)[moodName] ?: getMoodReflectionData(themeColors.isDark)["Happy"]!!
     var selectedOptions by remember { mutableStateOf(listOf<String>()) }
     var notes by remember { mutableStateOf(TextFieldValue("")) }
     val maxSelection = 3
@@ -95,7 +97,7 @@ fun MoodReflectionScreen(
             modifier = Modifier
                 .size(ScreenUtils.responsiveImageSize(120.dp))
                 .clip(CircleShape)
-                .background(Color(0xFFE3F2FD)),
+                .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
             Image(
@@ -108,13 +110,13 @@ fun MoodReflectionScreen(
         Text(
             text = "What might be behind this feeling?",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color(0xFF666666),
+            color = themeColors.onBackground,
             textAlign = TextAlign.Center
         )
         if (selectionLimitReached) {
             Text(
                 text = "You can only select up to 3.",
-                color = Color(0xFFB00020),
+                color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(top = ScreenUtils.responsiveTextSpacing(), bottom = ScreenUtils.responsiveSpacing())
             )
@@ -141,8 +143,20 @@ fun MoodReflectionScreen(
                 .fillMaxWidth()
                 .height(100.dp),
             shape = RoundedCornerShape(16.dp),
-            placeholder = { Text("Anything else  you’d like to express?") },
-            textStyle = MaterialTheme.typography.bodyLarge
+            placeholder = {
+                Text(
+                    "Anything else you'd like to express?",
+                    color = themeColors.onBackground.copy(alpha = 0.6f)
+                )
+            },
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = themeColors.onBackground),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = themeColors.onBackground,
+                unfocusedTextColor = themeColors.onBackground,
+                focusedBorderColor = themeColors.primary,
+                unfocusedBorderColor = themeColors.onBackground.copy(alpha = 0.3f),
+                cursorColor = themeColors.primary
+            )
         )
         Spacer(modifier = Modifier.height(32.dp))
         Button(
@@ -151,7 +165,7 @@ fun MoodReflectionScreen(
                 .fillMaxWidth()
                 .height(54.dp),
             shape = RoundedCornerShape(32.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8EC6C6))
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Text("Save & Continue", fontWeight = FontWeight.Bold, fontSize = 18.sp)
         }
@@ -159,7 +173,7 @@ fun MoodReflectionScreen(
         Text(
             text = "← Back to moods",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF888888),
+            color = themeColors.onBackground.copy(alpha = 0.7f),
             modifier = Modifier
                 .clickable { onBack() }
                 .padding(8.dp)
@@ -205,19 +219,19 @@ private fun ReflectionOptionChip(
     onClick: () -> Unit
 ) {
     val backgroundColor = when {
-        selected -> Color(0xFF8EC6C6)
-        !enabled -> Color(0xFFF0F0F0)
-        else -> Color.White
+        selected -> MaterialTheme.colorScheme.primary
+        !enabled -> MaterialTheme.colorScheme.surfaceVariant
+        else -> MaterialTheme.colorScheme.surface
     }
     val contentColor = when {
-        selected -> Color.White
-        !enabled -> Color(0xFFAAAAAA)
-        else -> Color(0xFF444444)
+        selected -> MaterialTheme.colorScheme.onPrimary
+        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.onSurface
     }
     Surface(
         shape = RoundedCornerShape(50),
         color = backgroundColor,
-        border = if (selected) null else BorderStroke(1.dp, Color(0xFFE0E0E0)),
+        border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         modifier = Modifier
             .padding(horizontal = 2.dp)
             .then(if (enabled) Modifier.clickable { onClick() } else Modifier)

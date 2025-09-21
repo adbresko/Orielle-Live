@@ -62,7 +62,7 @@ fun RememberSearchScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = ScreenUtils.responsivePadding()),
-            contentPadding = PaddingValues(top = 8.dp, bottom = ScreenUtils.responsiveIconSize()),
+            contentPadding = PaddingValues(top = ScreenUtils.responsiveSpacing(), bottom = ScreenUtils.responsiveIconSize()),
             verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
         ) {
             item {
@@ -110,7 +110,7 @@ fun RememberSearchScreen(
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Charcoal,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        modifier = Modifier.padding(bottom = ScreenUtils.responsiveSpacing())
                     )
                 }
 
@@ -168,7 +168,7 @@ private fun SearchInput(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(ScreenUtils.responsiveSpacing()),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = getCardBorder()
@@ -205,7 +205,7 @@ private fun SearchInput(
                         text = "Search by tag, mood, or memory...",
                         fontFamily = NotoSans,
                         fontSize = 14.sp,
-                        color = Color(0xFF999999),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Normal
                     )
                 }
@@ -220,7 +220,7 @@ private fun SearchInput(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Clear",
-                        tint = Color(0xFF999999),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(ScreenUtils.responsiveIconSize(ScreenUtils.responsivePadding()))
                     )
                 }
@@ -247,7 +247,7 @@ private fun FilterSection(
             content = {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(
-                        (min(LocalConfiguration.current.screenWidthDp, LocalConfiguration.current.screenHeightDp) * 0.03f).dp.coerceIn(8.dp, ScreenUtils.responsivePadding())
+                        (min(LocalConfiguration.current.screenWidthDp, LocalConfiguration.current.screenHeightDp) * 0.03f).dp.coerceIn(ScreenUtils.responsiveSpacing(), ScreenUtils.responsivePadding())
                     )
                 ) {
                     TypeFilterChip(
@@ -296,7 +296,7 @@ private fun FilterSection(
                 title = "Tags",
                 content = {
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
                     ) {
                         items(availableTags) { tag ->
                             TagFilterChip(
@@ -324,7 +324,7 @@ private fun FilterGroup(
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Charcoal,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = ScreenUtils.responsiveSpacing())
         )
         content()
     }
@@ -357,7 +357,7 @@ private fun TypeFilterChip(
         modifier = Modifier.clickable { onClick() },
         shape = RoundedCornerShape(cornerRadius.value),
         color = if (isSelected) color else Color.Transparent,
-        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(ScreenUtils.responsiveTextSpacing() * 0.25f, MaterialTheme.colorScheme.outline)
     ) {
         Text(
             text = text,
@@ -403,8 +403,8 @@ private fun MoodFilterChip(
             .size(containerSize)
             .clip(CircleShape)
             .border(
-                width = if (isSelected) (containerSize * 0.05f).coerceAtLeast(2.dp) else (containerSize * 0.017f).coerceAtLeast(1.dp),
-                color = if (isSelected) WaterBlue else Color(0xFFE0E0E0),
+                width = if (isSelected) (containerSize * 0.05f).coerceAtLeast(ScreenUtils.responsiveTextSpacing() * 0.5f) else (containerSize * 0.017f).coerceAtLeast(ScreenUtils.responsiveTextSpacing() * 0.25f),
+                color = if (isSelected) WaterBlue else MaterialTheme.colorScheme.outline,
                 shape = CircleShape
             )
             .background(
@@ -657,7 +657,7 @@ private fun SearchResultCard(
                             text = "+${activity.tags.size - 3}",
                             fontFamily = NotoSans,
                             fontSize = 11.sp,
-                            color = Color(0xFF999999),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 4.dp)
                         )
                     }

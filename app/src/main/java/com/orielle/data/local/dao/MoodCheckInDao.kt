@@ -14,10 +14,14 @@ interface MoodCheckInDao {
     @Query("SELECT * FROM mood_check_ins WHERE userId = :userId ORDER BY timestamp DESC")
     fun getMoodCheckInsByUserId(userId: String): Flow<List<MoodCheckInEntity>>
 
-    @Query("SELECT * FROM mood_check_ins WHERE userId = :userId AND DATE(timestamp/1000, 'unixepoch') = DATE(:date/1000, 'unixepoch') LIMIT 1")
+    // Use 'localtime' modifier to ensure calendar day detection works in user's local timezone
+    // This ensures daily check-ins reset at midnight local time, not UTC
+    @Query("SELECT * FROM mood_check_ins WHERE userId = :userId AND DATE(timestamp/1000, 'unixepoch', 'localtime') = DATE(:date/1000, 'unixepoch', 'localtime') LIMIT 1")
     suspend fun getMoodCheckInForDate(userId: String, date: Date): MoodCheckInEntity?
 
-    @Query("SELECT EXISTS(SELECT 1 FROM mood_check_ins WHERE userId = :userId AND DATE(timestamp/1000, 'unixepoch') = DATE(:date/1000, 'unixepoch'))")
+    // Use 'localtime' modifier to ensure calendar day detection works in user's local timezone
+    // This ensures daily check-ins reset at midnight local time, not UTC
+    @Query("SELECT EXISTS(SELECT 1 FROM mood_check_ins WHERE userId = :userId AND DATE(timestamp/1000, 'unixepoch', 'localtime') = DATE(:date/1000, 'unixepoch', 'localtime'))")
     suspend fun hasMoodCheckInForDate(userId: String, date: Date): Boolean
 
     @Query("SELECT * FROM mood_check_ins WHERE userId = :userId ORDER BY timestamp DESC LIMIT :limit")

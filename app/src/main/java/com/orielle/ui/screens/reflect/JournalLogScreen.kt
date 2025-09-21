@@ -38,11 +38,11 @@ fun JournalLogScreen(
     viewModel: JournalLogViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
+    val themeColors = getThemeColors()
 
-    val backgroundColor = if (isDark) DarkGray else SoftSand
-    val textColor = if (isDark) SoftSand else Charcoal
-    val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
+    val backgroundColor = themeColors.background
+    val textColor = themeColors.onBackground
+    val cardColor = themeColors.surface
 
     // Filter Dialog
     if (uiState.showFilterDialog) {
@@ -122,7 +122,12 @@ private fun JournalLogTopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = ScreenUtils.responsivePadding(), end = ScreenUtils.responsivePadding() * 1.5f, top = ScreenUtils.responsiveSpacing(), bottom = ScreenUtils.responsiveSpacing()),
+            .padding(
+                start = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                end = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                top = 0.dp,
+                bottom = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp
+            ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
