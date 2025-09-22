@@ -81,6 +81,7 @@ class MoodCheckInViewModel @Inject constructor(
                     return@launch
                 }
 
+                // Create new mood check-in
                 val moodCheckIn = MoodCheckIn(
                     id = UUID.randomUUID().toString(),
                     userId = userId,
@@ -93,29 +94,63 @@ class MoodCheckInViewModel @Inject constructor(
                 println("🔥 MoodCheckInViewModel: Saving mood check-in: $moodCheckIn")
                 Timber.d("Saving mood check-in: $moodCheckIn")
                 val result = saveMoodCheckInUseCase(moodCheckIn)
-                when (result) {
-                    is com.orielle.domain.model.Response.Success -> {
-                        println("✅ MoodCheckInViewModel: Mood check-in saved successfully!")
-                        Timber.d("Mood check-in saved successfully")
-                        _eventFlow.emit(UiEvent.ShowSnackbar("Mood check-in saved!"))
-                    }
-                    is com.orielle.domain.model.Response.Failure -> {
-                        _eventFlow.emit(UiEvent.ShowSnackbar("Failed to save mood check-in"))
-                        Timber.e(result.exception, "Error saving mood check-in")
-                    }
-                    is com.orielle.domain.model.Response.Loading -> { /* Optionally handle loading */ }
-                }
+                handleSaveResult(result)
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error saving mood check-in")
-                _eventFlow.emit(UiEvent.ShowSnackbar("An unexpected error occurred"))
-            } finally {
                 _uiState.value = _uiState.value.copy(isLoading = false)
+                _eventFlow.emit(UiEvent.ShowSnackbar("Error saving mood check-in: ${e.message}"))
+                Timber.e(e, "Error in saveMoodCheckIn")
             }
+        }
+    }
+
+    private suspend fun handleSaveResult(result: com.orielle.domain.model.Response<Unit>) {
+        try {
+            when (result) {
+                is com.orielle.domain.model.Response.Success -> {
+                    println("✅ MoodCheckInViewModel: Mood check-in saved successfully!")
+                    Timber.d("Mood check-in saved successfully")
+                    _eventFlow.emit(UiEvent.ShowSnackbar("Mood check-in saved!"))
+                }
+                is com.orielle.domain.model.Response.Failure -> {
+                    _eventFlow.emit(UiEvent.ShowSnackbar("Failed to save mood check-in"))
+                    Timber.e(result.exception, "Error saving mood check-in")
+                }
+                is com.orielle.domain.model.Response.Loading -> { /* Optionally handle loading */ }
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Unexpected error saving mood check-in")
+            _eventFlow.emit(UiEvent.ShowSnackbar("An unexpected error occurred"))
+        } finally {
+            _uiState.value = _uiState.value.copy(isLoading = false)
         }
     }
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    /**
+     * Clean up duplicate mood check-ins for the same day.
+     * This function should be called to fix existing data issues.
+     */
+    fun cleanupDuplicateMoodCheckIns() {
+        viewModelScope.launch {
+            try {
+                val userId = sessionManager.currentUserId.first()
+                if (userId == null) {
+                    _eventFlow.emit(UiEvent.ShowSnackbar("User not authenticated"))
+                    return@launch
+                }
+
+                // This would need to be implemented in the repository
+                // For now, we'll just log that this function was called
+                Timber.d("Cleanup duplicate mood check-ins requested for user: $userId")
+                _eventFlow.emit(UiEvent.ShowSnackbar("Cleanup function called - check logs for details"))
+            } catch (e: Exception) {
+                Timber.e(e, "Error in cleanupDuplicateMoodCheckIns")
+                _eventFlow.emit(UiEvent.ShowSnackbar("Error during cleanup: ${e.message}"))
+            }
+        }
     }
 
     suspend fun checkIfNeedsMoodCheckIn(): Boolean {

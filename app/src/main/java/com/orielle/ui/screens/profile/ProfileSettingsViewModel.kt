@@ -22,11 +22,6 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import com.orielle.ui.components.AvatarOption
 import com.orielle.ui.theme.ThemeManager
-import id.zelory.compressor.Compressor
-import id.zelory.compressor.constraint.format
-import id.zelory.compressor.constraint.quality
-import id.zelory.compressor.constraint.resolution
-import id.zelory.compressor.constraint.size
 
 @HiltViewModel
 class ProfileSettingsViewModel @Inject constructor(
@@ -42,27 +37,17 @@ class ProfileSettingsViewModel @Inject constructor(
     // Expose theme state for UI
     val currentThemeState = themeManager.isDarkTheme
 
-    // Avatar library - using your actual mood icons!
+    // Avatar library - using your actual mood check-in icons
     private val avatarLibrary = listOf(
-        // Happy & Joyful Moods
-        AvatarOption("happy", "Happy", imageUrl = "drawable://ic_happy", isPremium = false),
-        AvatarOption("playful", "Playful", imageUrl = "drawable://ic_playful", isPremium = false),
-        AvatarOption("surprised", "Surprised", imageUrl = "drawable://ic_surprised", isPremium = false),
-
-        // Calm & Peaceful Moods
-        AvatarOption("peaceful", "Peaceful", imageUrl = "drawable://ic_peaceful", isPremium = false),
-        AvatarOption("shy", "Shy", imageUrl = "drawable://ic_shy", isPremium = false),
-
-        // Challenging Moods
-        AvatarOption("sad", "Sad", imageUrl = "drawable://ic_sad", isPremium = false),
-        AvatarOption("angry", "Angry", imageUrl = "drawable://ic_angry", isPremium = false),
-        AvatarOption("frustrated", "Frustrated", imageUrl = "drawable://ic_frustrated", isPremium = false),
-        AvatarOption("scared", "Scared", imageUrl = "drawable://ic_scared", isPremium = false),
-
-        // Premium Mood Combinations (using existing icons creatively)
-        AvatarOption("premium_happy_playful", "Joyful Spirit", imageUrl = "drawable://ic_happy", isPremium = true),
-        AvatarOption("premium_peaceful_surprised", "Zen Wonder", imageUrl = "drawable://ic_peaceful", isPremium = true),
-        AvatarOption("premium_playful_surprised", "Magical Joy", imageUrl = "drawable://ic_playful", isPremium = true)
+        AvatarOption(id = "happy", name = "Happy", imageUrl = "mood_icon", isPremium = false),
+        AvatarOption(id = "playful", name = "Playful", imageUrl = "mood_icon", isPremium = false),
+        AvatarOption(id = "surprised", name = "Surprised", imageUrl = "mood_icon", isPremium = false),
+        AvatarOption(id = "peaceful", name = "Peaceful", imageUrl = "mood_icon", isPremium = false),
+        AvatarOption(id = "shy", name = "Shy", imageUrl = "mood_icon", isPremium = false),
+        AvatarOption(id = "sad", name = "Sad", imageUrl = "mood_icon", isPremium = false),
+        AvatarOption(id = "angry", name = "Angry", imageUrl = "mood_icon", isPremium = false),
+        AvatarOption(id = "frustrated", name = "Frustrated", imageUrl = "mood_icon", isPremium = false),
+        AvatarOption(id = "scared", name = "Scared", imageUrl = "mood_icon", isPremium = false)
     )
 
     // Get avatar library
@@ -114,7 +99,7 @@ class ProfileSettingsViewModel @Inject constructor(
 
                 // Check if Firebase Auth token is valid by refreshing it
                 try {
-                    val tokenResult = currentUser.getIdToken(true).await()
+                    currentUser.getIdToken(true).await()
                     Timber.d("🔄 Firebase Auth token refreshed successfully")
                 } catch (tokenError: Exception) {
                     Timber.e(tokenError, "❌ Failed to refresh Firebase Auth token")
@@ -133,6 +118,9 @@ class ProfileSettingsViewModel @Inject constructor(
                         userName = cachedProfile.firstName,
                         userEmail = cachedProfile.email,
                         profileImageUrl = cachedProfile.profileImageUrl,
+                        localImagePath = cachedProfile.localImagePath,
+                        selectedAvatarId = cachedProfile.selectedAvatarId,
+                        backgroundColorHex = cachedProfile.backgroundColorHex,
                         isPremium = cachedProfile.isPremium,
                         twoFactorEnabled = cachedProfile.twoFactorEnabled,
                         notificationsEnabled = cachedProfile.notificationsEnabled,
@@ -223,19 +211,20 @@ class ProfileSettingsViewModel @Inject constructor(
                 // Save image locally first
                 val localImagePath = saveImageLocally(context, imageUri, userId)
 
-                // TODO: Cloud Storage - Upload to Firebase Storage
-                // val storageRef = FirebaseStorage.getInstance().reference.child("profile_images/$userId.jpg")
-                // val uploadTask = storageRef.putFile(imageUri)
-                // uploadTask.await()
-                // val downloadUrl = storageRef.downloadUrl.await().toString()
+                // Upload to Firebase Storage
+                val storageRef = FirebaseStorage.getInstance().reference.child("profile_images/$userId.jpg")
+                val uploadTask = storageRef.putFile(imageUri)
+                uploadTask.await()
 
-                // TODO: Cloud Storage - Save to Firestore when cloud upload is enabled
-                // firestore.collection("users").document(userId)
-                //     .update("profileImageUrl", downloadUrl).await()
+                val downloadUrl = storageRef.downloadUrl.await().toString()
 
-                // Update UI state with local image path
+                // Save to Firestore
+                firestore.collection("users").document(userId)
+                    .update("profileImageUrl", downloadUrl).await()
+
+                // Update UI state with both local and remote URLs
                 _uiState.value = _uiState.value.copy(
-                    profileImageUrl = null, // No cloud storage yet
+                    profileImageUrl = downloadUrl,
                     localImagePath = localImagePath,
                     isUploadingImage = false
                 )
@@ -243,7 +232,7 @@ class ProfileSettingsViewModel @Inject constructor(
                 // Update cached profile data
                 sessionManager.updateCachedUserProfile(
                     userId = userId,
-                    profileImageUrl = null // No cloud storage yet
+                    profileImageUrl = downloadUrl
                 )
 
                 showMessage("Profile image updated successfully!")
@@ -258,36 +247,18 @@ class ProfileSettingsViewModel @Inject constructor(
     }
 
     // Save image locally for offline access
-    private suspend fun saveImageLocally(context: Context, imageUri: Uri, userId: String): String {
+    private fun saveImageLocally(context: Context, imageUri: Uri, userId: String): String {
         return try {
-            // First, save the original image temporarily
-            val tempFile = File(context.cacheDir, "temp_profile_$userId.jpg")
             val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
+            val file = File(context.filesDir, "profile_image_$userId.jpg")
 
             inputStream?.use { input ->
-                FileOutputStream(tempFile).use { output ->
+                FileOutputStream(file).use { output ->
                     input.copyTo(output)
                 }
             }
 
-            // Compress the image with size and quality constraints
-            val compressedFile = Compressor.compress(context, tempFile) {
-                resolution(512, 512) // Max 512x512 pixels
-                quality(80) // 80% quality
-                format(android.graphics.Bitmap.CompressFormat.JPEG)
-                size(2_097_152) // Max 2MB file size
-            }
-
-            // Move compressed file to final location
-            val finalFile = File(context.filesDir, "profile_image_$userId.jpg")
-            compressedFile.copyTo(finalFile, overwrite = true)
-
-            // Clean up temp file
-            tempFile.delete()
-            compressedFile.delete()
-
-            Timber.d("✅ Image compressed and saved locally: ${finalFile.absolutePath}")
-            finalFile.absolutePath
+            file.absolutePath
         } catch (e: Exception) {
             Timber.e(e, "❌ Failed to save image locally")
             ""
@@ -312,7 +283,9 @@ class ProfileSettingsViewModel @Inject constructor(
                 // Update UI state immediately
                 _uiState.value = _uiState.value.copy(
                     profileImageUrl = avatar.imageUrl,
-                    selectedAvatarId = avatar.id
+                    selectedAvatarId = avatar.id,
+                    // Clear background color when avatar is selected
+                    backgroundColorHex = null
                 )
 
                 // Save to Firestore
@@ -322,7 +295,9 @@ class ProfileSettingsViewModel @Inject constructor(
                 // Update cached profile data
                 sessionManager.updateCachedUserProfile(
                     userId = userId,
-                    profileImageUrl = avatar.imageUrl
+                    profileImageUrl = avatar.imageUrl,
+                    selectedAvatarId = avatar.id,
+                    backgroundColorHex = null // Clear background color when avatar is selected
                 )
 
                 showMessage("Avatar updated successfully!")
@@ -679,6 +654,53 @@ class ProfileSettingsViewModel @Inject constructor(
     fun hideAvatarLibrary() {
         _uiState.value = _uiState.value.copy(showAvatarLibrary = false)
     }
+
+    fun onColorSelected(colorHex: String) {
+        viewModelScope.launch {
+            try {
+                val userId = auth.currentUser?.uid
+                if (userId != null) {
+                    // Update UI state immediately
+                    _uiState.value = _uiState.value.copy(
+                        backgroundColorHex = colorHex,
+                        // Clear other avatar selections when color is selected
+                        selectedAvatarId = null,
+                        profileImageUrl = null,
+                        localImagePath = null
+                    )
+
+                    // Update Firebase
+                    firestore.collection("users").document(userId)
+                        .update("backgroundColorHex", colorHex)
+                        .await()
+
+                    // Update cached profile
+                    val cachedProfile = sessionManager.getCachedUserProfile(userId)
+                    if (cachedProfile != null) {
+                        sessionManager.cacheUserProfile(
+                            userId = userId,
+                            firstName = cachedProfile.firstName,
+                            displayName = cachedProfile.displayName,
+                            email = cachedProfile.email,
+                            profileImageUrl = null, // Clear when color is selected
+                            localImagePath = null, // Clear when color is selected
+                            selectedAvatarId = null, // Clear when color is selected
+                            backgroundColorHex = colorHex,
+                            isPremium = cachedProfile.isPremium,
+                            notificationsEnabled = cachedProfile.notificationsEnabled,
+                            twoFactorEnabled = cachedProfile.twoFactorEnabled
+                        )
+                    }
+
+                    Timber.d("✅ Background color updated: $colorHex")
+                    showMessage("Background color updated!")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "❌ Failed to update background color")
+                showMessage("Failed to update background color", isError = true)
+            }
+        }
+    }
 }
 
 data class ProfileSettingsUiState(
@@ -688,6 +710,7 @@ data class ProfileSettingsUiState(
     val profileImageUrl: String? = null,
     val localImagePath: String? = null,
     val selectedAvatarId: String? = null,
+    val backgroundColorHex: String? = null,
     val isPremium: Boolean = false,
     val isUploadingImage: Boolean = false,
 

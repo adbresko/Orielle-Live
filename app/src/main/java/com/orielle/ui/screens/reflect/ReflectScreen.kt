@@ -74,15 +74,30 @@ fun ReflectScreen(
 
                 Spacer(Modifier.weight(1f))
 
-                // Right side - Profile icon
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Profile",
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clickable { navController.navigate("profile_settings") },
-                    tint = textColor
-                )
+                // Right side - Profile section with avatar (following leading UX practices)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Profile icon (left)
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Profile",
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clickable { navController.navigate("profile_settings") },
+                        tint = textColor
+                    )
+
+                    // Miniature user avatar (right - following leading UX practices)
+                    com.orielle.ui.screens.home.UserMiniatureAvatar(
+                        userProfileImageUrl = uiState.userProfileImageUrl,
+                        userLocalImagePath = uiState.userLocalImagePath,
+                        userSelectedAvatarId = uiState.userSelectedAvatarId,
+                        userName = uiState.userName,
+                        size = ScreenUtils.responsiveIconSize(24.dp)
+                    )
+                }
             }
         },
         bottomBar = {
@@ -112,7 +127,6 @@ fun ReflectScreen(
                     prompt = uiState.todaysPrompt,
                     cardColor = cardColor,
                     textColor = textColor,
-                    isDark = themeColors.isDark,
                     onRespondToPrompt = {
                         navController.navigate("journal_editor?promptText=${uiState.todaysPrompt}")
                     }
@@ -138,7 +152,6 @@ fun ReflectScreen(
                         entry = entry,
                         cardColor = cardColor,
                         textColor = textColor,
-                        isDark = themeColors.isDark,
                         onClick = {
                             navController.navigate("journal_detail/${entry.id}")
                         }
@@ -157,7 +170,6 @@ private fun TodaysPromptCard(
     prompt: String,
     cardColor: Color,
     textColor: Color,
-    isDark: Boolean,
     onRespondToPrompt: () -> Unit
 ) {
     val themeColors = getThemeColors()
@@ -165,7 +177,7 @@ private fun TodaysPromptCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = cardColor),
         shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.25f),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (themeColors.isDark) 0.dp else 8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(
             modifier = Modifier.padding(ScreenUtils.responsivePadding() * 1.5f),
@@ -211,7 +223,6 @@ private fun LookBackModule(
     entry: JournalEntry,
     cardColor: Color,
     textColor: Color,
-    isDark: Boolean,
     onClick: () -> Unit
 ) {
     val themeColors = getThemeColors()
@@ -232,7 +243,7 @@ private fun LookBackModule(
                 .clickable { onClick() },
             colors = CardDefaults.cardColors(containerColor = cardColor),
             shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (themeColors.isDark) 0.dp else 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
                 modifier = Modifier.padding(ScreenUtils.responsivePadding() * 1.25f),

@@ -10,6 +10,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -56,11 +59,11 @@ fun JournalEditorScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val themeColors = getThemeColors()
+    val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
 
-    val backgroundColor = themeColors.background
-    val textColor = themeColors.onBackground
-    val cardColor = themeColors.surface
+    val backgroundColor = if (isDark) DarkGray else SoftSand
+    val textColor = if (isDark) SoftSand else Charcoal
+    val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
 
     // Initialize the editor with prompt text or existing entry
     LaunchedEffect(promptText, entryId, tags) {
@@ -527,9 +530,12 @@ private fun TaggingModal(
                     )
                 )
 
-                LazyRow(
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
                     horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
-                    contentPadding = PaddingValues(vertical = 4.dp)
+                    verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                    contentPadding = PaddingValues(vertical = 4.dp),
+                    modifier = Modifier.heightIn(max = ScreenUtils.responsiveImageSize(200.dp))
                 ) {
                     items(suggestedTags) { tag ->
                         val isSelected = selectedTags.contains(tag)
@@ -568,9 +574,12 @@ private fun TaggingModal(
                         )
                     )
 
-                    LazyRow(
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
                         horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
-                        contentPadding = PaddingValues(vertical = 4.dp)
+                        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                        contentPadding = PaddingValues(vertical = 4.dp),
+                        modifier = Modifier.heightIn(max = ScreenUtils.responsiveImageSize(150.dp))
                     ) {
                         items(selectedTags.toList()) { tag ->
                             Card(

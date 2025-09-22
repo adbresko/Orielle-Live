@@ -28,6 +28,11 @@ class RememberViewModel @Inject constructor(
     private var currentMonth = Calendar.getInstance()
     private var searchQuery = ""
 
+    // Caching variables
+    private var isDataLoaded = false
+    private var lastLoadTime = 0L
+    private val CACHE_DURATION = 5 * 60 * 1000L // 5 minutes in milliseconds
+
     init {
         // Initialize with current month to prevent crashes
         currentMonth = Calendar.getInstance()
@@ -41,12 +46,24 @@ class RememberViewModel @Inject constructor(
 
     fun loadRememberData() {
         viewModelScope.launch {
-            // Show skeleton loading immediately for better UX
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            // Check if we have cached data that's still fresh
+            val currentTime = System.currentTimeMillis()
+            if (isDataLoaded && (currentTime - lastLoadTime) < CACHE_DURATION) {
+                // Use cached data, just regenerate calendar
+                generateCalendarData()
+                return@launch
+            }
+
+            // Show loading only if we don't have cached data
+            if (!isDataLoaded) {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+            }
 
             try {
-                // Add a small delay to show skeleton loading smoothly
-                kotlinx.coroutines.delay(300)
+                // Add a small delay to show loading smoothly (only if not cached)
+                if (!isDataLoaded) {
+                    kotlinx.coroutines.delay(300)
+                }
                 // Load journal entries and convert to activities
                 val journalEntries = journalRepository.getJournalEntries().first()
                 println("DEBUG: Loaded ${journalEntries.size} journal entries")
@@ -121,6 +138,10 @@ class RememberViewModel @Inject constructor(
 
                 // Generate calendar data
                 generateCalendarData()
+
+                // Mark data as loaded and update cache time
+                isDataLoaded = true
+                lastLoadTime = currentTime
 
             } catch (e: Exception) {
                 println("DEBUG: Error loading data: ${e.message}")

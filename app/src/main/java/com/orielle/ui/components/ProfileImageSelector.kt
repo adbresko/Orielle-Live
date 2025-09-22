@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,13 +26,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
 import com.orielle.R
 import com.orielle.ui.components.AvatarOption
 import com.orielle.ui.components.AvatarLibraryDialog
+import com.orielle.ui.components.ColorPicker
+import com.orielle.ui.components.hexToColor
 import java.io.File
 
 @Composable
@@ -39,9 +41,12 @@ fun ProfileImageSelector(
     profileImageUrl: String?,
     localImagePath: String?,
     selectedAvatarId: String?,
+    backgroundColorHex: String?,
+    userName: String?,
     isUploading: Boolean,
     onImageUpload: (Uri) -> Unit,
     onAvatarSelect: (AvatarOption) -> Unit,
+    onColorSelect: (String) -> Unit,
     onImageRemove: () -> Unit,
     avatarLibrary: List<AvatarOption>,
     isPremiumUser: Boolean = false,
@@ -49,8 +54,8 @@ fun ProfileImageSelector(
 ) {
     var showImageOptions by remember { mutableStateOf(false) }
     var showAvatarLibrary by remember { mutableStateOf(false) }
+    var showColorPicker by remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
 
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -73,7 +78,10 @@ fun ProfileImageSelector(
                 modifier = Modifier
                     .size(100.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .background(
+                        backgroundColorHex?.let { hexToColor(it) }
+                            ?: MaterialTheme.colorScheme.surfaceVariant
+                    )
                     .border(
                         width = 3.dp,
                         color = MaterialTheme.colorScheme.primary,
@@ -107,59 +115,28 @@ fun ProfileImageSelector(
                             contentScale = ContentScale.Crop
                         )
                     }
-                    else -> {
-                        // Check if there's a selected avatar
-                        val selectedAvatar = avatarLibrary.find { it.id == selectedAvatarId }
-                        if (selectedAvatar?.emoji != null) {
-                            // Display selected emoji avatar
-                            Text(
-                                text = selectedAvatar.emoji,
-                                fontSize = 50.sp,
-                                modifier = Modifier.align(Alignment.Center)
+                    selectedAvatarId != null -> {
+                        // Show selected mood icon directly
+                        val resourceId = getDrawableResourceId(selectedAvatarId)
+                        if (resourceId != null) {
+                            Image(
+                                painter = painterResource(id = resourceId),
+                                contentDescription = "Your Mood Avatar",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
                             )
-                        } else if (selectedAvatar?.imageUrl != null) {
-                            // Check if it's a drawable resource
-                            if (selectedAvatar.imageUrl.startsWith("drawable://")) {
-                                val drawableName = selectedAvatar.imageUrl.removePrefix("drawable://")
-                                val resourceId = getDrawableResourceId(drawableName)
-                                if (resourceId != null) {
-                                    Image(
-                                        painter = painterResource(id = resourceId),
-                                        contentDescription = selectedAvatar.name,
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Fit
-                                    )
-                                } else {
-                                    // Fallback to default icon
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = "Default Avatar",
-                                        modifier = Modifier
-                                            .size(50.dp)
-                                            .align(Alignment.Center),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            } else {
-                                // Display URL image
-                                Image(
-                                    painter = rememberAsyncImagePainter(selectedAvatar.imageUrl),
-                                    contentDescription = selectedAvatar.name,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
                         } else {
-                            // Default avatar
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Default Avatar",
-                                modifier = Modifier
-                                    .size(50.dp)
-                                    .align(Alignment.Center),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            // Fallback to initials
+                            UserInitialsDisplay(userName = userName)
                         }
+                    }
+                    backgroundColorHex != null -> {
+                        // Show initials on colored background
+                        UserInitialsDisplay(userName = userName)
+                    }
+                    else -> {
+                        // Default - show initials
+                        UserInitialsDisplay(userName = userName)
                     }
                 }
 
@@ -223,6 +200,24 @@ fun ProfileImageSelector(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Choose Avatar", style = MaterialTheme.typography.bodyMedium)
                 }
+
+                // Choose Color Button
+                Button(
+                    onClick = { showColorPicker = true },
+                    enabled = !isUploading,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    ),
+                    modifier = Modifier.width(140.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Choose Color", style = MaterialTheme.typography.bodyMedium)
+                }
             }
         }
 
@@ -285,6 +280,44 @@ fun ProfileImageSelector(
             isPremiumUser = isPremiumUser
         )
     }
+
+    // Color Picker Dialog
+    if (showColorPicker) {
+        Dialog(
+            onDismissRequest = { showColorPicker = false },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            )
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    ColorPicker(
+                        selectedColor = backgroundColorHex,
+                        onColorSelected = { color ->
+                            onColorSelect(color)
+                            showColorPicker = false
+                        }
+                    )
+
+                    Button(
+                        onClick = { showColorPicker = false },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Done")
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -344,7 +377,7 @@ private fun ImageOptionsDialog(
                     )
                 }
 
-                Divider()
+                HorizontalDivider()
 
                 // Choose Avatar Option
                 Row(
@@ -369,7 +402,7 @@ private fun ImageOptionsDialog(
 
                 // Remove Image Option (only if there's an image)
                 if (hasImage) {
-                    Divider()
+                    HorizontalDivider()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -406,18 +439,33 @@ private fun ImageOptionsDialog(
     }
 }
 
-// Helper function to get drawable resource ID
-private fun getDrawableResourceId(drawableName: String): Int? {
-    return when (drawableName) {
-        "ic_happy" -> R.drawable.ic_happy
-        "ic_playful" -> R.drawable.ic_playful
-        "ic_surprised" -> R.drawable.ic_surprised
-        "ic_peaceful" -> R.drawable.ic_peaceful
-        "ic_shy" -> R.drawable.ic_shy
-        "ic_sad" -> R.drawable.ic_sad
-        "ic_angry" -> R.drawable.ic_angry
-        "ic_frustrated" -> R.drawable.ic_frustrated
-        "ic_scared" -> R.drawable.ic_scared
+@Composable
+private fun UserInitialsDisplay(userName: String?) {
+    Text(
+        text = userName?.let { name ->
+            name.split(" ").mapNotNull { it.firstOrNull()?.toString() }
+                .take(2).joinToString("").uppercase()
+        } ?: "U",
+        style = MaterialTheme.typography.headlineMedium.copy(
+            fontWeight = FontWeight.Bold
+        ),
+        color = Color.White,
+        textAlign = TextAlign.Center
+    )
+}
+
+// Helper function to get drawable resource ID for mood icons
+private fun getDrawableResourceId(avatarId: String): Int? {
+    return when (avatarId) {
+        "happy" -> R.drawable.ic_happy
+        "playful" -> R.drawable.ic_playful
+        "surprised" -> R.drawable.ic_surprised
+        "peaceful" -> R.drawable.ic_peaceful
+        "shy" -> R.drawable.ic_shy
+        "sad" -> R.drawable.ic_sad
+        "angry" -> R.drawable.ic_angry
+        "frustrated" -> R.drawable.ic_frustrated
+        "scared" -> R.drawable.ic_scared
         else -> null
     }
 }

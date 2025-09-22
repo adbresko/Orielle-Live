@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.orielle.R
 import com.orielle.ui.components.OrielleScreenHeader
 import androidx.compose.foundation.Image
+import com.orielle.ui.theme.StillwaterTeal
 
 @Composable
 fun MoodFinalScreen(
@@ -60,7 +61,7 @@ fun MoodFinalScreen(
                 Text(
                     text = "Abraham Lincoln",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
@@ -76,7 +77,7 @@ fun MoodFinalScreen(
         Button(
             onClick = onDone,
             shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 2),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            colors = ButtonDefaults.buttonColors(containerColor = StillwaterTeal),
             modifier = Modifier
                 .width(180.dp)
                 .height(44.dp)
@@ -87,7 +88,7 @@ fun MoodFinalScreen(
         Text(
             text = "Share your insight  ➔",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
+            color = StillwaterTeal,
             modifier = Modifier
                 .clickable { onShare() }
                 .padding(8.dp)

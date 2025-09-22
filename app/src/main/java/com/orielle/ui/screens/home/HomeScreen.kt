@@ -18,6 +18,7 @@ import androidx.navigation.NavController
 import com.orielle.ui.theme.DarkGray
 import com.orielle.ui.theme.WaterBlue
 import com.orielle.ui.theme.Typography
+import com.orielle.ui.theme.Lora
 import com.orielle.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
@@ -31,6 +32,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.EaseOutBack
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -55,6 +58,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -72,14 +77,192 @@ import android.view.MotionEvent
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.ExperimentalComposeUiApi
 import com.orielle.ui.theme.OrielleTheme
-import com.orielle.ui.theme.getThemeColors
 import com.orielle.ui.components.WaterDropLoading
 import com.orielle.ui.util.ScreenUtils
 import com.orielle.ui.components.BottomNavigation
-import com.orielle.util.GreetingUtils
-import com.orielle.util.MoonPhaseUtils
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import java.io.File
 
 // Import the WeeklyMoodView composable from the same package (auto-resolved)
+
+// Helper function to get avatar library
+private fun getAvatarLibrary(): List<com.orielle.ui.components.AvatarOption> {
+    return listOf(
+        com.orielle.ui.components.AvatarOption(
+            id = "avatar1",
+            name = "Calm",
+            imageUrl = "https://example.com/avatar1.jpg",
+            isPremium = false
+        ),
+        com.orielle.ui.components.AvatarOption(
+            id = "avatar2",
+            name = "Joyful",
+            imageUrl = "https://example.com/avatar2.jpg",
+            isPremium = false
+        ),
+        com.orielle.ui.components.AvatarOption(
+            id = "avatar3",
+            name = "Thoughtful",
+            imageUrl = "https://example.com/avatar3.jpg",
+            isPremium = false
+        ),
+        com.orielle.ui.components.AvatarOption(
+            id = "avatar4",
+            name = "Serene",
+            imageUrl = "https://example.com/avatar4.jpg",
+            isPremium = false
+        ),
+        com.orielle.ui.components.AvatarOption(
+            id = "avatar5",
+            name = "Energetic",
+            imageUrl = "https://example.com/avatar5.jpg",
+            isPremium = true
+        ),
+        com.orielle.ui.components.AvatarOption(
+            id = "avatar6",
+            name = "Mystical",
+            imageUrl = "https://example.com/avatar6.jpg",
+            isPremium = true
+        )
+    )
+}
+
+@Composable
+private fun UserInitialAvatar(
+    userName: String,
+    size: androidx.compose.ui.unit.Dp
+) {
+    val themeColors = MaterialTheme.colorScheme
+    val initial = userName.take(1).uppercase()
+
+    Box(
+        modifier = Modifier
+            .size(size)
+            .background(
+                color = themeColors.primary.copy(alpha = 0.2f),
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = initial,
+            style = Typography.bodyMedium.copy(
+                color = themeColors.primary,
+                fontWeight = FontWeight.Bold
+            )
+        )
+    }
+}
+
+@Composable
+internal fun UserMiniatureAvatar(
+    userProfileImageUrl: String?,
+    userLocalImagePath: String?,
+    userSelectedAvatarId: String?,
+    userName: String?,
+    size: androidx.compose.ui.unit.Dp
+) {
+    val themeColors = MaterialTheme.colorScheme
+
+    // Subtle animation states
+    var isVisible by remember { mutableStateOf(false) }
+    val alpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = tween(durationMillis = 300, easing = EaseOutCubic),
+        label = "avatarAlpha"
+    )
+    val scale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.8f,
+        animationSpec = tween(durationMillis = 300, easing = EaseOutBack),
+        label = "avatarScale"
+    )
+
+    // Trigger animation when component appears
+    LaunchedEffect(Unit) {
+        isVisible = true
+    }
+
+    Box(
+        modifier = Modifier.graphicsLayer {
+            this.alpha = alpha
+            scaleX = scale
+            scaleY = scale
+        }
+    ) {
+        when {
+            // Priority 1: Local uploaded image
+            userLocalImagePath != null && File(userLocalImagePath).exists() -> {
+                Image(
+                    painter = rememberAsyncImagePainter(File(userLocalImagePath)),
+                    contentDescription = "Your Profile",
+                    modifier = Modifier
+                        .size(size)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            // Priority 2: Remote profile image
+            userProfileImageUrl != null && userProfileImageUrl.isNotBlank() -> {
+                AsyncImage(
+                    model = userProfileImageUrl,
+                    contentDescription = "Your Profile",
+                    modifier = Modifier
+                        .size(size)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(id = R.drawable.ic_orielle_drop),
+                    error = painterResource(id = R.drawable.ic_orielle_drop)
+                )
+            }
+
+            // Priority 3: Selected avatar from library
+            userSelectedAvatarId != null -> {
+                val avatarLibrary = getAvatarLibrary()
+                val selectedAvatar = avatarLibrary.find { it.id == userSelectedAvatarId }
+                if (selectedAvatar != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(selectedAvatar.imageUrl),
+                        contentDescription = selectedAvatar.name,
+                        modifier = Modifier
+                            .size(size)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // Fallback to initial
+                    UserInitialAvatar(userName = userName.toString(), size = size)
+                }
+            }
+
+            // Priority 4: User initial in themed circle
+            !userName.isNullOrBlank() -> {
+                UserInitialAvatar(userName = userName, size = size)
+            }
+
+            // Fallback: Default circle
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .size(size)
+                        .background(
+                            color = themeColors.primary.copy(alpha = 0.2f),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "You",
+                        modifier = Modifier.size(size * 0.6f),
+                        tint = themeColors.primary
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun HomeScreen(
@@ -89,8 +272,6 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val dashboardState by viewModel.dashboardState.collectAsState()
-    val themeColors = getThemeColors()
-    val isDark = themeColors.isDark
 
     // Refresh data when returning to home screen
     LaunchedEffect(Unit) {
@@ -135,7 +316,11 @@ fun HomeScreen(
                 onCheckInTap = {
                     // Navigate to mood check-in screen instead of just changing state
                     navController.navigate("mood_check_in")
-                }
+                },
+                // Pass profile data for miniature avatar
+                userProfileImageUrl = uiState.userProfileImageUrl,
+                userLocalImagePath = uiState.userLocalImagePath,
+                userSelectedAvatarId = uiState.userSelectedAvatarId
             )
         }
     }
@@ -150,26 +335,17 @@ fun HomeDashboardScreen(
     navController: NavController,
     dashboardState: DashboardState,
     themeManager: com.orielle.ui.theme.ThemeManager,
-    onCheckInTap: () -> Unit
+    onCheckInTap: () -> Unit,
+    // Profile data for miniature avatar
+    userProfileImageUrl: String? = null,
+    userLocalImagePath: String? = null,
+    userSelectedAvatarId: String? = null
 ) {
-    val themeColors = getThemeColors()
-    val backgroundColor = themeColors.background
-    val textColor = themeColors.onBackground
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val textColor = MaterialTheme.colorScheme.onBackground
     val accentColor = WaterBlue
     val today = remember { Date() }
     val dateFormat = remember { SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()) }
-    val yearFormat = remember { SimpleDateFormat("yyyy", Locale.getDefault()) }
-    // Moon phase using local calculations (reliable and fast)
-    val moonPhaseDisplay = remember(today) {
-        try {
-            // Use runBlocking for synchronous call since we're in remember
-            kotlinx.coroutines.runBlocking {
-                MoonPhaseUtils.getMoonPhaseDisplay(today)
-            }
-        } catch (e: Exception) {
-            "🌙 Unavailable"
-        }
-    }
     val breathingTransition = rememberInfiniteTransition(label = "breathing")
     val breathingScale by breathingTransition.animateFloat(
         initialValue = 1f,
@@ -193,10 +369,10 @@ fun HomeDashboardScreen(
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Water drop icon and ORIELLE on the left
+                // Orielle logo and text - side by side
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_orielle_drop),
@@ -206,19 +382,39 @@ fun HomeDashboardScreen(
                     )
                     Text(
                         text = "ORIELLE",
-                        style = Typography.titleMedium.copy(color = textColor, fontWeight = FontWeight.Medium)
+                        style = Typography.bodySmall.copy(
+                            color = textColor,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = Lora,
+                            fontSize = 22.sp
+                        )
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                // Profile icon on the right
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Profile",
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clickable { navController.navigate("profile_settings") },
-                    tint = themeColors.onBackground
-                )
+                // Profile section with avatar on the right (leading UX practice)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Profile icon (left)
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Profile",
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clickable { navController.navigate("profile_settings") },
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+
+                    // Miniature user avatar (right - following leading UX practices)
+                    UserMiniatureAvatar(
+                        userProfileImageUrl = userProfileImageUrl,
+                        userLocalImagePath = userLocalImagePath,
+                        userSelectedAvatarId = userSelectedAvatarId,
+                        userName = userName,
+                        size = ScreenUtils.responsiveIconSize(24.dp)
+                    )
+                }
             }
         },
         bottomBar = {
@@ -263,8 +459,8 @@ fun HomeDashboardScreen(
                             onClick = onCheckInTap
                         ),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = themeColors.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = if (themeColors.isDark) 0.dp else 8.dp)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(vertical = 48.dp),
@@ -292,7 +488,7 @@ fun HomeDashboardScreen(
                         Spacer(Modifier.height(ScreenUtils.responsiveSpacing()))
                         Text(
                             text = "Tap here to begin your check-in.",
-                            style = Typography.bodyLarge.copy(color = themeColors.onBackground),
+                            style = Typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -308,25 +504,45 @@ fun HomeDashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // Greeting - left aligned
+                    // Dynamic greeting based on time of day
+                    val greeting = remember {
+                        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+                        when {
+                            hour < 12 -> "Good morning"
+                            hour < 17 -> "Good afternoon"
+                            else -> "Good evening"
+                        }
+                    }
+
                     Text(
-                        text = GreetingUtils.getTimeBasedGreeting(userName, today),
+                        text = "$greeting, ${userName ?: "User"}.",
                         style = Typography.headlineLarge.copy(color = textColor),
-                        modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding() * 1.5f)
+                        modifier = Modifier.align(Alignment.Start)
                     )
 
-                    // Date line - UNDER the greeting, smaller font
+                    // Dynamic date line with moon phase - directly under greeting
+                    var moonPhaseDisplay by remember { mutableStateOf("🌙 waxing crescent") }
+
+                    // Load moon phase
+                    LaunchedEffect(Unit) {
+                        moonPhaseDisplay = try {
+                            val moonPhase = com.orielle.util.LocalMoonPhaseUtils.getMoonPhase(today)
+                            "🌙 ${moonPhase.phase}"
+                        } catch (e: Exception) {
+                            "🌙 waxing crescent" // Fallback
+                        }
+                    }
+
                     Text(
-                        text = "${dateFormat.format(today)} • ${moonPhaseDisplay} | ${yearFormat.format(today)}",
-                        style = Typography.bodyMedium.copy(
-                            color = themeColors.onBackground,
-                            fontWeight = FontWeight.Medium
+                        text = "${dateFormat.format(today)}. $moonPhaseDisplay | ${today.year + 1900}",
+                        style = Typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                            fontSize = 15.sp // Larger font for better readability
                         ),
-                        modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding() * 1f)
+                        modifier = Modifier.align(Alignment.Start)
                     )
 
-                    // Spacer before cards - reduced spacing
-                    Spacer(Modifier.height(ScreenUtils.responsivePadding() * 1f))
+                    Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 3))
 
                     // Inner Weather Card
                     var weatherPressed by remember { mutableStateOf(false) }
@@ -345,41 +561,32 @@ fun HomeDashboardScreen(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = rememberRipple(bounded = true, color = accentColor),
-                                onClick = { navController.navigate("reflect") }
+                                onClick = { navController.navigate("inner_weather_history") }
                             ),
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = themeColors.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = if (themeColors.isDark) 0.dp else 4.dp)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(vertical = 16.dp, horizontal = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.Start
                         ) {
+                            Text(
+                                text = "YOUR INNER WEATHER",
+                                style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+                                textAlign = TextAlign.Start
+                            )
+                            Spacer(Modifier.height(ScreenUtils.responsivePadding()))
                             WeeklyMoodView(
                                 weeklyView = weeklyMoodView,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
-                    Spacer(Modifier.height(ScreenUtils.responsivePadding() * 3f))
+                    Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 2))
                     // Thought From Your Past Card
                     var thoughtPressed by remember { mutableStateOf(false) }
                     val thoughtScale by animateFloatAsState(targetValue = if (thoughtPressed) 0.95f else 1f, label = "thoughtTapScale")
-
-                    // Select a random journal entry for the card (only meaningful content)
-                    val selectedEntry = if (journalEntries.isNotEmpty()) {
-                        val meaningfulEntries = journalEntries.filter { entry ->
-                            entry.content.trim().length >= 5
-                        }
-                        if (meaningfulEntries.isNotEmpty()) {
-                            meaningfulEntries.random()
-                        } else {
-                            null
-                        }
-                    } else {
-                        null
-                    }
-
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -394,33 +601,34 @@ fun HomeDashboardScreen(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = rememberRipple(bounded = true, color = accentColor),
-                                onClick = {
-                                    if (selectedEntry != null) {
-                                        navController.navigate("journal_detail/${selectedEntry.id}")
-                                    } else {
-                                        navController.navigate("reflect")
-                                    }
-                                }
+                                onClick = { navController.navigate("reflect") }
                             ),
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = themeColors.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = if (themeColors.isDark) 0.dp else 4.dp)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(vertical = 20.dp, horizontal = 16.dp),
+                            modifier = Modifier.padding(16.dp),
                             horizontalAlignment = Alignment.Start
                         ) {
                             Text(
                                 text = "A THOUGHT FROM YOUR PAST",
-                                style = Typography.titleMedium.copy(color = themeColors.onSurface, fontWeight = FontWeight.Bold),
+                                style = Typography.titleMedium.copy(color = accentColor),
                                 textAlign = TextAlign.Start
                             )
                             Spacer(Modifier.height(12.dp))
-                            val quote = selectedEntry?.content ?: "This space is empty... Take a moment to reflect on your day and capture your thoughts. Your future self will thank you for these meaningful moments."
+                            // Random thought selection
+                            val randomThought = remember(journalEntries) {
+                                if (journalEntries.isNotEmpty()) {
+                                    journalEntries.random().content
+                                } else {
+                                    "Felt a real sense of growth today after that challenging conversation."
+                                }
+                            }
                             Text(
-                                text = quote,
+                                text = randomThought,
                                 style = Typography.bodyMedium.copy(
-                                    color = themeColors.onSurface,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontStyle = FontStyle.Italic
                                 ),
                                 textAlign = TextAlign.Start
@@ -435,8 +643,7 @@ fun HomeDashboardScreen(
 
 @Composable
 fun DashboardNavItem(icon: Int, label: String, selected: Boolean, onClick: () -> Unit = {}) {
-    val themeColors = getThemeColors()
-    val unselectedTextColor = if (themeColors.isDark) Color.LightGray else Charcoal
+    val unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -467,7 +674,7 @@ fun DashboardNavItem(icon: Int, label: String, selected: Boolean, onClick: () ->
 fun Preview_HomeDashboard_Initial_Light() {
     val fakeNavController = androidx.navigation.compose.rememberNavController()
     val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
-    OrielleTheme(darkTheme = false) {
+    com.orielle.ui.theme.OrielleThemeWithPreference(themeManager = fakeThemeManager) {
         HomeDashboardScreen(
             userName = "Mona",
             journalEntries = listOf(
@@ -492,7 +699,8 @@ fun Preview_HomeDashboard_Initial_Light() {
 fun Preview_HomeDashboard_Initial_Dark() {
     val fakeNavController = androidx.navigation.compose.rememberNavController()
     val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
-    OrielleTheme(darkTheme = true) {
+    // Force dark theme for this preview
+    com.orielle.ui.theme.OrielleTheme(darkTheme = true) {
         HomeDashboardScreen(
             userName = "Mona",
             journalEntries = listOf(
@@ -517,7 +725,7 @@ fun Preview_HomeDashboard_Initial_Dark() {
 fun Preview_HomeDashboard_Unfolded_Light() {
     val fakeNavController = androidx.navigation.compose.rememberNavController()
     val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
-    OrielleTheme(darkTheme = false) {
+    com.orielle.ui.theme.OrielleThemeWithPreference(themeManager = fakeThemeManager) {
         HomeDashboardScreen(
             userName = "Mona",
             journalEntries = listOf(
@@ -542,7 +750,8 @@ fun Preview_HomeDashboard_Unfolded_Light() {
 fun Preview_HomeDashboard_Unfolded_Dark() {
     val fakeNavController = androidx.navigation.compose.rememberNavController()
     val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
-    OrielleTheme(darkTheme = true) {
+    // Force dark theme for this preview
+    com.orielle.ui.theme.OrielleTheme(darkTheme = true) {
         HomeDashboardScreen(
             userName = "Mona",
             journalEntries = listOf(

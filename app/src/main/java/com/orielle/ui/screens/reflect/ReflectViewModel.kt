@@ -5,17 +5,21 @@ import androidx.lifecycle.viewModelScope
 import com.orielle.domain.model.DefaultJournalPrompts
 import com.orielle.domain.model.JournalEntry
 import com.orielle.domain.use_case.GetJournalEntriesUseCase
+import com.orielle.domain.manager.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
 @HiltViewModel
 class ReflectViewModel @Inject constructor(
-    private val getJournalEntriesUseCase: GetJournalEntriesUseCase
+    private val getJournalEntriesUseCase: GetJournalEntriesUseCase,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReflectUiState())
@@ -24,6 +28,7 @@ class ReflectViewModel @Inject constructor(
     init {
         loadTodaysPrompt()
         loadLookBackEntry()
+        loadCachedUserProfile()
     }
 
     private fun loadTodaysPrompt() {
@@ -70,11 +75,38 @@ class ReflectViewModel @Inject constructor(
 
         return null
     }
+
+    private fun loadCachedUserProfile() {
+        viewModelScope.launch {
+            try {
+                val userId = sessionManager.currentUserId.first()
+                if (userId != null && !sessionManager.isGuest.first()) {
+                    val cachedProfile = sessionManager.getCachedUserProfile(userId)
+                    if (cachedProfile != null) {
+                        _uiState.value = _uiState.value.copy(
+                            userName = cachedProfile.displayName ?: cachedProfile.firstName,
+                            userProfileImageUrl = cachedProfile.profileImageUrl,
+                            userLocalImagePath = cachedProfile.localImagePath,
+                            userSelectedAvatarId = cachedProfile.selectedAvatarId
+                        )
+                        Timber.d("📋 ReflectViewModel: Loaded cached profile data for user: $userId")
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "❌ ReflectViewModel: Failed to load cached user profile")
+            }
+        }
+    }
 }
 
 data class ReflectUiState(
     val todaysPrompt: String = "",
     val lookBackEntry: JournalEntry? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    // Profile data for avatar display
+    val userName: String? = null,
+    val userProfileImageUrl: String? = null,
+    val userLocalImagePath: String? = null,
+    val userSelectedAvatarId: String? = null
 )

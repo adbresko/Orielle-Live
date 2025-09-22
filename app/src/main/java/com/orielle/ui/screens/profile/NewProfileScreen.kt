@@ -6,7 +6,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.remember
+import androidx.compose.ui.res.painterResource
+import com.orielle.R
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,15 +45,15 @@ fun ProfileSettingsScreen(
     viewModel: ProfileSettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val themeColors = getThemeColors()
+    val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
     val currentContext = LocalContext.current
 
     // Get current theme state from ViewModel
     val currentDarkTheme by viewModel.currentThemeState.collectAsState(initial = false)
 
-    val backgroundColor = themeColors.background
-    val textColor = themeColors.onBackground
-    val cardColor = themeColors.surface
+    val backgroundColor = if (isDark) DarkGray else SoftSand
+    val textColor = if (isDark) SoftSand else Charcoal
+    val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
 
     // Initialize with current data
     LaunchedEffect(Unit) {
@@ -88,7 +93,7 @@ fun ProfileSettingsScreen(
             ) {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = textColor
                     )
@@ -130,12 +135,15 @@ fun ProfileSettingsScreen(
                         profileImageUrl = uiState.profileImageUrl,
                         localImagePath = uiState.localImagePath,
                         selectedAvatarId = uiState.selectedAvatarId,
+                        backgroundColorHex = uiState.backgroundColorHex,
+                        userName = uiState.userName,
                         isUploading = uiState.isUploadingImage,
                         onImageUpload = { uri -> viewModel.uploadImage(uri, currentContext) },
                         onAvatarSelect = { avatar -> viewModel.selectAvatar(avatar) },
+                        onColorSelect = { color -> viewModel.onColorSelected(color) },
                         onImageRemove = { viewModel.removeProfileImage(currentContext) },
                         avatarLibrary = viewModel.getAvatarLibrary(),
-                        isPremiumUser = uiState.isPremium ?: false,
+                        isPremiumUser = uiState.isPremium,
                         modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding())
                     )
 
@@ -210,7 +218,7 @@ fun ProfileSettingsScreen(
                 }
 
                 SettingsItem(
-                    icon = Icons.Default.Logout,
+                    icon = Icons.AutoMirrored.Filled.Logout,
                     title = "Sign Out",
                     subtitle = "Sign out of your account",
                     textColor = ErrorRed

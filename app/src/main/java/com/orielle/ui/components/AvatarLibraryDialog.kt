@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,8 +31,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
-import com.orielle.R
 import com.orielle.ui.components.AvatarOption
+import com.orielle.R
 
 @Composable
 fun AvatarLibraryDialog(
@@ -51,7 +52,7 @@ fun AvatarLibraryDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 600.dp),
+                .heightIn(max = 700.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
@@ -84,8 +85,8 @@ fun AvatarLibraryDialog(
 
                 // Description
                 Text(
-                    text = "Select from our curated collection of beautiful avatars",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Select from our mood icons",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
@@ -98,7 +99,7 @@ fun AvatarLibraryDialog(
                     columns = GridCells.Fixed(3),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.heightIn(max = 400.dp)
+                    modifier = Modifier.heightIn(max = 450.dp)
                 ) {
                     items(avatars) { avatar ->
                         AvatarItem(
@@ -135,7 +136,8 @@ fun AvatarLibraryDialog(
                             Text(
                                 text = "Premium avatars require a premium subscription",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp
                             )
                         }
                     }
@@ -160,7 +162,7 @@ private fun AvatarItem(
             .clickable(enabled = isClickable) { onClick() }
             .alpha(if (isClickable) 1f else 0.5f)
     ) {
-        // Avatar image or emoji
+        // Avatar image
         Box(
             modifier = Modifier
                 .size(80.dp)
@@ -178,53 +180,21 @@ private fun AvatarItem(
                     }
                 )
         ) {
-            if (avatar.emoji != null) {
-                // Display emoji
-                Text(
-                    text = avatar.emoji,
-                    fontSize = 40.sp,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            } else if (avatar.imageUrl != null) {
-                // Check if it's a drawable resource
-                if (avatar.imageUrl.startsWith("drawable://")) {
-                    val drawableName = avatar.imageUrl.removePrefix("drawable://")
-                    val resourceId = getDrawableResourceId(drawableName)
-                    if (resourceId != null) {
-                        Image(
-                            painter = painterResource(id = resourceId),
-                            contentDescription = avatar.name,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit
-                        )
-                    } else {
-                        // Fallback to default icon
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = avatar.name,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .align(Alignment.Center),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    // Display URL image
-                    Image(
-                        painter = rememberAsyncImagePainter(avatar.imageUrl),
-                        contentDescription = avatar.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            } else {
-                // Fallback to default icon
-                Icon(
-                    imageVector = Icons.Default.Star,
+            // Use mood icon drawable resources instead of URLs
+            val resourceId = getDrawableResourceId(avatar.id)
+            if (resourceId != null) {
+                Image(
+                    painter = painterResource(id = resourceId),
                     contentDescription = avatar.name,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .align(Alignment.Center),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                // Fallback for unknown avatars
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = avatar.name,
+                    modifier = Modifier.fillMaxSize(),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -264,18 +234,18 @@ private fun AvatarItem(
     }
 }
 
-// Helper function to get drawable resource ID
-private fun getDrawableResourceId(drawableName: String): Int? {
-    return when (drawableName) {
-        "ic_happy" -> R.drawable.ic_happy
-        "ic_playful" -> R.drawable.ic_playful
-        "ic_surprised" -> R.drawable.ic_surprised
-        "ic_peaceful" -> R.drawable.ic_peaceful
-        "ic_shy" -> R.drawable.ic_shy
-        "ic_sad" -> R.drawable.ic_sad
-        "ic_angry" -> R.drawable.ic_angry
-        "ic_frustrated" -> R.drawable.ic_frustrated
-        "ic_scared" -> R.drawable.ic_scared
+// Helper function to get drawable resource ID for mood icons
+private fun getDrawableResourceId(avatarId: String): Int? {
+    return when (avatarId) {
+        "happy" -> R.drawable.ic_happy
+        "playful" -> R.drawable.ic_playful
+        "surprised" -> R.drawable.ic_surprised
+        "peaceful" -> R.drawable.ic_peaceful
+        "shy" -> R.drawable.ic_shy
+        "sad" -> R.drawable.ic_sad
+        "angry" -> R.drawable.ic_angry
+        "frustrated" -> R.drawable.ic_frustrated
+        "scared" -> R.drawable.ic_scared
         else -> null
     }
 }

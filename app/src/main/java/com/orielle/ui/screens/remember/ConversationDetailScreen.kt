@@ -13,8 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.orielle.ui.util.ScreenUtils
+import com.orielle.ui.components.WaterDropLoading
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -63,31 +65,55 @@ fun ConversationDetailScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = ScreenUtils.responsivePadding()),
-            verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding()),
-            contentPadding = PaddingValues(vertical = ScreenUtils.responsivePadding())
-        ) {
-            items(
-                items = uiState.messages,
-                key = { it.id }
-            ) { message ->
-                MessageBubble(message = message)
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    WaterDropLoading(
+                        size = ScreenUtils.responsiveImageSize(60.dp).value.toInt(),
+                        modifier = Modifier.size(ScreenUtils.responsiveImageSize(60.dp))
+                    )
+                    Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing() * 2))
+                    Text(
+                        text = "Loading conversation...",
+                        style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(paddingValues)
+                    .padding(horizontal = ScreenUtils.responsivePadding()),
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding()),
+                contentPadding = PaddingValues(vertical = ScreenUtils.responsivePadding())
+            ) {
+                items(
+                    items = uiState.messages,
+                    key = { it.id }
+                ) { message ->
+                    MessageBubble(message = message)
+                }
 
-            // Tags section at the bottom
-            uiState.conversation?.let { conversation ->
-                if (conversation.tags.isNotEmpty()) {
-                    item {
-                        TagsSection(tags = conversation.tags)
+                // Tags section at the bottom
+                uiState.conversation?.let { conversation ->
+                    if (conversation.tags.isNotEmpty()) {
+                        item {
+                            TagsSection(tags = conversation.tags)
+                        }
                     }
                 }
             }
@@ -118,7 +144,7 @@ private fun MessageBubble(message: ChatMessage) {
             modifier = Modifier.widthIn(max = ScreenUtils.responsivePadding() * 17.5f),
             shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
             colors = CardDefaults.cardColors(
-                containerColor = if (isUser) WaterBlue else Color.White
+                containerColor = if (isUser) WaterBlue else MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
@@ -126,7 +152,7 @@ private fun MessageBubble(message: ChatMessage) {
                 text = message.content,
                 fontFamily = NotoSans,
                 fontSize = 14.sp,
-                color = if (isUser) Color.White else Charcoal,
+                color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                 lineHeight = 20.sp,
                 modifier = Modifier.padding(ScreenUtils.responsivePadding())
             )
@@ -146,7 +172,7 @@ private fun TagsSection(tags: List<String>) {
             fontFamily = NotoSans,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Charcoal,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
@@ -157,14 +183,14 @@ private fun TagsSection(tags: List<String>) {
             tags.forEach { tag ->
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                 ) {
                     Text(
                         text = tag,
                         fontFamily = NotoSans,
                         fontSize = 12.sp,
-                        color = Charcoal,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )

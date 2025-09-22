@@ -66,6 +66,9 @@ interface SessionManager {
         displayName: String?,
         email: String?,
         profileImageUrl: String?,
+        localImagePath: String? = null,
+        selectedAvatarId: String? = null,
+        backgroundColorHex: String? = null,
         isPremium: Boolean = false,
         notificationsEnabled: Boolean = true,
         twoFactorEnabled: Boolean = false
@@ -87,6 +90,9 @@ interface SessionManager {
         displayName: String? = null,
         email: String? = null,
         profileImageUrl: String? = null,
+        localImagePath: String? = null,
+        selectedAvatarId: String? = null,
+        backgroundColorHex: String? = null,
         isPremium: Boolean? = null,
         notificationsEnabled: Boolean? = null,
         twoFactorEnabled: Boolean? = null
@@ -109,6 +115,30 @@ interface SessionManager {
      * Default is 1 hour (3600000 ms).
      */
     suspend fun getProfileCacheExpiration(): Long
+
+    // --- NEW: Mood Check-in Caching Methods ---
+
+    /**
+     * Caches that a user has completed their mood check-in for a specific date.
+     * This prevents unnecessary database queries and provides instant UI updates.
+     * @param userId The user's unique identifier
+     * @param date The date in "yyyy-MM-dd" format when the check-in was completed
+     */
+    suspend fun cacheMoodCheckInCompleted(userId: String, date: String)
+
+    /**
+     * Checks if user has completed mood check-in today (from cache).
+     * @param userId The user's unique identifier
+     * @return null if no cached data exists, true if check-in was completed today, false if not completed today
+     */
+    suspend fun hasCachedMoodCheckInToday(userId: String): Boolean?
+
+    /**
+     * Clears cached mood check-in data for a specific user.
+     * Called when cache should be invalidated or on logout.
+     * @param userId The user's unique identifier
+     */
+    suspend fun clearCachedMoodCheckIn(userId: String)
 }
 
 /**
@@ -121,6 +151,9 @@ data class CachedUserProfile(
     val displayName: String?,
     val email: String?,
     val profileImageUrl: String?,
+    val localImagePath: String? = null,
+    val selectedAvatarId: String? = null,
+    val backgroundColorHex: String? = null,
     val isPremium: Boolean,
     val notificationsEnabled: Boolean,
     val twoFactorEnabled: Boolean,

@@ -37,6 +37,7 @@ import com.orielle.domain.model.UserActivity
 import com.orielle.domain.model.ActivityType
 import com.orielle.R
 import com.orielle.ui.util.ScreenUtils
+import com.orielle.ui.components.WaterDropLoading
 import java.util.Date
 
 @Composable
@@ -51,80 +52,105 @@ fun RememberSearchScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             SearchTopBar(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = ScreenUtils.responsivePadding()),
-            contentPadding = PaddingValues(top = ScreenUtils.responsiveSpacing(), bottom = ScreenUtils.responsiveIconSize()),
-            verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
-        ) {
-            item {
-                // Search Input
-                SearchInput(
-                    query = uiState.searchQuery,
-                    onQueryChange = { viewModel.updateSearchQuery(it) }
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
-            }
-
-            item {
-                // Filter Sections
-                FilterSection(
-                    selectedTypes = uiState.selectedTypes,
-                    selectedMoods = uiState.selectedMoods,
-                    selectedTags = uiState.selectedTags,
-                    availableMoods = uiState.availableMoods,
-                    availableTags = uiState.availableTags,
-                    onTypeToggle = { viewModel.toggleTypeFilter(it) },
-                    onMoodToggle = { viewModel.toggleMoodFilter(it) },
-                    onTagToggle = { viewModel.toggleTagFilter(it) }
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
-            }
-
-            // Results Section
-            if (uiState.filteredResults.isEmpty() && (uiState.searchQuery.isNotEmpty() ||
-                        uiState.selectedTypes.isNotEmpty() || uiState.selectedMoods.isNotEmpty() ||
-                        uiState.selectedTags.isNotEmpty())) {
-                item {
-                    EmptySearchResults()
-                }
-            } else if (uiState.filteredResults.isNotEmpty()) {
-                item {
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    WaterDropLoading(
+                        size = ScreenUtils.responsiveImageSize(60.dp).value.toInt(),
+                        modifier = Modifier.size(ScreenUtils.responsiveImageSize(60.dp))
+                    )
+                    Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing() * 2))
                     Text(
-                        text = "Results (${uiState.filteredResults.size})",
-                        fontFamily = NotoSans,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Charcoal,
-                        modifier = Modifier.padding(bottom = ScreenUtils.responsiveSpacing())
+                        text = "Loading your memories...",
+                        style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(paddingValues)
+                    .padding(horizontal = ScreenUtils.responsivePadding()),
+                contentPadding = PaddingValues(top = 8.dp, bottom = ScreenUtils.responsiveIconSize()),
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+            ) {
+                item {
+                    // Search Input
+                    SearchInput(
+                        query = uiState.searchQuery,
+                        onQueryChange = { viewModel.updateSearchQuery(it) }
                     )
                 }
 
-                items(uiState.filteredResults) { activity ->
-                    SearchResultCard(
-                        activity = activity,
-                        onClick = {
-                            when (activity.activityType) {
-                                ActivityType.REFLECT -> navController.navigate("journal_detail/${activity.relatedId}")
-                                ActivityType.ASK -> navController.navigate("conversation_detail/${activity.relatedId}")
-                                ActivityType.CHECK_IN -> { /* Ignore mood check-ins */ }
-                            }
-                        }
+                item {
+                    Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
+                }
+
+                item {
+                    // Filter Sections
+                    FilterSection(
+                        selectedTypes = uiState.selectedTypes,
+                        selectedMoods = uiState.selectedMoods,
+                        selectedTags = uiState.selectedTags,
+                        availableMoods = uiState.availableMoods,
+                        availableTags = uiState.availableTags,
+                        onTypeToggle = { viewModel.toggleTypeFilter(it) },
+                        onMoodToggle = { viewModel.toggleMoodFilter(it) },
+                        onTagToggle = { viewModel.toggleTagFilter(it) }
                     )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
+                }
+
+                // Results Section
+                if (uiState.filteredResults.isEmpty() && (uiState.searchQuery.isNotEmpty() ||
+                            uiState.selectedTypes.isNotEmpty() || uiState.selectedMoods.isNotEmpty() ||
+                            uiState.selectedTags.isNotEmpty())) {
+                    item {
+                        EmptySearchResults()
+                    }
+                } else if (uiState.filteredResults.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "Results (${uiState.filteredResults.size})",
+                            fontFamily = NotoSans,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+
+                    items(uiState.filteredResults) { activity ->
+                        SearchResultCard(
+                            activity = activity,
+                            onClick = {
+                                when (activity.activityType) {
+                                    ActivityType.REFLECT -> navController.navigate("journal_detail/${activity.relatedId}")
+                                    ActivityType.ASK -> navController.navigate("conversation_detail/${activity.relatedId}")
+                                    ActivityType.CHECK_IN -> { /* Ignore mood check-ins */ }
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -156,7 +182,7 @@ private fun SearchTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.background
         )
     )
 }
@@ -168,7 +194,7 @@ private fun SearchInput(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(ScreenUtils.responsiveSpacing()),
+        shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = getCardBorder()
@@ -182,7 +208,7 @@ private fun SearchInput(
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Search",
-                tint = Charcoal,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(ScreenUtils.responsiveIconSize())
             )
 
@@ -195,7 +221,7 @@ private fun SearchInput(
                     textStyle = MaterialTheme.typography.bodyMedium.copy(
                         fontFamily = NotoSans,
                         fontSize = 14.sp,
-                        color = Charcoal
+                        color = MaterialTheme.colorScheme.onSurface
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -205,7 +231,7 @@ private fun SearchInput(
                         text = "Search by tag, mood, or memory...",
                         fontFamily = NotoSans,
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         fontWeight = FontWeight.Normal
                     )
                 }
@@ -220,7 +246,7 @@ private fun SearchInput(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Clear",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.size(ScreenUtils.responsiveIconSize(ScreenUtils.responsivePadding()))
                     )
                 }
@@ -247,7 +273,7 @@ private fun FilterSection(
             content = {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(
-                        (min(LocalConfiguration.current.screenWidthDp, LocalConfiguration.current.screenHeightDp) * 0.03f).dp.coerceIn(ScreenUtils.responsiveSpacing(), ScreenUtils.responsivePadding())
+                        (min(LocalConfiguration.current.screenWidthDp, LocalConfiguration.current.screenHeightDp) * 0.03f).dp.coerceIn(8.dp, ScreenUtils.responsivePadding())
                     )
                 ) {
                     TypeFilterChip(
@@ -271,17 +297,30 @@ private fun FilterSection(
             FilterGroup(
                 title = "Mood",
                 content = {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(
-                            ScreenUtils.responsiveSpacing()
-                        )
+                    // Create a 3x3 grid layout for mood icons
+                    val moodChunks = availableMoods.chunked(3)
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
                     ) {
-                        items(availableMoods) { mood ->
-                            MoodFilterChip(
-                                mood = mood,
-                                isSelected = selectedMoods.contains(mood),
-                                onClick = { onMoodToggle(mood) }
-                            )
+                        moodChunks.forEach { moodRow ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                moodRow.forEach { mood ->
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        MoodFilterChip(
+                                            mood = mood,
+                                            isSelected = selectedMoods.contains(mood),
+                                            onClick = { onMoodToggle(mood) }
+                                        )
+                                    }
+                                }
+                                // Fill remaining space if row has less than 3 items
+                                repeat(3 - moodRow.size) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
                         }
                     }
                 }
@@ -296,7 +335,7 @@ private fun FilterSection(
                 title = "Tags",
                 content = {
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(availableTags) { tag ->
                             TagFilterChip(
@@ -323,8 +362,8 @@ private fun FilterGroup(
             fontFamily = NotoSans,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Charcoal,
-            modifier = Modifier.padding(bottom = ScreenUtils.responsiveSpacing())
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
         content()
     }
@@ -357,14 +396,14 @@ private fun TypeFilterChip(
         modifier = Modifier.clickable { onClick() },
         shape = RoundedCornerShape(cornerRadius.value),
         color = if (isSelected) color else Color.Transparent,
-        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(ScreenUtils.responsiveTextSpacing() * 0.25f, MaterialTheme.colorScheme.outline)
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
     ) {
         Text(
             text = text,
             fontFamily = NotoSans,
             fontSize = fontSize,
             fontWeight = FontWeight.Medium,
-            color = if (isSelected) Color.White else Charcoal,
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding)
         )
     }
@@ -381,7 +420,10 @@ private fun MoodFilterChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val (containerSize, iconSize) = getResponsiveSizes()
+    val (baseContainerSize, baseIconSize) = getResponsiveSizes()
+    // Increase sizes slightly using dynamic scaling
+    val containerSize = baseContainerSize * 1.15f
+    val iconSize = baseIconSize * 1.15f
 
     // Color mapping similar to mood check-in screen
     val moodColors = mapOf(
@@ -398,87 +440,102 @@ private fun MoodFilterChip(
 
     val backgroundColor = moodColors[mood.lowercase()] ?: Color(0xFFF5F5F5)
 
-    Box(
-        modifier = Modifier
-            .size(containerSize)
-            .clip(CircleShape)
-            .border(
-                width = if (isSelected) (containerSize * 0.05f).coerceAtLeast(ScreenUtils.responsiveTextSpacing() * 0.5f) else (containerSize * 0.017f).coerceAtLeast(ScreenUtils.responsiveTextSpacing() * 0.25f),
-                color = if (isSelected) WaterBlue else MaterialTheme.colorScheme.outline,
-                shape = CircleShape
-            )
-            .background(
-                color = if (isSelected) backgroundColor.copy(alpha = 0.3f) else backgroundColor.copy(alpha = 0.2f),
-                shape = CircleShape
-            )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onClick() }
     ) {
-        // Use mood icons without tint to preserve their native designed colors
-        when (mood.lowercase()) {
-            "happy" -> Icon(
-                painter = painterResource(id = R.drawable.ic_happy),
-                contentDescription = "Happy",
-                tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(iconSize)
-            )
-            "sad" -> Icon(
-                painter = painterResource(id = R.drawable.ic_sad),
-                contentDescription = "Sad",
-                tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(iconSize)
-            )
-            "angry" -> Icon(
-                painter = painterResource(id = R.drawable.ic_angry),
-                contentDescription = "Angry",
-                tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(iconSize)
-            )
-            "peaceful" -> Icon(
-                painter = painterResource(id = R.drawable.ic_peaceful),
-                contentDescription = "Peaceful",
-                tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(iconSize)
-            )
-            "playful" -> Icon(
-                painter = painterResource(id = R.drawable.ic_playful),
-                contentDescription = "Playful",
-                tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(iconSize)
-            )
-            "scared" -> Icon(
-                painter = painterResource(id = R.drawable.ic_scared),
-                contentDescription = "Scared",
-                tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(iconSize)
-            )
-            "shy" -> Icon(
-                painter = painterResource(id = R.drawable.ic_shy),
-                contentDescription = "Shy",
-                tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(iconSize)
-            )
-            "surprised" -> Icon(
-                painter = painterResource(id = R.drawable.ic_surprised),
-                contentDescription = "Surprised",
-                tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(iconSize)
-            )
-            "frustrated" -> Icon(
-                painter = painterResource(id = R.drawable.ic_frustrated),
-                contentDescription = "Frustrated",
-                tint = Color.Unspecified, // No tint - preserve native colors
-                modifier = Modifier.size(iconSize)
-            )
-            else -> Text(
-                text = mood.take(2).uppercase(),
-                fontFamily = NotoSans,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (isSelected) WaterBlue else Charcoal,
-                textAlign = TextAlign.Center
-            )
+        Box(
+            modifier = Modifier
+                .size(containerSize)
+                .clip(CircleShape)
+                .border(
+                    width = if (isSelected) (containerSize * 0.05f).coerceAtLeast(2.dp) else (containerSize * 0.017f).coerceAtLeast(1.dp),
+                    color = if (isSelected) WaterBlue else Color(0xFFE0E0E0),
+                    shape = CircleShape
+                )
+                .background(
+                    color = if (isSelected) backgroundColor.copy(alpha = 0.3f) else backgroundColor.copy(alpha = 0.2f),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            // Use mood icons without tint to preserve their native designed colors
+            when (mood.lowercase()) {
+                "happy" -> Icon(
+                    painter = painterResource(id = R.drawable.ic_happy),
+                    contentDescription = "Happy",
+                    tint = Color.Unspecified, // No tint - preserve native colors
+                    modifier = Modifier.size(iconSize)
+                )
+                "sad" -> Icon(
+                    painter = painterResource(id = R.drawable.ic_sad),
+                    contentDescription = "Sad",
+                    tint = Color.Unspecified, // No tint - preserve native colors
+                    modifier = Modifier.size(iconSize)
+                )
+                "angry" -> Icon(
+                    painter = painterResource(id = R.drawable.ic_angry),
+                    contentDescription = "Angry",
+                    tint = Color.Unspecified, // No tint - preserve native colors
+                    modifier = Modifier.size(iconSize)
+                )
+                "peaceful" -> Icon(
+                    painter = painterResource(id = R.drawable.ic_peaceful),
+                    contentDescription = "Peaceful",
+                    tint = Color.Unspecified, // No tint - preserve native colors
+                    modifier = Modifier.size(iconSize)
+                )
+                "playful" -> Icon(
+                    painter = painterResource(id = R.drawable.ic_playful),
+                    contentDescription = "Playful",
+                    tint = Color.Unspecified, // No tint - preserve native colors
+                    modifier = Modifier.size(iconSize)
+                )
+                "scared" -> Icon(
+                    painter = painterResource(id = R.drawable.ic_scared),
+                    contentDescription = "Scared",
+                    tint = Color.Unspecified, // No tint - preserve native colors
+                    modifier = Modifier.size(iconSize)
+                )
+                "shy" -> Icon(
+                    painter = painterResource(id = R.drawable.ic_shy),
+                    contentDescription = "Shy",
+                    tint = Color.Unspecified, // No tint - preserve native colors
+                    modifier = Modifier.size(iconSize)
+                )
+                "surprised" -> Icon(
+                    painter = painterResource(id = R.drawable.ic_surprised),
+                    contentDescription = "Surprised",
+                    tint = Color.Unspecified, // No tint - preserve native colors
+                    modifier = Modifier.size(iconSize)
+                )
+                "frustrated" -> Icon(
+                    painter = painterResource(id = R.drawable.ic_frustrated),
+                    contentDescription = "Frustrated",
+                    tint = Color.Unspecified, // No tint - preserve native colors
+                    modifier = Modifier.size(iconSize)
+                )
+                else -> Text(
+                    text = mood.take(2).uppercase(),
+                    fontFamily = NotoSans,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) WaterBlue else MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
+
+        // Add mood label below the icon
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = mood.replaceFirstChar { it.uppercase() },
+            fontFamily = NotoSans,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (isSelected) WaterBlue else MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -492,52 +549,22 @@ private fun TagFilterChip(
         modifier = Modifier.clickable { onClick() },
         shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) WaterBlue.copy(alpha = 0.15f) else Color.White
+            containerColor = if (isSelected) WaterBlue.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         border = if (isSelected)
             androidx.compose.foundation.BorderStroke(2.dp, WaterBlue)
         else
-            androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+            getCardBorder()
     ) {
         Text(
             text = tag,
             fontFamily = NotoSans,
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = if (isSelected) WaterBlue else Charcoal,
+            color = if (isSelected) WaterBlue else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = ScreenUtils.responsiveSpacing(), vertical = 6.dp)
         )
-    }
-}
-
-@Composable
-private fun ResultsList(
-    results: List<UserActivity>,
-    onResultClick: (UserActivity) -> Unit
-) {
-    if (results.isEmpty()) {
-        return
-    }
-
-    Text(
-        text = "Results (${results.size})",
-        fontFamily = NotoSans,
-        fontSize = 16.sp,
-        fontWeight = FontWeight.Bold,
-        color = Charcoal,
-        modifier = Modifier.padding(bottom = ScreenUtils.responsiveSpacing())
-    )
-
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
-    ) {
-        items(results) { activity ->
-            SearchResultCard(
-                activity = activity,
-                onClick = { onResultClick(activity) }
-            )
-        }
     }
 }
 
@@ -610,7 +637,7 @@ private fun SearchResultCard(
                     fontFamily = NotoSans,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Charcoal,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
@@ -637,7 +664,7 @@ private fun SearchResultCard(
                         Box(
                             modifier = Modifier
                                 .background(
-                                    color = activityColor.copy(alpha = 0.15f),
+                                    color = MaterialTheme.colorScheme.surfaceVariant,
                                     shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
                                 )
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -646,7 +673,7 @@ private fun SearchResultCard(
                                 text = tag,
                                 fontFamily = NotoSans,
                                 fontSize = 11.sp,
-                                color = activityColor,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -657,7 +684,7 @@ private fun SearchResultCard(
                             text = "+${activity.tags.size - 3}",
                             fontFamily = NotoSans,
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Color(0xFF999999),
                             modifier = Modifier.padding(start = 4.dp)
                         )
                     }
@@ -690,7 +717,7 @@ private fun EmptySearchResults() {
             fontFamily = NotoSans,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = Charcoal,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
     }
@@ -744,9 +771,9 @@ fun RememberSearchScreenPreview() {
 
             FilterSection(
                 selectedTypes = setOf(ActivityType.REFLECT),
-                selectedMoods = setOf("Happy"),
+                selectedMoods = setOf("happy"),
                 selectedTags = setOf("growth"),
-                availableMoods = listOf("Happy", "Sad", "Peaceful", "Excited"),
+                availableMoods = listOf("happy", "sad", "angry", "peaceful", "playful", "scared", "shy", "surprised", "frustrated"),
                 availableTags = listOf("growth", "mindfulness", "relationships", "work"),
                 onTypeToggle = {},
                 onMoodToggle = {},

@@ -24,6 +24,9 @@ data class AskUiState(
     val showChoiceModal: Boolean = false,
     val showTaggingModal: Boolean = false,
     val currentTags: List<String> = emptyList(),
+    val conversationTitle: String = "",
+    val suggestedTitle: String = "",
+    val isTitleCustom: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -79,10 +82,17 @@ class AskViewModel @Inject constructor(
 
                 // Create conversation if it doesn't exist
                 if (currentConversationId == null) {
+                    // Generate suggested title from first message
+                    val suggestedTitle = generateTitleFromContent(text)
+                    _uiState.value = _uiState.value.copy(
+                        suggestedTitle = suggestedTitle,
+                        conversationTitle = suggestedTitle
+                    )
+
                     val conversation = ChatConversation(
                         id = UUID.randomUUID().toString(),
                         userId = userId,
-                        title = "Ask Orielle Conversation",
+                        title = suggestedTitle,
                         createdAt = Date(),
                         updatedAt = Date(),
                         tags = _uiState.value.currentTags,
@@ -219,7 +229,10 @@ class AskViewModel @Inject constructor(
                     messageType = "text"
                 )
             ),
-            currentTags = emptyList()
+            currentTags = emptyList(),
+            conversationTitle = "",
+            suggestedTitle = "",
+            isTitleCustom = false
         )
     }
 
@@ -245,6 +258,40 @@ class AskViewModel @Inject constructor(
 
     fun hideTaggingModal() {
         _uiState.value = _uiState.value.copy(showTaggingModal = false)
+    }
+
+    fun updateConversationTitle(title: String) {
+        _uiState.value = _uiState.value.copy(
+            conversationTitle = title,
+            isTitleCustom = title.isNotEmpty()
+        )
+    }
+
+    fun generateSuggestedTitle() {
+        val messages = _uiState.value.messages
+        if (messages.size > 1) { // More than just welcome message
+            val userMessages = messages.filter { it.isFromUser }
+            if (userMessages.isNotEmpty()) {
+                val firstMessage = userMessages.first().content
+                val suggestedTitle = generateTitleFromContent(firstMessage)
+                _uiState.value = _uiState.value.copy(
+                    suggestedTitle = suggestedTitle,
+                    conversationTitle = if (!_uiState.value.isTitleCustom) suggestedTitle else _uiState.value.conversationTitle
+                )
+            }
+        }
+    }
+
+    private fun generateTitleFromContent(content: String): String {
+        // Simple title generation based on content
+        val words = content.split(" ").take(6) // Take first 6 words
+        val title = words.joinToString(" ")
+
+        return when {
+            title.length > 50 -> title.take(47) + "..."
+            title.isEmpty() -> "Ask Orielle Conversation"
+            else -> title
+        }
     }
 
     fun isFirstTimeUser(): Boolean {

@@ -21,15 +21,18 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+
     @Provides
     @Singleton
-    fun provideOrielleDatabase(@ApplicationContext context: Context): OrielleDatabase {
+    fun provideOrielleDatabase(
+        @ApplicationContext context: Context
+    ): OrielleDatabase {
         return Room.databaseBuilder(
             context,
             OrielleDatabase::class.java,
-            "orielle_database"
+            "orielle_database_v2" // New database name to force fresh start
         )
-            .fallbackToDestructiveMigration() // Use this during development - will recreate DB if migration fails
+            .fallbackToDestructiveMigration() // Recreate database from scratch - safest approach
             .build()
     }
 

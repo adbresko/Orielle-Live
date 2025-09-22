@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.orielle.ui.util.ScreenUtils
@@ -27,7 +26,6 @@ fun WeeklyMoodView(
     weeklyView: WeeklyMoodView,
     modifier: Modifier = Modifier
 ) {
-    val themeColors = getThemeColors()
     val accentColor = WaterBlue
 
 
@@ -53,12 +51,12 @@ fun WeeklyMoodView(
 
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.Start
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "YOUR INNER WEATHER",
-            style = Typography.titleMedium.copy(color = themeColors.onSurface, fontWeight = FontWeight.Bold),
-            textAlign = TextAlign.Start
+            style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground),
+            textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(ScreenUtils.responsivePadding()))
 
@@ -88,7 +86,7 @@ fun WeeklyMoodView(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = dayLabel,
-                            style = Typography.bodyMedium.copy(color = themeColors.onSurface)
+                            style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground)
                         )
                         Spacer(Modifier.height(ScreenUtils.responsiveTextSpacing()))
                         Box(
@@ -104,7 +102,7 @@ fun WeeklyMoodView(
                                 modifier = Modifier
                                     .size(ScreenUtils.responsiveIconSize(20.dp))
                                     .background(
-                                        color = if (themeColors.isDark) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f) else Charcoal.copy(alpha = 0.2f),
+                                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
                                         shape = CircleShape
                                     )
                             )
@@ -124,7 +122,6 @@ fun WeeklyMoodView(
                         isToday = dayData.isToday,
                         breathingScale = if (dayData.isToday) breathingScale else 1f,
                         accentColor = accentColor,
-                        isDark = themeColors.isDark
                     )
                 }
             }
@@ -137,14 +134,12 @@ private fun WeeklyMoodDayItem(
     dayData: DayMoodData,
     isToday: Boolean,
     breathingScale: Float,
-    accentColor: Color,
-    isDark: Boolean
+    accentColor: Color
 ) {
-    val themeColors = getThemeColors()
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = dayData.dayLabel,
-            style = Typography.bodyMedium.copy(color = themeColors.onBackground)
+            style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground)
         )
         Spacer(Modifier.height(ScreenUtils.responsiveTextSpacing()))
         Box(
@@ -179,8 +174,7 @@ private fun WeeklyMoodDayItem(
             } else {
                 // Show empty state indicator
                 EmptyDayIndicator(
-                    isToday = isToday,
-                    isDark = themeColors.isDark
+                    isToday = isToday
                 )
             }
         }
@@ -189,10 +183,8 @@ private fun WeeklyMoodDayItem(
 
 @Composable
 private fun EmptyDayIndicator(
-    isToday: Boolean,
-    isDark: Boolean
+    isToday: Boolean
 ) {
-    val themeColors = getThemeColors()
     // Show a subtle indicator for days without check-ins
     Box(
         modifier = Modifier
@@ -200,10 +192,10 @@ private fun EmptyDayIndicator(
             .background(
                 color = if (isToday) {
                     // For today, show a more prominent empty state
-                    if (themeColors.isDark) Color.White.copy(alpha = 0.4f) else Charcoal.copy(alpha = 0.4f)
+                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
                 } else {
                     // For other days, show a very subtle indicator
-                    if (themeColors.isDark) Color.White.copy(alpha = 0.2f) else Charcoal.copy(alpha = 0.2f)
+                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f)
                 },
                 shape = CircleShape
             ),
@@ -215,9 +207,9 @@ private fun EmptyDayIndicator(
                 .size(if (isToday) 8.dp else 6.dp)
                 .background(
                     color = if (isToday) {
-                        if (themeColors.isDark) Color.White.copy(alpha = 0.6f) else Charcoal.copy(alpha = 0.6f)
+                        MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     } else {
-                        if (themeColors.isDark) Color.White.copy(alpha = 0.3f) else Charcoal.copy(alpha = 0.3f)
+                        MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
                     },
                     shape = CircleShape
                 )

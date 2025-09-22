@@ -20,7 +20,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,7 +31,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.orielle.ui.util.ScreenUtils
 import androidx.compose.ui.unit.sp
 
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,6 +42,8 @@ import com.orielle.domain.model.CalendarDay
 import com.orielle.domain.model.UserActivity
 import com.orielle.domain.model.ActivityType
 import com.orielle.ui.components.BottomNavigation
+import com.orielle.ui.components.WaterDropLoading
+import com.orielle.ui.util.ScreenUtils
 import com.orielle.R
 import java.util.Date
 import java.util.Calendar
@@ -73,7 +75,8 @@ fun RememberScreen(
                 backgroundColor = backgroundColor,
                 textColor = textColor,
                 onClearSearch = { viewModel.clearSearch() },
-                onNavigateToSearch = { navController.navigate("remember_search") }
+                onNavigateToSearch = { navController.navigate("remember_search") },
+                onNavigateToWeatherHistory = { navController.navigate("inner_weather_history") }
             )
         },
         bottomBar = {
@@ -92,7 +95,7 @@ fun RememberScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = ScreenUtils.responsivePadding() * 1.25f)
+                    .padding(horizontal = ScreenUtils.responsivePadding())
             ) {
                 // Calendar Section
                 CalendarSection(
@@ -116,9 +119,27 @@ fun RememberScreen(
 
             }
 
-            // Skeleton loading for better UX
+            // Full-screen water drop loading for better UX
             if (uiState.isLoading) {
-                SkeletonLoading()
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(backgroundColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        WaterDropLoading(
+                            size = ScreenUtils.responsiveImageSize(60.dp).value.toInt(),
+                            modifier = Modifier.size(ScreenUtils.responsiveImageSize(60.dp))
+                        )
+                        Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing() * 2))
+                        Text(
+                            text = "Loading your memories...",
+                            style = Typography.bodyMedium.copy(color = textColor),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
 
             // Error message
@@ -126,7 +147,7 @@ fun RememberScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(ScreenUtils.responsivePadding() * 1.25f),
+                        .padding(ScreenUtils.responsivePadding()),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -143,7 +164,6 @@ fun RememberScreen(
                     day = uiState.selectedDay!!,
                     cardColor = cardColor,
                     textColor = textColor,
-                    isDark = themeColors.isDark,
                     onDismiss = { viewModel.onDayDetailDismiss() },
                     onNavigateToDetail = { activity ->
                         when (activity.activityType) {
@@ -163,7 +183,8 @@ private fun RememberHeader(
     backgroundColor: Color,
     textColor: Color,
     onClearSearch: () -> Unit,
-    onNavigateToSearch: () -> Unit
+    onNavigateToSearch: () -> Unit,
+    onNavigateToWeatherHistory: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
@@ -171,9 +192,9 @@ private fun RememberHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(backgroundColor)
-            .padding(ScreenUtils.responsivePadding() * 1.25f)
+            .padding(ScreenUtils.responsivePadding())
     ) {
-        // Top row with title and three dots icon
+        // Top row with title and weather history icon
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -188,21 +209,18 @@ private fun RememberHeader(
                 color = textColor
             )
 
-            // Three dots icon (ellipsis) - top right corner
+            // Weather History icon
             Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "More options",
+                imageVector = Icons.Default.Timeline,
+                contentDescription = "Inner Weather History",
                 modifier = Modifier
-                    .size(28.dp)
-                    .clickable {
-                        // TODO: Add functionality for three dots menu
-                    },
+                    .size(ScreenUtils.responsiveIconSize(28.dp))
+                    .clickable { onNavigateToWeatherHistory() },
                 tint = textColor
             )
         }
 
-        // Add bottom padding to maintain spacing
-        Spacer(Modifier.height(ScreenUtils.responsivePadding()))
+        Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing()))
 
         // Search Bar
         SearchBar(
@@ -224,20 +242,20 @@ private fun SearchBar(
 ) {
     val themeColors = getThemeColors()
     val cardColor = themeColors.surface
-    val textColor = themeColors.onBackground
+    val textColor = themeColors.onSurface
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onNavigateToSearch() },
-        shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.25f),
+        shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
         colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = ScreenUtils.responsivePadding(), vertical = ScreenUtils.responsiveSpacing() * 1.25f),
+                .padding(horizontal = ScreenUtils.responsivePadding(), vertical = ScreenUtils.responsiveSpacing()),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -247,19 +265,19 @@ private fun SearchBar(
                 modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(ScreenUtils.responsiveSpacing()))
 
             Text(
                 text = if (query.isEmpty()) "Search by tag, mood, or memory..." else query,
                 fontFamily = NotoSans,
-                fontSize = 14.sp,
-                color = if (query.isEmpty()) Color(0xFF999999) else textColor,
+                fontSize = (14 * ScreenUtils.getTextScaleFactor()).sp,
+                color = if (query.isEmpty()) textColor.copy(alpha = 0.6f) else textColor,
                 fontWeight = FontWeight.Normal,
                 modifier = Modifier.weight(1f)
             )
 
             if (query.isNotEmpty()) {
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(ScreenUtils.responsiveSpacing()))
                 TextButton(
                     onClick = {
                         onClearSearch()
@@ -268,7 +286,7 @@ private fun SearchBar(
                     Text(
                         text = "Clear",
                         color = textColor,
-                        fontSize = 12.sp
+                        fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp
                     )
                 }
             }
@@ -305,7 +323,7 @@ private fun CalendarSection(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(
-                modifier = Modifier.padding(19.dp)
+                modifier = Modifier.padding(ScreenUtils.responsivePadding())
             ) {
                 // Month/Year Header with Navigation
                 MonthYearHeader(
@@ -332,16 +350,9 @@ private fun CalendarSection(
                     onDayClick = onDayClick
                 )
 
-                // Legend for activity dots - Ensure it's always visible
-                Spacer(modifier = Modifier.height(24.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    ActivityLegend(textColor = textColor)
-                }
+                // Compact Legend - positioned right under calendar
+                Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing()))
+                CompactActivityLegend(textColor = textColor)
             }
         }
 
@@ -499,7 +510,7 @@ private fun MonthSelector(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         LazyColumn(
-            modifier = Modifier.heightIn(max = ScreenUtils.responsivePadding() * 12.5f),
+            modifier = Modifier.heightIn(max = 200.dp),
             state = rememberLazyListState(initialFirstVisibleItemIndex = maxOf(0, currentSelectedMonth - 2))
         ) {
             items(months.size) { index ->
@@ -554,7 +565,7 @@ private fun YearSelector(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         LazyColumn(
-            modifier = Modifier.heightIn(max = ScreenUtils.responsivePadding() * 12.5f),
+            modifier = Modifier.heightIn(max = 200.dp),
             state = rememberLazyListState(initialFirstVisibleItemIndex = maxOf(0, selectedIndex - 2))
         ) {
             items(years.size) { index ->
@@ -704,70 +715,52 @@ private fun CalendarDayCell(
 }
 
 @Composable
-private fun ActivityLegend(textColor: Color) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        border = BorderStroke(1.dp, textColor.copy(alpha = 0.1f))
+private fun CompactActivityLegend(textColor: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = ScreenUtils.responsiveSpacing()),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.Start
+        // Reflection dot
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing() * 0.5f)
         ) {
-            Text(
-                text = "Activity Legend",
-                fontFamily = NotoSans,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = textColor,
-                modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding())
+            Box(
+                modifier = Modifier
+                    .size(ScreenUtils.responsiveIconSize(6.dp))
+                    .clip(CircleShape)
+                    .background(StillwaterTeal)
             )
+            Text(
+                text = "Reflection",
+                fontFamily = NotoSans,
+                fontSize = (11 * ScreenUtils.getTextScaleFactor()).sp,
+                color = textColor.copy(alpha = 0.7f)
+            )
+        }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                // Reflection dot
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(StillwaterTeal)
-                    )
-                    Text(
-                        text = "Reflection",
-                        fontFamily = NotoSans,
-                        fontSize = 12.sp,
-                        color = textColor
-                    )
-                }
+        Spacer(modifier = Modifier.width(ScreenUtils.responsivePadding()))
 
-                // Ask dot
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(AuroraGold)
-                    )
-                    Text(
-                        text = "Chat/Ask",
-                        fontFamily = NotoSans,
-                        fontSize = 12.sp,
-                        color = textColor
-                    )
-                }
-            }
+        // Ask dot
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing() * 0.5f)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(ScreenUtils.responsiveIconSize(6.dp))
+                    .clip(CircleShape)
+                    .background(AuroraGold)
+            )
+            Text(
+                text = "Chat/Ask",
+                fontFamily = NotoSans,
+                fontSize = (11 * ScreenUtils.getTextScaleFactor()).sp,
+                color = textColor.copy(alpha = 0.7f)
+            )
         }
     }
 }
@@ -777,11 +770,9 @@ private fun DailyGlimpsePanel(
     day: CalendarDay,
     cardColor: Color,
     textColor: Color,
-    isDark: Boolean,
     onDismiss: () -> Unit,
     onNavigateToDetail: (UserActivity) -> Unit
 ) {
-    val themeColors = getThemeColors()
 
     Box(
         modifier = Modifier
@@ -803,7 +794,7 @@ private fun DailyGlimpsePanel(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = ScreenUtils.responsivePadding() * 1.25f)
+                    .padding(horizontal = ScreenUtils.responsivePadding())
                     .padding(top = 12.dp)
             ) {
                 // Grabber
@@ -841,7 +832,7 @@ private fun DailyGlimpsePanel(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
                             tint = textColor,
-                            modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
@@ -885,7 +876,7 @@ private fun DailyGlimpsePanel(
                             text = "No activities on this day",
                             fontFamily = NotoSans,
                             fontSize = 16.sp,
-                            color = themeColors.onBackground.copy(alpha = 0.6f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             textAlign = TextAlign.Center
                         )
                     }
@@ -900,7 +891,7 @@ private fun GlimpseActivityItem(
     activity: UserActivity,
     onClick: () -> Unit
 ) {
-    val themeColors = getThemeColors()
+    val isDark = MaterialTheme.colorScheme.background == DarkGray
 
     val activityColor = when (activity.activityType) {
         ActivityType.REFLECT -> StillwaterTeal
@@ -910,7 +901,7 @@ private fun GlimpseActivityItem(
 
     val activityTitle = when (activity.activityType) {
         ActivityType.REFLECT -> "Your Reflection"
-        ActivityType.ASK -> "Chat with Orielle"
+        ActivityType.ASK -> activity.title ?: "Chat with Orielle"
         ActivityType.CHECK_IN -> "Mood Check-in" // Fallback title for mood check-ins (shouldn't be displayed)
     }
 
@@ -923,7 +914,7 @@ private fun GlimpseActivityItem(
         Text(
             text = activityTitle,
             fontFamily = NotoSans,
-            fontSize = 16.sp,
+            fontSize = (16 * ScreenUtils.getTextScaleFactor()).sp,
             fontWeight = FontWeight.Bold,
             color = activityColor
         )
@@ -933,11 +924,48 @@ private fun GlimpseActivityItem(
             Text(
                 text = activity.preview,
                 fontFamily = NotoSans,
-                fontSize = 16.sp,
-                color = themeColors.onBackground,
+                fontSize = (16 * ScreenUtils.getTextScaleFactor()).sp,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 3,
                 modifier = Modifier.padding(top = 8.dp)
             )
+        }
+
+        // Tags for ASK activities
+        if (activity.activityType == ActivityType.ASK && activity.tags.isNotEmpty()) {
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                activity.tags.take(3).forEach { tag ->
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = AuroraGold.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = tag,
+                            fontFamily = NotoSans,
+                            fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp,
+                            color = AuroraGold,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                if (activity.tags.size > 3) {
+                    Text(
+                        text = "+${activity.tags.size - 3}",
+                        fontFamily = NotoSans,
+                        fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
         }
 
         // Action link
@@ -950,7 +978,7 @@ private fun GlimpseActivityItem(
         Text(
             text = actionText,
             fontFamily = NotoSans,
-            fontSize = 16.sp,
+            fontSize = (16 * ScreenUtils.getTextScaleFactor()).sp,
             fontWeight = FontWeight.Medium,
             color = WaterBlue,
             modifier = Modifier.padding(top = 12.dp)
@@ -979,7 +1007,7 @@ private fun SkeletonLoading() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(ScreenUtils.responsivePadding() * 1.25f)
+                .padding(ScreenUtils.responsivePadding())
         ) {
             // Title skeleton
             Box(
@@ -1011,7 +1039,7 @@ private fun SkeletonLoading() {
         // Calendar skeleton
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = White)
         ) {
             Column(
@@ -1075,12 +1103,24 @@ private fun SkeletonLoading() {
 
 
 
-// Preview function
-@Preview(showBackground = true)
+// Preview functions
+@Preview(showBackground = true, name = "Remember Screen - Light", backgroundColor = 0xFFF6F5F1)
 @Composable
-fun RememberScreenPreview() {
+fun RememberScreenLightPreview() {
     val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
-    OrielleTheme {
+    OrielleTheme(darkTheme = false) {
+        RememberScreen(
+            navController = androidx.navigation.compose.rememberNavController(),
+            themeManager = fakeThemeManager
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Remember Screen - Dark", backgroundColor = 0xFF1A1A1A)
+@Composable
+fun RememberScreenDarkPreview() {
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
+    OrielleTheme(darkTheme = true) {
         RememberScreen(
             navController = androidx.navigation.compose.rememberNavController(),
             themeManager = fakeThemeManager

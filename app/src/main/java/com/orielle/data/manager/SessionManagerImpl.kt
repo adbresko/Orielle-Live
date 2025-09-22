@@ -42,6 +42,10 @@ class SessionManagerImpl @Inject constructor(
         val CACHED_PROFILE_PREFIX = "cached_profile_"
         val PROFILE_CACHE_TIMESTAMP_PREFIX = "profile_cache_timestamp_"
         val PROFILE_CACHE_EXPIRATION = longPreferencesKey("profile_cache_expiration")
+
+        // --- NEW: Mood Check-in Caching Keys ---
+        val MOOD_CHECKIN_PREFIX = "mood_checkin_"
+        val MOOD_CHECKIN_DATE_PREFIX = "mood_checkin_date_"
     }
 
     private val gson = Gson()
@@ -154,6 +158,9 @@ class SessionManagerImpl @Inject constructor(
         displayName: String?,
         email: String?,
         profileImageUrl: String?,
+        localImagePath: String?,
+        selectedAvatarId: String?,
+        backgroundColorHex: String?,
         isPremium: Boolean,
         notificationsEnabled: Boolean,
         twoFactorEnabled: Boolean
@@ -165,6 +172,9 @@ class SessionManagerImpl @Inject constructor(
                 displayName = displayName,
                 email = email,
                 profileImageUrl = profileImageUrl,
+                localImagePath = localImagePath,
+                selectedAvatarId = selectedAvatarId,
+                backgroundColorHex = backgroundColorHex,
                 isPremium = isPremium,
                 notificationsEnabled = notificationsEnabled,
                 twoFactorEnabled = twoFactorEnabled,
@@ -218,6 +228,9 @@ class SessionManagerImpl @Inject constructor(
         displayName: String?,
         email: String?,
         profileImageUrl: String?,
+        localImagePath: String?,
+        selectedAvatarId: String?,
+        backgroundColorHex: String?,
         isPremium: Boolean?,
         notificationsEnabled: Boolean?,
         twoFactorEnabled: Boolean?
@@ -230,6 +243,9 @@ class SessionManagerImpl @Inject constructor(
                     displayName = displayName ?: existingProfile.displayName,
                     email = email ?: existingProfile.email,
                     profileImageUrl = profileImageUrl ?: existingProfile.profileImageUrl,
+                    localImagePath = localImagePath ?: existingProfile.localImagePath,
+                    selectedAvatarId = selectedAvatarId ?: existingProfile.selectedAvatarId,
+                    backgroundColorHex = backgroundColorHex ?: existingProfile.backgroundColorHex,
                     isPremium = isPremium ?: existingProfile.isPremium,
                     notificationsEnabled = notificationsEnabled ?: existingProfile.notificationsEnabled,
                     twoFactorEnabled = twoFactorEnabled ?: existingProfile.twoFactorEnabled,
@@ -241,6 +257,9 @@ class SessionManagerImpl @Inject constructor(
                     displayName = updatedProfile.displayName,
                     email = updatedProfile.email,
                     profileImageUrl = updatedProfile.profileImageUrl,
+                    localImagePath = updatedProfile.localImagePath,
+                    selectedAvatarId = updatedProfile.selectedAvatarId,
+                    backgroundColorHex = updatedProfile.backgroundColorHex,
                     isPremium = updatedProfile.isPremium,
                     notificationsEnabled = updatedProfile.notificationsEnabled,
                     twoFactorEnabled = updatedProfile.twoFactorEnabled
@@ -279,6 +298,80 @@ class SessionManagerImpl @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "❌ Failed to get profile cache expiration, using default")
             defaultCacheExpiration
+        }
+    }
+
+    // --- NEW: Mood Check-in Caching Methods ---
+
+    /**
+     * Caches that a user has completed their mood check-in for today
+     * This prevents unnecessary database queries and provides instant UI updates
+     */
+    override suspend fun cacheMoodCheckInCompleted(userId: String, date: String) {
+        try {
+            val checkinKey = stringPreferencesKey("${PreferencesKeys.MOOD_CHECKIN_PREFIX}$userId")
+            val dateKey = stringPreferencesKey("${PreferencesKeys.MOOD_CHECKIN_DATE_PREFIX}$userId")
+
+            context.dataStore.edit { preferences ->
+                preferences[checkinKey] = "true"
+                preferences[dateKey] = date
+            }
+
+            Timber.d("✅ Cached mood check-in completion for user: $userId on date: $date")
+        } catch (e: Exception) {
+            Timber.e(e, "❌ Failed to cache mood check-in completion for user: $userId")
+        }
+    }
+
+    /**
+     * Checks if user has completed mood check-in today (from cache)
+     * Returns null if no cached data, true/false if cached
+     */
+    override suspend fun hasCachedMoodCheckInToday(userId: String): Boolean? {
+        return try {
+            val preferences = context.dataStore.data.first()
+            val checkinKey = stringPreferencesKey("${PreferencesKeys.MOOD_CHECKIN_PREFIX}$userId")
+            val dateKey = stringPreferencesKey("${PreferencesKeys.MOOD_CHECKIN_DATE_PREFIX}$userId")
+
+            val cachedCheckin = preferences[checkinKey]
+            val cachedDate = preferences[dateKey]
+
+            if (cachedCheckin == "true" && cachedDate != null) {
+                // Check if cached date is today
+                val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+                if (cachedDate == today) {
+                    Timber.d("📋 Found cached mood check-in for today for user: $userId")
+                    true
+                } else {
+                    // Cached date is not today, clear old cache
+                    clearCachedMoodCheckIn(userId)
+                    null
+                }
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "❌ Failed to check cached mood check-in for user: $userId")
+            null
+        }
+    }
+
+    /**
+     * Clears cached mood check-in data for a user
+     */
+    override suspend fun clearCachedMoodCheckIn(userId: String) {
+        try {
+            val checkinKey = stringPreferencesKey("${PreferencesKeys.MOOD_CHECKIN_PREFIX}$userId")
+            val dateKey = stringPreferencesKey("${PreferencesKeys.MOOD_CHECKIN_DATE_PREFIX}$userId")
+
+            context.dataStore.edit { preferences ->
+                preferences.remove(checkinKey)
+                preferences.remove(dateKey)
+            }
+
+            Timber.d("🗑️ Cleared cached mood check-in for user: $userId")
+        } catch (e: Exception) {
+            Timber.e(e, "❌ Failed to clear cached mood check-in for user: $userId")
         }
     }
 }

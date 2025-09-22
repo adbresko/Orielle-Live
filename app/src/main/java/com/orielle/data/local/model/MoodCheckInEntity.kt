@@ -1,6 +1,7 @@
 package com.orielle.data.local.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.util.Date
 
@@ -15,7 +16,10 @@ import java.util.Date
  * @param timestamp The date and time the check-in was created.
  * @param notes Optional notes associated with the mood check-in.
  */
-@Entity(tableName = "mood_check_ins")
+@Entity(
+    tableName = "mood_check_ins",
+    indices = [Index(value = ["userId", "dateKey"], unique = true)]
+)
 data class MoodCheckInEntity(
     @PrimaryKey
     val id: String,
@@ -23,5 +27,6 @@ data class MoodCheckInEntity(
     val mood: String,
     val tags: List<String> = emptyList(),
     val timestamp: Date,
-    val notes: String? = null
+    val notes: String? = null,
+    val dateKey: String = "" // Format: "yyyy-MM-dd" for unique constraint
 )

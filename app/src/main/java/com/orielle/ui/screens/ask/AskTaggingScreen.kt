@@ -1,5 +1,7 @@
 package com.orielle.ui.screens.ask
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -54,9 +56,8 @@ fun AskTaggingScreen(
         tempEntryId?.let { viewModel.setTempEntryId(it) }
     }
     val uiState by viewModel.uiState.collectAsState()
-    val themeColors = getThemeColors()
-    val backgroundColor = themeColors.background
-    val textColor = themeColors.onBackground
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val textColor = MaterialTheme.colorScheme.onBackground
 
     var newTagText by remember { mutableStateOf("") }
 
@@ -95,7 +96,7 @@ fun AskTaggingScreen(
         Text(
             text = "Add tags to help you find this conversation later. You can select from suggestions or create your own.",
             style = Typography.bodyLarge,
-            color = themeColors.onBackground.copy(alpha = 0.8f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
             modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding() * 1.5f)
         )
 
@@ -117,7 +118,6 @@ fun AskTaggingScreen(
                         tag = tag,
                         isSelected = uiState.selectedTags.contains(tag),
                         onToggle = { viewModel.toggleSuggestedTag(tag) },
-                        isDark = themeColors.isDark
                     )
                 }
             }
@@ -140,7 +140,6 @@ fun AskTaggingScreen(
                     SelectedTagChip(
                         tag = tag,
                         onRemove = { viewModel.removeTag(tag) },
-                        isDark = themeColors.isDark
                     )
                 }
             }
@@ -153,10 +152,10 @@ fun AskTaggingScreen(
                 .padding(vertical = 16.dp),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
-                containerColor = themeColors.surface
+                containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = if (themeColors.isDark) 0.dp else 2.dp
+                defaultElevation = 2.dp
             )
         ) {
             TextField(
@@ -167,7 +166,7 @@ fun AskTaggingScreen(
                     Text(
                         text = "Add a custom tag...",
                         style = Typography.bodyLarge,
-                        color = themeColors.onBackground.copy(alpha = 0.6f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 },
                 colors = TextFieldDefaults.colors(
@@ -175,8 +174,8 @@ fun AskTaggingScreen(
                     unfocusedContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = themeColors.onBackground,
-                    unfocusedTextColor = themeColors.onBackground
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 ),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
@@ -226,28 +225,26 @@ fun SuggestedTagChip(
     tag: String,
     isSelected: Boolean,
     onToggle: () -> Unit,
-    isDark: Boolean
 ) {
-    val themeColors = getThemeColors()
     FilterChip(
         onClick = onToggle,
         label = {
             Text(
                 text = tag,
                 style = Typography.bodyMedium,
-                color = if (isSelected) Color.White else if (isDark) SoftSand else Charcoal
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
             )
         },
         selected = isSelected,
         enabled = true,
         colors = FilterChipDefaults.filterChipColors(
-            containerColor = themeColors.surface,
+            containerColor = MaterialTheme.colorScheme.surface,
             selectedContainerColor = WaterBlue,
-            labelColor = themeColors.onBackground,
+            labelColor = MaterialTheme.colorScheme.onSurface,
             selectedLabelColor = Color.White
         ),
         border = FilterChipDefaults.filterChipBorder(
-            borderColor = themeColors.onBackground.copy(alpha = 0.3f),
+            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
             selectedBorderColor = WaterBlue,
             enabled = true,
             selected = isSelected
@@ -259,23 +256,21 @@ fun SuggestedTagChip(
 fun SelectedTagChip(
     tag: String,
     onRemove: () -> Unit,
-    isDark: Boolean
 ) {
-    val themeColors = getThemeColors()
     AssistChip(
         onClick = { },
         label = {
             Text(
                 text = tag,
                 style = Typography.bodyMedium,
-                color = themeColors.onBackground
+                color = Color.White
             )
         },
         trailingIcon = {
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "Remove tag",
-                tint = themeColors.onBackground,
+                tint = Color.White,
                 modifier = Modifier
                     .size(16.dp)
                     .clickable { onRemove() }
@@ -396,6 +391,7 @@ class AskTaggingViewModel @Inject constructor(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 @Preview(name = "Ask Tagging Screen - Light", showBackground = true, backgroundColor = 0xFFF6F5F1)
 @Composable
 fun Preview_AskTaggingScreen_Light() {
@@ -405,6 +401,7 @@ fun Preview_AskTaggingScreen_Light() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 @Preview(name = "Ask Tagging Screen - Dark", showBackground = true, backgroundColor = 0xFF1A1A1A)
 @Composable
 fun Preview_AskTaggingScreen_Dark() {
@@ -414,6 +411,7 @@ fun Preview_AskTaggingScreen_Dark() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 @Preview(name = "Suggested Tag Chip - Light", showBackground = true, backgroundColor = 0xFFF6F5F1)
 @Composable
 fun Preview_SuggestedTagChip_Light() {
@@ -423,18 +421,17 @@ fun Preview_SuggestedTagChip_Light() {
                 tag = "anxiety",
                 isSelected = false,
                 onToggle = {},
-                isDark = false
             )
             SuggestedTagChip(
                 tag = "growth",
                 isSelected = true,
                 onToggle = {},
-                isDark = false
             )
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 @Preview(name = "Suggested Tag Chip - Dark", showBackground = true, backgroundColor = 0xFF1A1A1A)
 @Composable
 fun Preview_SuggestedTagChip_Dark() {
@@ -444,18 +441,17 @@ fun Preview_SuggestedTagChip_Dark() {
                 tag = "anxiety",
                 isSelected = false,
                 onToggle = {},
-                isDark = true
             )
             SuggestedTagChip(
                 tag = "growth",
                 isSelected = true,
                 onToggle = {},
-                isDark = true
             )
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 @Preview(name = "Selected Tag Chip - Light", showBackground = true, backgroundColor = 0xFFF6F5F1)
 @Composable
 fun Preview_SelectedTagChip_Light() {
@@ -464,17 +460,16 @@ fun Preview_SelectedTagChip_Light() {
             SelectedTagChip(
                 tag = "mindfulness",
                 onRemove = {},
-                isDark = false
             )
             SelectedTagChip(
                 tag = "self-care",
                 onRemove = {},
-                isDark = false
             )
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 @Preview(name = "Selected Tag Chip - Dark", showBackground = true, backgroundColor = 0xFF1A1A1A)
 @Composable
 fun Preview_SelectedTagChip_Dark() {
@@ -483,12 +478,10 @@ fun Preview_SelectedTagChip_Dark() {
             SelectedTagChip(
                 tag = "mindfulness",
                 onRemove = {},
-                isDark = true
             )
             SelectedTagChip(
                 tag = "self-care",
                 onRemove = {},
-                isDark = true
             )
         }
     }

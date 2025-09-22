@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import android.os.Build
 
 private val DarkColorScheme = darkColorScheme(
     primary = StillwaterTeal,
@@ -27,8 +28,9 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = White,
     surface = DarkSurface, // Distinct from background
     onSurface = White,
-    surfaceVariant = DarkGray.copy(alpha = 0.8f), // Slightly lighter variant
-    onSurfaceVariant = White.copy(alpha = 0.8f),
+    surfaceVariant = MediumGray.copy(alpha = 0.3f), // Better contrast for tags/chips
+    onSurfaceVariant = White.copy(alpha = 0.9f), // Better text contrast
+    outline = MediumGray, // For borders in dark mode
     error = ErrorRed,
     onError = White
 )
@@ -44,15 +46,16 @@ private val LightColorScheme = lightColorScheme(
     onBackground = Charcoal,      // Default text color on background is high-contrast
     surface = White,
     onSurface = Charcoal,         // Default text color on cards/surfaces is high-contrast
-    surfaceVariant = SoftSand.copy(alpha = 0.8f), // Slightly darker variant
-    onSurfaceVariant = Charcoal.copy(alpha = 0.8f),
+    surfaceVariant = Color(0xFFEEEEEE), // Light gray for tags/chips
+    onSurfaceVariant = Charcoal, // Good contrast for text on light gray
+    outline = LightGray, // For borders in light mode
     error = ErrorRed,
     onError = White
 )
 
 @Composable
 fun OrielleTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(), // Use system preference by default
+    darkTheme: Boolean = false, // Default to light theme
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -62,9 +65,9 @@ fun OrielleTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // Set status bar and navigation bar colors (API 21+)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                // Make status bar transparent for edge-to-edge
+
+            // Make status bar and navigation bar transparent for edge-to-edge (API 21+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 window.statusBarColor = Color.Transparent.toArgb()
                 window.navigationBarColor = Color.Transparent.toArgb()
 
@@ -86,13 +89,12 @@ fun OrielleTheme(
 // Utility function to get card border based on theme
 @Composable
 fun getCardBorder(): BorderStroke? {
-    val isDark = isDarkTheme()
-    return if (isDark) {
-        BorderStroke(1.dp, MediumGray)
-    } else {
-        BorderStroke(1.dp, LightGray)
-    }
+    return BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
 }
+
+// Utility function to get current theme colors
+@Composable
+fun getThemeColors() = MaterialTheme.colorScheme
 
 /**
  * Composable that automatically observes the theme preference and applies it
@@ -109,47 +111,3 @@ fun OrielleThemeWithPreference(
         content()
     }
 }
-
-/**
- * Utility function to consistently detect if the current theme is dark mode
- * This replaces all the inconsistent dark mode detection patterns across screens
- */
-@Composable
-fun isDarkTheme(): Boolean {
-    return MaterialTheme.colorScheme.background == DarkGray
-}
-
-/**
- * Utility function to get theme-aware colors consistently
- * This replaces manual color calculations across screens
- */
-@Composable
-fun getThemeColors(): ThemeColors {
-    val isDark = isDarkTheme()
-    return ThemeColors(
-        background = MaterialTheme.colorScheme.background,
-        onBackground = MaterialTheme.colorScheme.onBackground,
-        surface = MaterialTheme.colorScheme.surface,
-        onSurface = MaterialTheme.colorScheme.onSurface,
-        primary = MaterialTheme.colorScheme.primary,
-        onPrimary = MaterialTheme.colorScheme.onPrimary,
-        secondary = MaterialTheme.colorScheme.secondary,
-        onSecondary = MaterialTheme.colorScheme.onSecondary,
-        isDark = isDark
-    )
-}
-
-/**
- * Data class to hold all theme-aware colors for consistent usage
- */
-data class ThemeColors(
-    val background: Color,
-    val onBackground: Color,
-    val surface: Color,
-    val onSurface: Color,
-    val primary: Color,
-    val onPrimary: Color,
-    val secondary: Color,
-    val onSecondary: Color,
-    val isDark: Boolean
-)

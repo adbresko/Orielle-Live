@@ -249,7 +249,10 @@ fun AppNavigation(
 
         // Ask feature screens
         composable("ask") {
-            AskScreen(navController = navController)
+            AskScreen(
+                navController = navController,
+                sessionManager = sessionManager
+            )
         }
 
         composable(
@@ -344,6 +347,31 @@ fun AppNavigation(
         // Remember filter and search screen
         composable("remember_search") {
             com.orielle.ui.screens.remember.RememberSearchScreen(navController = navController)
+        }
+
+        // Inner Weather History screen
+        composable("inner_weather_history") {
+            val authViewModel: AuthViewModel = hiltViewModel()
+            val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
+            // Guard: If not authenticated, redirect to auth_graph
+            LaunchedEffect(isUserAuthenticated) {
+                if (isUserAuthenticated == false) {
+                    navController.navigate("auth_graph") {
+                        popUpTo("inner_weather_history") { inclusive = true }
+                    }
+                }
+            }
+            if (isUserAuthenticated == true) {
+                com.orielle.ui.screens.mood.InnerWeatherHistoryScreen(navController = navController)
+            } else {
+                // Show loading while redirecting
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    WaterDropLoading()
+                }
+            }
         }
 
         // Conversation detail screen
