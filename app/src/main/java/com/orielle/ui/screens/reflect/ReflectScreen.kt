@@ -1,5 +1,8 @@
 package com.orielle.ui.screens.reflect
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,8 +11,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,12 +30,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.orielle.R
 import com.orielle.domain.model.DefaultJournalPrompts
-import com.orielle.domain.model.JournalEntry
-import com.orielle.domain.model.JournalEntryType
 import com.orielle.ui.theme.*
 import com.orielle.ui.components.BottomNavigation
-import java.text.SimpleDateFormat
-import java.util.*
 
 @Composable
 fun ReflectScreen(
@@ -43,16 +40,38 @@ fun ReflectScreen(
     viewModel: ReflectViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val themeColors = getThemeColors()
-    val backgroundColor = themeColors.background
-    val textColor = themeColors.onBackground
-    val cardColor = themeColors.surface
 
     // Refresh profile data when screen becomes visible (e.g., returning from profile settings)
     LaunchedEffect(navController.currentBackStackEntry) {
         viewModel.refreshUserProfile()
     }
-    val buttonColor = themeColors.primary
+
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else {
+        ReflectScreenContent(
+            uiState = uiState,
+            navController = navController,
+            themeManager = themeManager
+        )
+    }
+}
+
+@Composable
+private fun ReflectScreenContent(
+    uiState: ReflectUiState,
+    navController: NavController,
+    themeManager: com.orielle.ui.theme.ThemeManager
+) {
+    val themeColors = getThemeColors()
+    val backgroundColor = themeColors.background
+    val textColor = themeColors.onBackground
+    val cardColor = themeColors.surface
 
     Scaffold(
         containerColor = backgroundColor,
@@ -68,41 +87,27 @@ fun ReflectScreen(
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left side - Journal icon (clickable for free writing)
-                Image(
-                    painter = painterResource(id = R.drawable.reflect),
-                    contentDescription = "Write without prompt",
+                // Left side - Journal icon (following Figma design)
+                Icon(
+                    painter = painterResource(id = R.drawable.icon_view_journal),
+                    contentDescription = "Write journal entry",
                     modifier = Modifier
-                        .size(28.dp)
-                        .clickable { navController.navigate("journal_editor") }
+                        .size(ScreenUtils.responsiveIconSize(28.dp))
+                        .clickable { navController.navigate("journal_editor") },
+                    tint = textColor
                 )
 
                 Spacer(Modifier.weight(1f))
 
-                // Right side - Profile section with avatar (following leading UX practices)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Profile icon (left)
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile",
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clickable { navController.navigate("profile_settings") },
-                        tint = textColor
-                    )
-
-                    // Miniature user avatar (right - following leading UX practices)
-                    com.orielle.ui.screens.home.UserMiniatureAvatar(
-                        userProfileImageUrl = uiState.userProfileImageUrl,
-                        userLocalImagePath = uiState.userLocalImagePath,
-                        userSelectedAvatarId = uiState.userSelectedAvatarId,
-                        userName = uiState.userName,
-                        size = ScreenUtils.responsiveIconSize(40.dp)
-                    )
-                }
+                // Right side - User avatar (matching HomeScreen implementation)
+                com.orielle.ui.screens.home.UserMiniatureAvatar(
+                    userProfileImageUrl = uiState.userProfileImageUrl,
+                    userLocalImagePath = uiState.userLocalImagePath,
+                    userSelectedAvatarId = uiState.userSelectedAvatarId,
+                    userName = uiState.userName,
+                    size = ScreenUtils.responsiveIconSize(40.dp),
+                    onClick = { navController.navigate("profile_settings") }
+                )
             }
         },
         bottomBar = {
@@ -117,32 +122,61 @@ fun ReflectScreen(
                 .fillMaxSize()
                 .background(backgroundColor)
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.Top
         ) {
 
-            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 2))
+            // Top spacing to position card 50% below top bar
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 8))
 
-            // Content
+            // Content with proper spacing - Simple working structure
             Column(
-                modifier = Modifier.padding(horizontal = ScreenUtils.responsivePadding() * 1.5f),
-                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 2)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = ScreenUtils.responsivePadding() * 1.5f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 3)
             ) {
-                // Today's Prompt Card - Simplified and prominent
+                // Today's Prompt Card - works for both states
                 TodaysPromptCard(
-                    prompt = uiState.todaysPrompt,
+                    prompt = if (uiState.hasMoodCheckIn) uiState.todaysPrompt else "How is your inner weather?",
                     cardColor = cardColor,
-                    textColor = textColor,
-                    onRespondToPrompt = {
-                        navController.navigate("journal_editor?promptText=${uiState.todaysPrompt}")
-                    }
+                    textColor = textColor
                 )
+
+                // Primary action button - works for both states
+                Button(
+                    onClick = {
+                        if (uiState.hasMoodCheckIn) {
+                            navController.navigate("journal_editor?promptText=${uiState.todaysPrompt}")
+                        } else {
+                            navController.navigate("mood_check_in")
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = StillwaterTeal
+                    ),
+                    contentPadding = PaddingValues(vertical = ScreenUtils.responsivePadding() * 1.5f)
+                ) {
+                    Text(
+                        text = if (uiState.hasMoodCheckIn) "Respond to Prompt" else "Begin Check-in",
+                        style = Typography.titleMedium.copy(
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = (16 * ScreenUtils.getTextScaleFactor()).sp
+                        )
+                    )
+                }
 
                 // Alternative option - FREEWRITE pathway
                 Text(
                     text = "Or, start with a blank page",
                     style = Typography.bodyLarge.copy(
-                        color = themeColors.primary.copy(alpha = 0.7f),
-                        fontWeight = FontWeight.Medium
+                        color = textColor,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = (16 * ScreenUtils.getTextScaleFactor()).sp
                     ),
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -150,20 +184,6 @@ fun ReflectScreen(
                         .clickable { navController.navigate("journal_editor") }
                         .padding(vertical = ScreenUtils.responsiveSpacing())
                 )
-
-                // Look Back Module (only show if there's a past entry)
-                uiState.lookBackEntry?.let { entry ->
-                    LookBackModule(
-                        entry = entry,
-                        cardColor = cardColor,
-                        textColor = textColor,
-                        onClick = {
-                            navController.navigate("journal_detail/${entry.id}")
-                        }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
             }
         }
     }
@@ -174,8 +194,7 @@ fun ReflectScreen(
 private fun TodaysPromptCard(
     prompt: String,
     cardColor: Color,
-    textColor: Color,
-    onRespondToPrompt: () -> Unit
+    textColor: Color
 ) {
     val themeColors = getThemeColors()
     Card(
@@ -185,109 +204,225 @@ private fun TodaysPromptCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(
-            modifier = Modifier.padding(ScreenUtils.responsivePadding() * 1.5f),
+            modifier = Modifier.padding(
+                horizontal = ScreenUtils.responsivePadding() * 1.5f,
+                vertical = ScreenUtils.responsivePadding() * 3f // More top and bottom padding inside card
+            ),
             verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 1.5f)
         ) {
-            // Prompt text - Simplified and prominent
+            // Prompt text - LORA Bold 30pt with proper line spacing
             Text(
                 text = prompt,
                 style = Typography.headlineSmall.copy(
                     color = textColor,
-                    lineHeight = 32.sp,
-                    fontWeight = FontWeight.Medium
+                    fontFamily = Lora,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = (30 * ScreenUtils.getTextScaleFactor()).sp,
+                    lineHeight = (40 * ScreenUtils.getTextScaleFactor()).sp // More line spacing
                 ),
                 textAlign = TextAlign.Center
             )
-
-            // Prominent teal button
-            Button(
-                onClick = onRespondToPrompt,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = StillwaterTeal
-                ),
-                contentPadding = PaddingValues(vertical = 16.dp)
-            ) {
-                Text(
-                    text = "Respond to Prompt",
-                    style = Typography.titleMedium.copy(
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            }
         }
     }
 }
 
-
-
 @Composable
-private fun LookBackModule(
-    entry: JournalEntry,
+private fun InvitationStateContent(
+    navController: NavController,
     cardColor: Color,
-    textColor: Color,
-    onClick: () -> Unit
+    textColor: Color
 ) {
-    val themeColors = getThemeColors()
-    Column(
-        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
+    // Invitation card - contains ONLY the invitation text (matching original TodaysPromptCard structure)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.25f),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(
+                horizontal = ScreenUtils.responsivePadding() * 1.5f,
+                vertical = ScreenUtils.responsivePadding() * 3f // More top and bottom padding inside card
+            ),
+            verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 1.5f)
+        ) {
+            // Invitation text - LORA Bold 30pt with proper line spacing (matching original prompt card)
+            Text(
+                text = "How is your inner weather?",
+                style = Typography.headlineSmall.copy(
+                    color = textColor,
+                    fontFamily = Lora,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = (30 * ScreenUtils.getTextScaleFactor()).sp,
+                    lineHeight = (40 * ScreenUtils.getTextScaleFactor()).sp // More line spacing
+                ),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+
+    // Primary action button - Begin Check-in (OUTSIDE the card)
+    Button(
+        onClick = { navController.navigate("mood_check_in") },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = StillwaterTeal
+        ),
+        contentPadding = PaddingValues(vertical = ScreenUtils.responsivePadding() * 1.5f)
     ) {
         Text(
-            text = "From Your Past",
+            text = "Begin Check-in",
             style = Typography.titleMedium.copy(
-                color = textColor,
-                fontWeight = FontWeight.SemiBold
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = (16 * ScreenUtils.getTextScaleFactor()).sp
             )
         )
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onClick() },
-            colors = CardDefaults.cardColors(containerColor = cardColor),
-            shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(ScreenUtils.responsivePadding() * 1.25f),
-                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing() * 1.5f)
-            ) {
-                val dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
-                Text(
-                    text = "${dateFormat.format(entry.timestamp)}...",
-                    style = Typography.bodyMedium.copy(
-                        color = textColor.copy(alpha = 0.7f)
-                    )
-                )
-
-                Text(
-                    text = entry.content.take(150) + if (entry.content.length > 150) "..." else "",
-                    style = Typography.bodyMedium.copy(
-                        color = textColor,
-                        lineHeight = 24.sp
-                    )
-                )
-            }
-        }
     }
+
+    // Alternative option - FREEWRITE pathway (OUTSIDE the card)
+    Text(
+        text = "Or, start with a blank page",
+        style = Typography.bodyLarge.copy(
+            color = textColor,
+            fontWeight = FontWeight.Medium,
+            fontSize = (16 * ScreenUtils.getTextScaleFactor()).sp
+        ),
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { navController.navigate("journal_editor") }
+            .padding(vertical = ScreenUtils.responsiveSpacing())
+    )
 }
 
-@Preview(showBackground = true, name = "Reflect Screen - Light")
 @Composable
-fun ReflectScreenLightPreview() {
+private fun PersonalizedPromptStateContent(
+    uiState: ReflectUiState,
+    navController: NavController,
+    cardColor: Color,
+    textColor: Color
+) {
+    // Today's Prompt Card - Personalized based on mood (ONLY contains the prompt text)
+    TodaysPromptCard(
+        prompt = uiState.todaysPrompt,
+        cardColor = cardColor,
+        textColor = textColor
+    )
+
+    // Primary action button - Respond to Prompt (OUTSIDE the card)
+    Button(
+        onClick = { navController.navigate("journal_editor?promptText=${uiState.todaysPrompt}") },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = StillwaterTeal
+        ),
+        contentPadding = PaddingValues(vertical = ScreenUtils.responsivePadding() * 1.5f)
+    ) {
+        Text(
+            text = "Respond to Prompt",
+            style = Typography.titleMedium.copy(
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = (16 * ScreenUtils.getTextScaleFactor()).sp
+            )
+        )
+    }
+
+    // Alternative option - FREEWRITE pathway (OUTSIDE the card)
+    Text(
+        text = "Or, start with a blank page",
+        style = Typography.bodyLarge.copy(
+            color = textColor,
+            fontWeight = FontWeight.Medium,
+            fontSize = (16 * ScreenUtils.getTextScaleFactor()).sp
+        ),
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { navController.navigate("journal_editor") }
+            .padding(vertical = ScreenUtils.responsiveSpacing())
+    )
+}
+
+@Preview(showBackground = true, name = "Reflect Screen - Invitation Light", backgroundColor = 0xFFF6F5F1)
+@Composable
+fun ReflectScreenInvitationLightPreview() {
+    val fakeNavController = rememberNavController()
     val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
     OrielleTheme(darkTheme = false) {
-        ReflectScreen(navController = rememberNavController(), themeManager = fakeThemeManager)
+        ReflectScreenContent(
+            uiState = ReflectUiState(
+                hasMoodCheckIn = false,
+                isLoading = false,
+                userName = "Mona",
+                userSelectedAvatarId = "happy"
+            ),
+            navController = fakeNavController,
+            themeManager = fakeThemeManager
+        )
     }
 }
 
-@Preview(showBackground = true, name = "Reflect Screen - Dark")
+@Preview(showBackground = true, name = "Reflect Screen - Personalized Light", backgroundColor = 0xFFF6F5F1)
 @Composable
-fun ReflectScreenDarkPreview() {
+fun ReflectScreenPersonalizedLightPreview() {
+    val fakeNavController = rememberNavController()
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
+    OrielleTheme(darkTheme = false) {
+        ReflectScreenContent(
+            uiState = ReflectUiState(
+                hasMoodCheckIn = true,
+                todaysPrompt = "What is one thing on your mind today?",
+                todaysMood = "Happy",
+                isLoading = false,
+                userName = "Mona",
+                userSelectedAvatarId = "happy"
+            ),
+            navController = fakeNavController,
+            themeManager = fakeThemeManager
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Reflect Screen - Invitation Dark", backgroundColor = 0xFF1A1A1A)
+@Composable
+fun ReflectScreenInvitationDarkPreview() {
+    val fakeNavController = rememberNavController()
     val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
     OrielleTheme(darkTheme = true) {
-        ReflectScreen(navController = rememberNavController(), themeManager = fakeThemeManager)
+        ReflectScreenContent(
+            uiState = ReflectUiState(
+                hasMoodCheckIn = false,
+                isLoading = false,
+                userName = "Mona",
+                userSelectedAvatarId = "happy"
+            ),
+            navController = fakeNavController,
+            themeManager = fakeThemeManager
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Reflect Screen - Personalized Dark", backgroundColor = 0xFF1A1A1A)
+@Composable
+fun ReflectScreenPersonalizedDarkPreview() {
+    val fakeNavController = rememberNavController()
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
+    OrielleTheme(darkTheme = true) {
+        ReflectScreenContent(
+            uiState = ReflectUiState(
+                hasMoodCheckIn = true,
+                todaysPrompt = "What is one thing on your mind today?",
+                todaysMood = "Happy",
+                isLoading = false,
+                userName = "Mona",
+                userSelectedAvatarId = "happy"
+            ),
+            navController = fakeNavController,
+            themeManager = fakeThemeManager
+        )
     }
 }

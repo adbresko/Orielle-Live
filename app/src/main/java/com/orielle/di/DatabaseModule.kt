@@ -11,6 +11,7 @@ import com.orielle.data.local.dao.ChatMessageDao
 import com.orielle.data.local.dao.TagDao
 import com.orielle.data.local.dao.MemoryEntryDao
 import com.orielle.data.local.dao.QuoteDao
+import com.orielle.data.local.dao.JournalPromptDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -86,5 +87,11 @@ object DatabaseModule {
     @Singleton
     fun provideQuoteDao(database: OrielleDatabase): QuoteDao {
         return database.quoteDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideJournalPromptDao(database: OrielleDatabase): JournalPromptDao {
+        return database.journalPromptDao()
     }
 }

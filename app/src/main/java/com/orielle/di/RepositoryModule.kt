@@ -8,6 +8,7 @@ import com.orielle.data.local.dao.ChatConversationDao
 import com.orielle.data.local.dao.ChatMessageDao
 import com.orielle.data.local.dao.TagDao
 import com.orielle.data.local.dao.QuoteDao
+import com.orielle.data.local.dao.JournalPromptDao
 import com.orielle.domain.repository.AuthRepository
 import com.orielle.data.repository.AuthRepositoryImpl
 import com.orielle.domain.repository.JournalRepository
@@ -20,6 +21,7 @@ import com.orielle.domain.repository.TagRepository
 import com.orielle.data.repository.TagRepositoryImpl
 import com.orielle.data.repository.QuoteRepository
 import com.orielle.data.repository.QuoteRepositoryImpl
+import com.orielle.data.repository.JournalPromptRepository
 import com.orielle.data.cache.QuoteCacheManager
 import com.orielle.domain.manager.SessionManager
 import com.orielle.domain.manager.SyncManager
@@ -116,5 +118,17 @@ object RepositoryModule {
         // Set the repository in the cache manager to break circular dependency
         quoteCacheManager.setQuoteRepository(repository)
         return repository
+    }
+
+    @Provides
+    @Singleton
+    fun provideJournalPromptRepository(
+        journalPromptDao: JournalPromptDao,
+        @ApplicationContext context: Context
+    ): JournalPromptRepository {
+        return JournalPromptRepository(
+            journalPromptDao = journalPromptDao,
+            context = context
+        )
     }
 }
