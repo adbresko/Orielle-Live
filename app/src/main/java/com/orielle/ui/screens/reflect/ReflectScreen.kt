@@ -106,6 +106,7 @@ private fun ReflectScreenContent(
                     userSelectedAvatarId = uiState.userSelectedAvatarId,
                     userName = uiState.userName,
                     size = ScreenUtils.responsiveIconSize(40.dp),
+                    backgroundColorHex = uiState.userBackgroundColorHex,
                     onClick = { navController.navigate("profile_settings") }
                 )
             }
@@ -127,7 +128,7 @@ private fun ReflectScreenContent(
         ) {
 
             // Top spacing to position card 50% below top bar
-            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 8))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 10))
 
             // Content with proper spacing - Simple working structure
             Column(

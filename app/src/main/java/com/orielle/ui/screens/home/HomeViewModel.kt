@@ -41,7 +41,8 @@ data class HomeUiState(
     val weeklyMoodView: WeeklyMoodView = WeeklyMoodView(emptyList(), 0),
     val userProfileImageUrl: String? = null,
     val userLocalImagePath: String? = null,
-    val userSelectedAvatarId: String? = null
+    val userSelectedAvatarId: String? = null,
+    val userBackgroundColorHex: String? = null
 )
 
 // Dashboard state for UI
@@ -130,7 +131,8 @@ class HomeViewModel @Inject constructor(
                     isPremium = cachedProfile.isPremium,
                     userProfileImageUrl = cachedProfile.profileImageUrl,
                     userLocalImagePath = cachedProfile.localImagePath,
-                    userSelectedAvatarId = cachedProfile.selectedAvatarId
+                    userSelectedAvatarId = cachedProfile.selectedAvatarId,
+                    userBackgroundColorHex = cachedProfile.backgroundColorHex
                 )
 
                 // Debug logging
@@ -154,13 +156,15 @@ class HomeViewModel @Inject constructor(
                     val profileImageUrl = document.getString("profileImageUrl")
                     val localImagePath = document.getString("localImagePath")
                     val selectedAvatarId = document.getString("selectedAvatarId")
+                    val backgroundColorHex = document.getString("backgroundColorHex")
                     val userName = firstName ?: displayName ?: "User"
                     _uiState.value = _uiState.value.copy(
                         userName = userName,
                         isPremium = isPremium,
                         userProfileImageUrl = profileImageUrl,
                         userLocalImagePath = localImagePath,
-                        userSelectedAvatarId = selectedAvatarId
+                        userSelectedAvatarId = selectedAvatarId,
+                        userBackgroundColorHex = backgroundColorHex
                     )
 
                     // Debug logging

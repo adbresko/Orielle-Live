@@ -141,8 +141,7 @@ fun ProfileSettingsScreen(
                         onImageUpload = { uri -> viewModel.uploadImage(uri, currentContext) },
                         onAvatarSelect = { avatar -> viewModel.selectAvatar(avatar) },
                         onColorSelect = { color -> viewModel.onColorSelected(color) },
-                        onImageRemove = { viewModel.removeProfileImage(currentContext) },
-                        onClearProfile = { viewModel.clearProfile(currentContext) },
+                        onResetToDefault = { viewModel.clearProfile(currentContext) },
                         avatarLibrary = viewModel.getAvatarLibrary(),
                         isPremiumUser = uiState.isPremium,
                         modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding())

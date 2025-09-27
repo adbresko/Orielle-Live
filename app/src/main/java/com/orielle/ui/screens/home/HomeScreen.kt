@@ -106,18 +106,33 @@ private fun getMoodIconResourceId(avatarId: String): Int? {
 @Composable
 private fun UserInitialAvatar(
     userName: String,
-    size: androidx.compose.ui.unit.Dp
+    size: androidx.compose.ui.unit.Dp,
+    backgroundColorHex: String? = null
 ) {
     val themeColors = MaterialTheme.colorScheme
     val initial = remember(userName) {
         userName.trim().split(" ").firstOrNull()?.take(1)?.uppercase() ?: "U"
     }
 
+    // Parse background color from hex string, fallback to theme color
+    val backgroundColor = remember(backgroundColorHex) {
+        try {
+            if (!backgroundColorHex.isNullOrBlank()) {
+                Color(android.graphics.Color.parseColor(backgroundColorHex))
+            } else {
+                themeColors.primary
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("UserInitialAvatar", "Invalid background color hex: $backgroundColorHex, using theme color", e)
+            themeColors.primary
+        }
+    }
+
     Box(
         modifier = Modifier
             .size(size)
             .background(
-                color = themeColors.primary,
+                color = backgroundColor,
                 shape = CircleShape
             ),
         contentAlignment = Alignment.Center
@@ -140,6 +155,7 @@ internal fun UserMiniatureAvatar(
     userSelectedAvatarId: String?,
     userName: String?,
     size: androidx.compose.ui.unit.Dp,
+    backgroundColorHex: String? = null,
     onClick: (() -> Unit)? = null
 ) {
     val themeColors = MaterialTheme.colorScheme
@@ -232,10 +248,10 @@ internal fun UserMiniatureAvatar(
                                 contentScale = ContentScale.Crop
                             )
                         } else {
-                            UserInitialAvatar(userName = userName ?: "User", size = size)
+                            UserInitialAvatar(userName = userName ?: "User", size = size, backgroundColorHex = backgroundColorHex)
                         }
                     } else {
-                        UserInitialAvatar(userName = userName ?: "User", size = size)
+                        UserInitialAvatar(userName = userName ?: "User", size = size, backgroundColorHex = backgroundColorHex)
                     }
                 } else {
                     AsyncImage(
@@ -274,16 +290,16 @@ internal fun UserMiniatureAvatar(
                     )
                 } else {
                     android.util.Log.w("UserMiniatureAvatar", "No resource found for avatar ID: $userSelectedAvatarId")
-                    UserInitialAvatar(userName = userName ?: "User", size = size)
+                    UserInitialAvatar(userName = userName ?: "User", size = size, backgroundColorHex = backgroundColorHex)
                 }
             }
 
             "user_initials" -> {
-                UserInitialAvatar(userName = userName!!, size = size)
+                UserInitialAvatar(userName = userName!!, size = size, backgroundColorHex = backgroundColorHex)
             }
 
             "default_initials" -> {
-                UserInitialAvatar(userName = "User", size = size)
+                UserInitialAvatar(userName = "User", size = size, backgroundColorHex = backgroundColorHex)
             }
         }
     }
@@ -328,6 +344,7 @@ fun HomeScreen(
             userProfileImageUrl = uiState.userProfileImageUrl,
             userLocalImagePath = uiState.userLocalImagePath,
             userSelectedAvatarId = uiState.userSelectedAvatarId,
+            userBackgroundColorHex = uiState.userBackgroundColorHex,
             // Pass viewModel for debug functionality
             viewModel = viewModel
         )
@@ -348,6 +365,7 @@ fun HomeDashboardScreen(
     userProfileImageUrl: String? = null,
     userLocalImagePath: String? = null,
     userSelectedAvatarId: String? = null,
+    userBackgroundColorHex: String? = null,
     // Debug functionality
     viewModel: com.orielle.ui.screens.home.HomeViewModel? = null
 ) {
@@ -408,6 +426,7 @@ fun HomeDashboardScreen(
                     userSelectedAvatarId = userSelectedAvatarId,
                     userName = userName,
                     size = ScreenUtils.responsiveIconSize(40.dp),
+                    backgroundColorHex = userBackgroundColorHex,
                     onClick = { navController.navigate("profile_settings") }
                 )
 

@@ -627,7 +627,7 @@ fun Preview_AskScreen_Light() {
         override suspend fun clearSession() {}
         override suspend fun cacheUserProfile(userId: String, firstName: String?, displayName: String?, email: String?, profileImageUrl: String?, localImagePath: String?, selectedAvatarId: String?, backgroundColorHex: String?, isPremium: Boolean, notificationsEnabled: Boolean, twoFactorEnabled: Boolean) {}
         override suspend fun getCachedUserProfile(userId: String) = null
-        override suspend fun updateCachedUserProfile(userId: String, firstName: String?, displayName: String?, email: String?, profileImageUrl: String?, isPremium: Boolean?, notificationsEnabled: Boolean?, twoFactorEnabled: Boolean?) {}
+        override suspend fun updateCachedUserProfile(userId: String, firstName: String?, displayName: String?, email: String?, profileImageUrl: String?, localImagePath: String?, selectedAvatarId: String?, backgroundColorHex: String?, isPremium: Boolean?, notificationsEnabled: Boolean?, twoFactorEnabled: Boolean?) {}
         override suspend fun clearCachedUserProfile(userId: String) {}
         override suspend fun hasValidCachedProfile(userId: String): Boolean = false
         override suspend fun getProfileCacheExpiration(): Long = 3600000L
@@ -662,7 +662,7 @@ fun Preview_AskScreen_Dark() {
         override suspend fun clearSession() {}
         override suspend fun cacheUserProfile(userId: String, firstName: String?, displayName: String?, email: String?, profileImageUrl: String?, localImagePath: String?, selectedAvatarId: String?, backgroundColorHex: String?, isPremium: Boolean, notificationsEnabled: Boolean, twoFactorEnabled: Boolean) {}
         override suspend fun getCachedUserProfile(userId: String) = null
-        override suspend fun updateCachedUserProfile(userId: String, firstName: String?, displayName: String?, email: String?, profileImageUrl: String?, isPremium: Boolean?, notificationsEnabled: Boolean?, twoFactorEnabled: Boolean?) {}
+        override suspend fun updateCachedUserProfile(userId: String, firstName: String?, displayName: String?, email: String?, profileImageUrl: String?, localImagePath: String?, selectedAvatarId: String?, backgroundColorHex: String?, isPremium: Boolean?, notificationsEnabled: Boolean?, twoFactorEnabled: Boolean?) {}
         override suspend fun clearCachedUserProfile(userId: String) {}
         override suspend fun hasValidCachedProfile(userId: String): Boolean = false
         override suspend fun getProfileCacheExpiration(): Long = 3600000L
@@ -1407,4 +1407,3 @@ private fun getDrawableResourceId(avatarId: String): Int? {
         else -> null
     }
 }
-

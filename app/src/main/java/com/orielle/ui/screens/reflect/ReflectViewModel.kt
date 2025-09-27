@@ -144,7 +144,8 @@ class ReflectViewModel @Inject constructor(
                             userName = cachedProfile.displayName ?: cachedProfile.firstName,
                             userProfileImageUrl = cachedProfile.profileImageUrl,
                             userLocalImagePath = cachedProfile.localImagePath,
-                            userSelectedAvatarId = cachedProfile.selectedAvatarId
+                            userSelectedAvatarId = cachedProfile.selectedAvatarId,
+                            userBackgroundColorHex = cachedProfile.backgroundColorHex
                         )
                         Timber.d("📋 ReflectViewModel: Loaded cached profile data for user: $userId")
                     }
@@ -180,5 +181,6 @@ data class ReflectUiState(
     val userName: String? = null,
     val userProfileImageUrl: String? = null,
     val userLocalImagePath: String? = null,
-    val userSelectedAvatarId: String? = null
+    val userSelectedAvatarId: String? = null,
+    val userBackgroundColorHex: String? = null
 )
