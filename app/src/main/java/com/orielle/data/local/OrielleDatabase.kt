@@ -10,6 +10,7 @@ import com.orielle.data.local.dao.ChatConversationDao
 import com.orielle.data.local.dao.ChatMessageDao
 import com.orielle.data.local.dao.TagDao
 import com.orielle.data.local.dao.MemoryEntryDao
+import com.orielle.data.local.dao.QuoteDao
 import com.orielle.data.local.model.JournalEntryEntity
 import com.orielle.data.local.model.MoodCheckInEntity
 import com.orielle.data.local.model.UserEntity
@@ -18,6 +19,7 @@ import com.orielle.data.local.model.ChatMessageEntity
 import com.orielle.data.local.model.TagEntity
 import com.orielle.data.local.model.ConversationTagCrossRef
 import com.orielle.data.local.model.MemoryEntryEntity
+import com.orielle.data.local.model.QuoteEntity
 
 @Database(
     entities = [
@@ -28,9 +30,10 @@ import com.orielle.data.local.model.MemoryEntryEntity
         ChatMessageEntity::class,
         TagEntity::class,
         ConversationTagCrossRef::class,
-        MemoryEntryEntity::class
+        MemoryEntryEntity::class,
+        QuoteEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -43,6 +46,7 @@ abstract class OrielleDatabase : RoomDatabase() {
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun tagDao(): TagDao
     abstract fun memoryEntryDao(): MemoryEntryDao
+    abstract fun quoteDao(): QuoteDao
 
     companion object {
         // No migrations needed - Room will create tables from entities

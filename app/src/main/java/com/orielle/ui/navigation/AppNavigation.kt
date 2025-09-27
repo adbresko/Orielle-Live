@@ -40,6 +40,10 @@ import com.orielle.ui.screens.mood.MoodCheckInScreen
 import com.orielle.ui.screens.mood.MoodCheckInViewModel
 import com.orielle.ui.screens.mood.MoodFinalScreen
 import com.orielle.ui.screens.mood.MoodReflectionScreen
+import com.orielle.ui.screens.mood.GentleRewardScreen
+import com.orielle.ui.screens.mood.GentleRewardViewModel
+import com.orielle.ui.screens.mood.ShareScreen
+import com.orielle.ui.screens.mood.ShareViewModel
 import com.orielle.ui.screens.onboarding.OnboardingScreen
 import com.orielle.ui.screens.profile.ProfileSettingsScreen
 import com.orielle.ui.screens.reflect.JournalDetailScreen
@@ -50,6 +54,7 @@ import com.orielle.ui.screens.premium.PremiumScreen
 import com.orielle.ui.screens.sanctuary.SanctuaryScreen
 import com.orielle.ui.screens.remember.RememberScreen
 import com.orielle.ui.screens.remember.ConversationDetailScreen
+import com.orielle.data.local.model.QuoteEntity
 import dagger.hilt.android.EntryPointAccessors
 
 @Composable
@@ -96,8 +101,8 @@ fun AppNavigation(
 
         // Sanctuary screen
         composable("sanctuary") {
-            val authViewModel: AuthViewModel = hiltViewModel()
-            val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
+            val sanctuaryAuthViewModel: AuthViewModel = hiltViewModel()
+            val isUserAuthenticated by sanctuaryAuthViewModel.isUserAuthenticated.collectAsState()
             // Guard: If not authenticated, redirect to auth_graph
             LaunchedEffect(isUserAuthenticated) {
                 if (isUserAuthenticated == false) {
@@ -127,8 +132,8 @@ fun AppNavigation(
 
         // Mood check-in screen
         composable("mood_check_in") {
-            val authViewModel: AuthViewModel = hiltViewModel()
-            val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
+            val moodAuthViewModel: AuthViewModel = hiltViewModel()
+            val isUserAuthenticated by moodAuthViewModel.isUserAuthenticated.collectAsState()
             // Guard: If not authenticated, redirect to auth_graph
             LaunchedEffect(isUserAuthenticated) {
                 if (isUserAuthenticated == false) {
@@ -186,8 +191,8 @@ fun AppNavigation(
                         notes = if (notes.isBlank()) null else notes
                     )
 
-                    // Navigate to final screen
-                    navController.navigate("mood_final") {
+                    // Navigate to gentle reward screen
+                    navController.navigate("gentle_reward/$moodName") {
                         popUpTo("mood_reflection/$moodName/$moodIconRes") { inclusive = true }
                     }
                 },
@@ -196,7 +201,58 @@ fun AppNavigation(
                 }
             )
         }
-        // Final saved for today screen
+        // Gentle Reward Screen
+        composable(
+            route = "gentle_reward/{moodName}",
+            arguments = listOf(
+                navArgument("moodName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val moodName = backStackEntry.arguments?.getString("moodName") ?: "Happy"
+
+            GentleRewardScreen(
+                mood = moodName,
+                onDone = {
+                    navController.navigate("home_graph") {
+                        popUpTo("gentle_reward/$moodName") { inclusive = true }
+                    }
+                },
+                onShare = { quote, mood ->
+                    navController.navigate("share_quote/${quote.id}/$mood")
+                }
+            )
+        }
+
+        // Share Screen
+        composable(
+            route = "share_quote/{quoteId}/{moodName}",
+            arguments = listOf(
+                navArgument("quoteId") { type = NavType.StringType },
+                navArgument("moodName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val quoteId = backStackEntry.arguments?.getString("quoteId") ?: ""
+            val moodName = backStackEntry.arguments?.getString("moodName") ?: "Happy"
+
+            // For now, we'll create a mock quote. In a real implementation,
+            // you'd fetch the quote from the database using the quoteId
+            val mockQuote = QuoteEntity(
+                id = quoteId,
+                quote = "The power of finding beauty in the humblest things makes home happy and life lovely.",
+                source = "Louisa May Alcott",
+                mood = moodName
+            )
+
+            ShareScreen(
+                quote = mockQuote,
+                mood = moodName,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Final saved for today screen (kept for backward compatibility)
         composable("mood_final") {
             MoodFinalScreen(
                 onDone = {
@@ -212,7 +268,6 @@ fun AppNavigation(
         composable("profile_settings") {
             // Get user data from SessionManager and Firebase Auth
             val homeViewModel: com.orielle.ui.screens.home.HomeViewModel = hiltViewModel()
-            val uiState by homeViewModel.uiState.collectAsState()
 
             // Get real user ID from SessionManager
             val currentUserId by sessionManager.currentUserId.collectAsState(initial = null)
@@ -351,8 +406,8 @@ fun AppNavigation(
 
         // Inner Weather History screen
         composable("inner_weather_history") {
-            val authViewModel: AuthViewModel = hiltViewModel()
-            val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
+            val historyAuthViewModel: AuthViewModel = hiltViewModel()
+            val isUserAuthenticated by historyAuthViewModel.isUserAuthenticated.collectAsState()
             // Guard: If not authenticated, redirect to auth_graph
             LaunchedEffect(isUserAuthenticated) {
                 if (isUserAuthenticated == false) {
@@ -396,8 +451,8 @@ fun AppNavigation(
 
         // Premium screen
         composable("premium") {
-            val authViewModel: AuthViewModel = hiltViewModel()
-            val isUserAuthenticated by authViewModel.isUserAuthenticated.collectAsState()
+            val premiumAuthViewModel: AuthViewModel = hiltViewModel()
+            val isUserAuthenticated by premiumAuthViewModel.isUserAuthenticated.collectAsState()
             // Guard: If not authenticated, redirect to auth_graph
             LaunchedEffect(isUserAuthenticated) {
                 if (isUserAuthenticated == false) {
@@ -438,12 +493,6 @@ fun SplashScreenRouter(
     navController: NavController,
 ) {
     val context = LocalContext.current
-    val sessionManager = remember {
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            SessionManagerEntryPoint::class.java
-        ).sessionManagerImpl()
-    }
     var needsMoodCheckIn by remember { mutableStateOf(false) }
     var checkedMood by remember { mutableStateOf(false) }
 

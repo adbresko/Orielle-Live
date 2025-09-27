@@ -47,6 +47,11 @@ fun ReflectScreen(
     val backgroundColor = themeColors.background
     val textColor = themeColors.onBackground
     val cardColor = themeColors.surface
+
+    // Refresh profile data when screen becomes visible (e.g., returning from profile settings)
+    LaunchedEffect(navController.currentBackStackEntry) {
+        viewModel.refreshUserProfile()
+    }
     val buttonColor = themeColors.primary
 
     Scaffold(
@@ -95,7 +100,7 @@ fun ReflectScreen(
                         userLocalImagePath = uiState.userLocalImagePath,
                         userSelectedAvatarId = uiState.userSelectedAvatarId,
                         userName = uiState.userName,
-                        size = ScreenUtils.responsiveIconSize(24.dp)
+                        size = ScreenUtils.responsiveIconSize(40.dp)
                     )
                 }
             }

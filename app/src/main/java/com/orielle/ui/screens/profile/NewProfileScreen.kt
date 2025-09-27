@@ -142,6 +142,7 @@ fun ProfileSettingsScreen(
                         onAvatarSelect = { avatar -> viewModel.selectAvatar(avatar) },
                         onColorSelect = { color -> viewModel.onColorSelected(color) },
                         onImageRemove = { viewModel.removeProfileImage(currentContext) },
+                        onClearProfile = { viewModel.clearProfile(currentContext) },
                         avatarLibrary = viewModel.getAvatarLibrary(),
                         isPremiumUser = uiState.isPremium,
                         modifier = Modifier.padding(bottom = ScreenUtils.responsivePadding())

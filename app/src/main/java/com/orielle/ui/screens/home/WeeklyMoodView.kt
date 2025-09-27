@@ -53,12 +53,6 @@ fun WeeklyMoodView(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "YOUR INNER WEATHER",
-            style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground),
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(ScreenUtils.responsivePadding()))
 
         if (weeklyView.days.isEmpty()) {
             // Temporary fallback - generate basic week structure with correct today calculation

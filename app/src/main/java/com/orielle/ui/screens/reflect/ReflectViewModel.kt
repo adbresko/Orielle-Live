@@ -97,6 +97,20 @@ class ReflectViewModel @Inject constructor(
             }
         }
     }
+
+    fun refreshUserProfile() {
+        viewModelScope.launch {
+            try {
+                val userId = sessionManager.currentUserId.first()
+                if (userId != null) {
+                    android.util.Log.d("ReflectViewModel", "Refreshing user profile data")
+                    loadCachedUserProfile()
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error refreshing user profile")
+            }
+        }
+    }
 }
 
 data class ReflectUiState(

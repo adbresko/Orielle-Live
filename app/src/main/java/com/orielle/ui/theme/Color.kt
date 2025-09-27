@@ -26,3 +26,14 @@ val ContentTeal = Color(0xFF48C9B0)
 val AnxiousPurple = Color(0xFFAF7AC5)
 val SadGray = Color(0xFF34495E)
 val TiredNeutral = Color(0xFF566573)
+
+// Mood Check-In Background Colors (9 hex codes for dynamic backgrounds)
+val HappyBackground = Color(0xFFFFF59D) // Soft yellow
+val SadBackground = Color(0xFF90A4AE) // Muted blue-gray
+val AngryBackground = Color(0xFFFFAB91) // Soft coral
+val SurprisedBackground = Color(0xFFE1BEE7) // Light purple
+val PlayfulBackground = Color(0xFFFFF59D) // Soft yellow (same as happy)
+val ShyBackground = Color(0xFFE1BEE7) // Light purple (same as surprised)
+val FrustratedBackground = Color(0xFFFFAB91) // Soft coral (same as angry)
+val ScaredBackground = Color(0xFFB3E5FC) // Light blue
+val PeacefulBackground = Color(0xFFC8E6C9) // Soft green

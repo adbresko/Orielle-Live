@@ -68,6 +68,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.sp
 import com.orielle.ui.theme.SoftSand
 import com.orielle.ui.theme.Charcoal
+import androidx.compose.ui.text.style.TextOverflow
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -77,7 +78,6 @@ import android.view.MotionEvent
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.ExperimentalComposeUiApi
 import com.orielle.ui.theme.OrielleTheme
-import com.orielle.ui.components.WaterDropLoading
 import com.orielle.ui.util.ScreenUtils
 import com.orielle.ui.components.BottomNavigation
 import coil.compose.AsyncImage
@@ -86,46 +86,21 @@ import java.io.File
 
 // Import the WeeklyMoodView composable from the same package (auto-resolved)
 
-// Helper function to get avatar library
-private fun getAvatarLibrary(): List<com.orielle.ui.components.AvatarOption> {
-    return listOf(
-        com.orielle.ui.components.AvatarOption(
-            id = "avatar1",
-            name = "Calm",
-            imageUrl = "https://example.com/avatar1.jpg",
-            isPremium = false
-        ),
-        com.orielle.ui.components.AvatarOption(
-            id = "avatar2",
-            name = "Joyful",
-            imageUrl = "https://example.com/avatar2.jpg",
-            isPremium = false
-        ),
-        com.orielle.ui.components.AvatarOption(
-            id = "avatar3",
-            name = "Thoughtful",
-            imageUrl = "https://example.com/avatar3.jpg",
-            isPremium = false
-        ),
-        com.orielle.ui.components.AvatarOption(
-            id = "avatar4",
-            name = "Serene",
-            imageUrl = "https://example.com/avatar4.jpg",
-            isPremium = false
-        ),
-        com.orielle.ui.components.AvatarOption(
-            id = "avatar5",
-            name = "Energetic",
-            imageUrl = "https://example.com/avatar5.jpg",
-            isPremium = true
-        ),
-        com.orielle.ui.components.AvatarOption(
-            id = "avatar6",
-            name = "Mystical",
-            imageUrl = "https://example.com/avatar6.jpg",
-            isPremium = true
-        )
-    )
+
+// Helper function to get mood icon resource ID
+private fun getMoodIconResourceId(avatarId: String): Int? {
+    return when (avatarId) {
+        "happy" -> R.drawable.ic_happy
+        "playful" -> R.drawable.ic_playful
+        "surprised" -> R.drawable.ic_surprised
+        "peaceful" -> R.drawable.ic_peaceful
+        "shy" -> R.drawable.ic_shy
+        "sad" -> R.drawable.ic_sad
+        "angry" -> R.drawable.ic_angry
+        "frustrated" -> R.drawable.ic_frustrated
+        "scared" -> R.drawable.ic_scared
+        else -> null
+    }
 }
 
 @Composable
@@ -134,13 +109,15 @@ private fun UserInitialAvatar(
     size: androidx.compose.ui.unit.Dp
 ) {
     val themeColors = MaterialTheme.colorScheme
-    val initial = userName.take(1).uppercase()
+    val initial = remember(userName) {
+        userName.trim().split(" ").firstOrNull()?.take(1)?.uppercase() ?: "U"
+    }
 
     Box(
         modifier = Modifier
             .size(size)
             .background(
-                color = themeColors.primary.copy(alpha = 0.2f),
+                color = themeColors.primary,
                 shape = CircleShape
             ),
         contentAlignment = Alignment.Center
@@ -148,8 +125,9 @@ private fun UserInitialAvatar(
         Text(
             text = initial,
             style = Typography.bodyMedium.copy(
-                color = themeColors.primary,
-                fontWeight = FontWeight.Bold
+                color = themeColors.onPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = (size.value * 0.4).sp // Scale font size with avatar size
             )
         )
     }
@@ -161,9 +139,13 @@ internal fun UserMiniatureAvatar(
     userLocalImagePath: String?,
     userSelectedAvatarId: String?,
     userName: String?,
-    size: androidx.compose.ui.unit.Dp
+    size: androidx.compose.ui.unit.Dp,
+    onClick: (() -> Unit)? = null
 ) {
     val themeColors = MaterialTheme.colorScheme
+
+    // Debug logging
+    android.util.Log.d("UserMiniatureAvatar", "Profile data - ImageUrl: $userProfileImageUrl, LocalPath: $userLocalImagePath, AvatarId: $userSelectedAvatarId, UserName: $userName")
 
     // Subtle animation states
     var isVisible by remember { mutableStateOf(false) }
@@ -184,81 +166,124 @@ internal fun UserMiniatureAvatar(
     }
 
     Box(
-        modifier = Modifier.graphicsLayer {
-            this.alpha = alpha
-            scaleX = scale
-            scaleY = scale
-        }
+        modifier = Modifier
+            .graphicsLayer {
+                this.alpha = alpha
+                scaleX = scale
+                scaleY = scale
+            }
+            .then(
+                if (onClick != null) {
+                    Modifier
+                        .clickable { onClick() }
+                        .clip(CircleShape)
+                } else {
+                    Modifier.clip(CircleShape)
+                }
+            )
     ) {
-        when {
-            // Priority 1: Local uploaded image
-            userLocalImagePath != null && File(userLocalImagePath).exists() -> {
+        // Determine what to display based on priority
+        val displayType = remember(userLocalImagePath, userProfileImageUrl, userSelectedAvatarId, userName) {
+            when {
+                userLocalImagePath != null && File(userLocalImagePath).exists() -> "local_image"
+                userProfileImageUrl != null && userProfileImageUrl.isNotBlank() -> "remote_image"
+                userSelectedAvatarId != null -> "selected_avatar"
+                !userName.isNullOrBlank() -> "user_initials"
+                else -> "default_initials"
+            }
+        }
+
+        when (displayType) {
+            "local_image" -> {
                 Image(
-                    painter = rememberAsyncImagePainter(File(userLocalImagePath)),
+                    painter = rememberAsyncImagePainter(File(userLocalImagePath!!)),
                     contentDescription = "Your Profile",
                     modifier = Modifier
                         .size(size)
-                        .clip(CircleShape),
+                        .clip(CircleShape)
+                        .background(
+                            color = themeColors.outline.copy(alpha = 0.2f),
+                            shape = CircleShape
+                        )
+                        .padding(1.dp),
                     contentScale = ContentScale.Crop
                 )
             }
 
-            // Priority 2: Remote profile image
-            userProfileImageUrl != null && userProfileImageUrl.isNotBlank() -> {
-                AsyncImage(
-                    model = userProfileImageUrl,
-                    contentDescription = "Your Profile",
-                    modifier = Modifier
-                        .size(size)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                    placeholder = painterResource(id = R.drawable.ic_orielle_drop),
-                    error = painterResource(id = R.drawable.ic_orielle_drop)
-                )
-            }
+            "remote_image" -> {
+                var imageError by remember { mutableStateOf(false) }
 
-            // Priority 3: Selected avatar from library
-            userSelectedAvatarId != null -> {
-                val avatarLibrary = getAvatarLibrary()
-                val selectedAvatar = avatarLibrary.find { it.id == userSelectedAvatarId }
-                if (selectedAvatar != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(selectedAvatar.imageUrl),
-                        contentDescription = selectedAvatar.name,
+                if (imageError) {
+                    // If remote image failed, show selected avatar or initials
+                    if (userSelectedAvatarId != null) {
+                        val resourceId = getMoodIconResourceId(userSelectedAvatarId)
+                        if (resourceId != null) {
+                            Image(
+                                painter = painterResource(id = resourceId),
+                                contentDescription = "Your Mood Avatar",
+                                modifier = Modifier
+                                    .size(size)
+                                    .clip(CircleShape)
+                                    .background(
+                                        color = themeColors.outline.copy(alpha = 0.2f),
+                                        shape = CircleShape
+                                    )
+                                    .padding(1.dp),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            UserInitialAvatar(userName = userName ?: "User", size = size)
+                        }
+                    } else {
+                        UserInitialAvatar(userName = userName ?: "User", size = size)
+                    }
+                } else {
+                    AsyncImage(
+                        model = userProfileImageUrl,
+                        contentDescription = "Your Profile",
                         modifier = Modifier
                             .size(size)
-                            .clip(CircleShape),
+                            .clip(CircleShape)
+                            .background(
+                                color = themeColors.outline.copy(alpha = 0.2f),
+                                shape = CircleShape
+                            )
+                            .padding(1.dp),
+                        contentScale = ContentScale.Crop,
+                        onError = { imageError = true }
+                    )
+                }
+            }
+
+            "selected_avatar" -> {
+                val resourceId = getMoodIconResourceId(userSelectedAvatarId!!)
+                android.util.Log.d("UserMiniatureAvatar", "Selected avatar ID: $userSelectedAvatarId, Resource ID: $resourceId")
+                if (resourceId != null) {
+                    Image(
+                        painter = painterResource(id = resourceId),
+                        contentDescription = "Your Mood Avatar",
+                        modifier = Modifier
+                            .size(size)
+                            .clip(CircleShape)
+                            .background(
+                                color = themeColors.outline.copy(alpha = 0.2f),
+                                shape = CircleShape
+                            )
+                            .padding(1.dp),
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    // Fallback to initial
-                    UserInitialAvatar(userName = userName.toString(), size = size)
+                    android.util.Log.w("UserMiniatureAvatar", "No resource found for avatar ID: $userSelectedAvatarId")
+                    UserInitialAvatar(userName = userName ?: "User", size = size)
                 }
             }
 
-            // Priority 4: User initial in themed circle
-            !userName.isNullOrBlank() -> {
-                UserInitialAvatar(userName = userName, size = size)
+            "user_initials" -> {
+                UserInitialAvatar(userName = userName!!, size = size)
             }
 
-            // Fallback: Default circle
-            else -> {
-                Box(
-                    modifier = Modifier
-                        .size(size)
-                        .background(
-                            color = themeColors.primary.copy(alpha = 0.2f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "You",
-                        modifier = Modifier.size(size * 0.6f),
-                        tint = themeColors.primary
-                    )
-                }
+            "default_initials" -> {
+                UserInitialAvatar(userName = "User", size = size)
             }
         }
     }
@@ -273,56 +298,39 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val dashboardState by viewModel.dashboardState.collectAsState()
 
-    // Refresh data when returning to home screen
-    LaunchedEffect(Unit) {
-        viewModel.refreshHomeData()
+    // Data loads automatically in ViewModel init
+
+    // Refresh profile data when screen becomes visible (e.g., returning from profile settings)
+    LaunchedEffect(navController.currentBackStackEntry) {
+        viewModel.refreshUserProfile()
     }
 
-    // Show loading indicator during initialization to prevent flicker
-    if (uiState.isInitializing || dashboardState == DashboardState.Loading) {
+    if (uiState.isLoading || dashboardState == DashboardState.Loading) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                WaterDropLoading(
-                    size = ScreenUtils.responsiveImageSize(60.dp).value.toInt(),
-                    modifier = Modifier.size(ScreenUtils.responsiveImageSize(60.dp))
-                )
-                Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing() * 2))
-                Text(
-                    text = if (uiState.isInitializing) "Loading your dashboard..." else "Preparing your day...",
-                    style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onBackground),
-                    textAlign = TextAlign.Center
-                )
-            }
+            CircularProgressIndicator()
         }
     } else {
-        // Smooth transition when dashboard state changes
-        AnimatedVisibility(
-            visible = true,
-            enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
-                animationSpec = tween(300),
-                initialOffsetY = { it / 4 }
-            )
-        ) {
-            HomeDashboardScreen(
-                userName = uiState.userName,
-                journalEntries = uiState.journalEntries,
-                weeklyMoodView = uiState.weeklyMoodView,
-                navController = navController,
-                dashboardState = dashboardState,
-                themeManager = themeManager,
-                onCheckInTap = {
-                    // Navigate to mood check-in screen instead of just changing state
-                    navController.navigate("mood_check_in")
-                },
-                // Pass profile data for miniature avatar
-                userProfileImageUrl = uiState.userProfileImageUrl,
-                userLocalImagePath = uiState.userLocalImagePath,
-                userSelectedAvatarId = uiState.userSelectedAvatarId
-            )
-        }
+        HomeDashboardScreen(
+            userName = uiState.userName,
+            journalEntries = uiState.journalEntries,
+            weeklyMoodView = uiState.weeklyMoodView,
+            navController = navController,
+            dashboardState = dashboardState,
+            themeManager = themeManager,
+            onCheckInTap = {
+                // Navigate to mood check-in screen instead of just changing state
+                navController.navigate("mood_check_in")
+            },
+            // Pass profile data for miniature avatar
+            userProfileImageUrl = uiState.userProfileImageUrl,
+            userLocalImagePath = uiState.userLocalImagePath,
+            userSelectedAvatarId = uiState.userSelectedAvatarId,
+            // Pass viewModel for debug functionality
+            viewModel = viewModel
+        )
     }
 }
 
@@ -339,7 +347,9 @@ fun HomeDashboardScreen(
     // Profile data for miniature avatar
     userProfileImageUrl: String? = null,
     userLocalImagePath: String? = null,
-    userSelectedAvatarId: String? = null
+    userSelectedAvatarId: String? = null,
+    // Debug functionality
+    viewModel: com.orielle.ui.screens.home.HomeViewModel? = null
 ) {
     val backgroundColor = MaterialTheme.colorScheme.background
     val textColor = MaterialTheme.colorScheme.onBackground
@@ -391,30 +401,33 @@ fun HomeDashboardScreen(
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                // Profile section with avatar on the right (leading UX practice)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Profile icon (left)
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile",
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clickable { navController.navigate("profile_settings") },
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
+                // User avatar only (clickable for profile access)
+                UserMiniatureAvatar(
+                    userProfileImageUrl = userProfileImageUrl,
+                    userLocalImagePath = userLocalImagePath,
+                    userSelectedAvatarId = userSelectedAvatarId,
+                    userName = userName,
+                    size = ScreenUtils.responsiveIconSize(40.dp),
+                    onClick = { navController.navigate("profile_settings") }
+                )
 
-                    // Miniature user avatar (right - following leading UX practices)
-                    UserMiniatureAvatar(
-                        userProfileImageUrl = userProfileImageUrl,
-                        userLocalImagePath = userLocalImagePath,
-                        userSelectedAvatarId = userSelectedAvatarId,
-                        userName = userName,
-                        size = ScreenUtils.responsiveIconSize(24.dp)
-                    )
-                }
+                // TEMPORARY DEBUG: Test quote generator
+                // Spacer(modifier = Modifier.width(8.dp))
+                // TextButton(
+                //     onClick = { navController.navigate("gentle_reward/Happy") },
+                //     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                // ) {
+                //     Text("Test Quotes", style = Typography.bodySmall)
+                // }
+
+                // TEMPORARY DEBUG: Reset mood check-in
+                // Spacer(modifier = Modifier.width(4.dp))
+                // TextButton(
+                //     onClick = { viewModel?.debugClearTodaysMoodCheckIn() },
+                //     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                // ) {
+                //     Text("Reset", style = Typography.bodySmall)
+                // }
             }
         },
         bottomBar = {
@@ -514,10 +527,19 @@ fun HomeDashboardScreen(
                         }
                     }
 
+                    // Dynamic greeting with first name only and better spacing
+                    val firstName = remember(userName) {
+                        userName?.split(" ")?.firstOrNull() ?: "User"
+                    }
+
                     Text(
-                        text = "$greeting, ${userName ?: "User"}.",
+                        text = "$greeting, $firstName.",
                         style = Typography.headlineLarge.copy(color = textColor),
-                        modifier = Modifier.align(Alignment.Start)
+                        modifier = Modifier
+                            .align(Alignment.Start)
+                            .fillMaxWidth(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     // Dynamic date line with moon phase - directly under greeting
@@ -532,6 +554,8 @@ fun HomeDashboardScreen(
                             "🌙 waxing crescent" // Fallback
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
 
                     Text(
                         text = "${dateFormat.format(today)}. $moonPhaseDisplay | ${today.year + 1900}",

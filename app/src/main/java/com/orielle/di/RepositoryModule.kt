@@ -7,6 +7,7 @@ import com.orielle.data.local.dao.MoodCheckInDao
 import com.orielle.data.local.dao.ChatConversationDao
 import com.orielle.data.local.dao.ChatMessageDao
 import com.orielle.data.local.dao.TagDao
+import com.orielle.data.local.dao.QuoteDao
 import com.orielle.domain.repository.AuthRepository
 import com.orielle.data.repository.AuthRepositoryImpl
 import com.orielle.domain.repository.JournalRepository
@@ -17,11 +18,16 @@ import com.orielle.domain.repository.ChatRepository
 import com.orielle.data.repository.ChatRepositoryImpl
 import com.orielle.domain.repository.TagRepository
 import com.orielle.data.repository.TagRepositoryImpl
+import com.orielle.data.repository.QuoteRepository
+import com.orielle.data.repository.QuoteRepositoryImpl
+import com.orielle.data.cache.QuoteCacheManager
 import com.orielle.domain.manager.SessionManager
 import com.orielle.domain.manager.SyncManager
+import android.content.Context
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -89,4 +95,26 @@ object RepositoryModule {
         firestore = firestore,
         sessionManager = sessionManager
     )
+
+
+    @Provides
+    @Singleton
+    fun provideQuoteCacheManager(): QuoteCacheManager = QuoteCacheManager()
+
+    @Provides
+    @Singleton
+    fun provideQuoteRepository(
+        quoteDao: QuoteDao,
+        @ApplicationContext context: Context,
+        quoteCacheManager: QuoteCacheManager
+    ): QuoteRepository {
+        val repository = QuoteRepositoryImpl(
+            quoteDao = quoteDao,
+            context = context,
+            quoteCacheManager = quoteCacheManager
+        )
+        // Set the repository in the cache manager to break circular dependency
+        quoteCacheManager.setQuoteRepository(repository)
+        return repository
+    }
 }

@@ -33,14 +33,12 @@ import androidx.navigation.NavController
 data class HomeUiState(
     val isGuest: Boolean = true,
     val isLoading: Boolean = true,
-    val isInitializing: Boolean = true, // Add specific initialization state
     val journalEntries: List<JournalEntry> = emptyList(),
     val error: String? = null,
-    val userName: String? = null, // Added userName property
-    val isPremium: Boolean = false, // Added isPremium property
-    val needsMoodCheckIn: Boolean = false, // Added mood check-in status
-    val weeklyMoodView: WeeklyMoodView = WeeklyMoodView(emptyList(), 0), // Added weekly mood view
-    // Profile data for efficient caching
+    val userName: String? = null,
+    val isPremium: Boolean = false,
+    val needsMoodCheckIn: Boolean = false,
+    val weeklyMoodView: WeeklyMoodView = WeeklyMoodView(emptyList(), 0),
     val userProfileImageUrl: String? = null,
     val userLocalImagePath: String? = null,
     val userSelectedAvatarId: String? = null
@@ -48,9 +46,9 @@ data class HomeUiState(
 
 // Dashboard state for UI
 sealed class DashboardState {
-    object Loading : DashboardState() // Loading state to prevent flicker
-    object Initial : DashboardState() // Minimalist, needs check-in
-    object Unfolded : DashboardState() // Full dashboard
+    object Loading : DashboardState()
+    object Initial : DashboardState()
+    object Unfolded : DashboardState()
 }
 
 @HiltViewModel
@@ -59,8 +57,8 @@ class HomeViewModel @Inject constructor(
     private val hasMoodCheckInForDateUseCase: HasMoodCheckInForDateUseCase,
     private val getWeeklyMoodViewUseCase: GetWeeklyMoodViewUseCase,
     private val sessionManager: SessionManager,
-    private val firestore: FirebaseFirestore, // Inject Firestore
-    private val auth: FirebaseAuth // Inject FirebaseAuth for log out
+    private val firestore: FirebaseFirestore,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -69,7 +67,6 @@ class HomeViewModel @Inject constructor(
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
-    // Add a log out event
     private val _logOutEvent = MutableSharedFlow<Unit>()
     val logOutEvent = _logOutEvent.asSharedFlow()
 
@@ -84,57 +81,34 @@ class HomeViewModel @Inject constructor(
     }
 
     init {
-        // Start with loading state
-        _uiState.value = _uiState.value.copy(isInitializing = true)
-
-        // Perform initial data loading in parallel
         initializeData()
     }
 
     private fun initializeData() {
-        viewModelScope.launch(coroutineExceptionHandler) {
+        viewModelScope.launch {
             try {
-                Timber.d("🚀 HomeViewModel: Starting parallel data initialization")
+                // Load session state
+                observeSessionState()
 
-                // Start all data loading operations in parallel
-                launch { observeSessionState() }
-                launch { fetchJournalEntries() }
-                val moodCheckJob = launch { checkMoodCheckInStatus() }
-                val dashboardJob = launch { checkDashboardState() }
-                launch { fetchWeeklyMoodView() }
+                // Load mood check-in status
+                checkMoodCheckInStatus()
+                checkDashboardState()
 
-                // Wait for critical data (mood check status and dashboard state) to complete
-                moodCheckJob.join()
-                dashboardJob.join()
-
-                // Mark initialization as complete
-                _uiState.value = _uiState.value.copy(isInitializing = false)
-                Timber.d("✅ HomeViewModel: Initial data loading complete")
-
-                // Small delay to ensure smooth transition and prevent flicker
-                kotlinx.coroutines.delay(100)
-
-                // Ensure dashboard state is properly set after all data is loaded
-                if (_dashboardState.value == DashboardState.Loading) {
-                    // If dashboard state is still loading, check it one more time
-                    checkDashboardState()
-                }
+                // Load data
+                fetchJournalEntries()
+                fetchWeeklyMoodView()
 
             } catch (e: Exception) {
-                Timber.e(e, "❌ HomeViewModel: Error during initialization")
-                _uiState.value = _uiState.value.copy(isInitializing = false)
+                Timber.e(e, "Error during initialization")
             }
         }
     }
 
     private fun observeSessionState() {
-        viewModelScope.launch(coroutineExceptionHandler) {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-
+        viewModelScope.launch {
             sessionManager.isGuest.collect { isGuest ->
                 _uiState.value = _uiState.value.copy(isGuest = isGuest, isLoading = false)
                 if (!isGuest) {
-                    // Try to get cached profile data first, then fetch from Firebase if needed
                     val userId = sessionManager.currentUserId.first()
                     if (userId != null) {
                         loadUserProfileData(userId)
@@ -148,31 +122,24 @@ class HomeViewModel @Inject constructor(
 
     private suspend fun loadUserProfileData(userId: String) {
         try {
-            // First, try to get cached profile data
             val cachedProfile = sessionManager.getCachedUserProfile(userId)
-
             if (cachedProfile != null) {
-                // Use cached data immediately
                 val userName = cachedProfile.firstName ?: cachedProfile.displayName ?: "User"
                 _uiState.value = _uiState.value.copy(
                     userName = userName,
-                    isPremium = cachedProfile.isPremium
+                    isPremium = cachedProfile.isPremium,
+                    userProfileImageUrl = cachedProfile.profileImageUrl,
+                    userLocalImagePath = cachedProfile.localImagePath,
+                    userSelectedAvatarId = cachedProfile.selectedAvatarId
                 )
-                Timber.d("✅ HomeViewModel: Used cached profile data for: $userId")
 
-                // Check if cache is getting stale (older than 30 minutes) and refresh in background
-                val cacheAge = System.currentTimeMillis() - cachedProfile.cachedAt
-                if (cacheAge > 1800000) { // 30 minutes
-                    Timber.d("🔄 HomeViewModel: Cache is getting stale, refreshing in background")
-                    refreshUserProfileFromFirebase(userId)
-                }
+                // Debug logging
+                android.util.Log.d("HomeViewModel", "Loaded cached profile - ImageUrl: ${cachedProfile.profileImageUrl}, LocalPath: ${cachedProfile.localImagePath}, AvatarId: ${cachedProfile.selectedAvatarId}")
             } else {
-                // No cached data, fetch from Firebase
-                Timber.d("🌐 HomeViewModel: No cached profile, fetching from Firebase")
                 refreshUserProfileFromFirebase(userId)
             }
         } catch (e: Exception) {
-            Timber.e(e, "❌ HomeViewModel: Error loading user profile data")
+            Timber.e(e, "Error loading user profile data")
             _uiState.value = _uiState.value.copy(userName = "User", isPremium = false)
         }
     }
@@ -184,60 +151,57 @@ class HomeViewModel @Inject constructor(
                     val firstName = document.getString("firstName")
                     val displayName = document.getString("displayName")
                     val isPremium = document.getBoolean("premium") == true
-                    val email = document.getString("email")
                     val profileImageUrl = document.getString("profileImageUrl")
-                    val notificationsEnabled = document.getBoolean("notificationsEnabled") ?: true
-                    val twoFactorEnabled = document.getBoolean("twoFactorEnabled") ?: false
-
-                    // Use firstName for personalized greetings, fallback to displayName, then "User"
+                    val localImagePath = document.getString("localImagePath")
+                    val selectedAvatarId = document.getString("selectedAvatarId")
                     val userName = firstName ?: displayName ?: "User"
+                    _uiState.value = _uiState.value.copy(
+                        userName = userName,
+                        isPremium = isPremium,
+                        userProfileImageUrl = profileImageUrl,
+                        userLocalImagePath = localImagePath,
+                        userSelectedAvatarId = selectedAvatarId
+                    )
 
-                    // Update UI state
-                    _uiState.value = _uiState.value.copy(userName = userName, isPremium = isPremium)
-
-                    // Cache the profile data for future use
-                    viewModelScope.launch {
-                        sessionManager.cacheUserProfile(
-                            userId = userId,
-                            firstName = firstName,
-                            displayName = displayName,
-                            email = email,
-                            profileImageUrl = profileImageUrl,
-                            isPremium = isPremium,
-                            notificationsEnabled = notificationsEnabled,
-                            twoFactorEnabled = twoFactorEnabled
-                        )
-                    }
-
-                    Timber.d("✅ HomeViewModel: Fetched and cached profile from Firebase for: $userId")
+                    // Debug logging
+                    android.util.Log.d("HomeViewModel", "Loaded from Firebase - ImageUrl: $profileImageUrl, LocalPath: $localImagePath, AvatarId: $selectedAvatarId")
                 }
                 .addOnFailureListener { e ->
-                    Timber.e(e, "❌ HomeViewModel: Failed to fetch user profile from Firebase")
+                    Timber.e(e, "Failed to fetch user profile from Firebase")
                     _uiState.value = _uiState.value.copy(userName = "User", isPremium = false)
                 }
         } catch (e: Exception) {
-            Timber.e(e, "❌ HomeViewModel: Exception during Firebase profile fetch")
+            Timber.e(e, "Exception during Firebase profile fetch")
             _uiState.value = _uiState.value.copy(userName = "User", isPremium = false)
         }
     }
 
     private fun fetchJournalEntries() {
-        viewModelScope.launch(coroutineExceptionHandler) {
-            getJournalEntriesUseCase()
-                .catch { e ->
-                    Timber.e(e, "Error fetching journal entries")
-                    _uiState.value = _uiState.value.copy(
-                        error = e.message ?: "An error occurred",
-                        isLoading = false
-                    )
-                    _eventFlow.emit(UiEvent.ShowSnackbar(AppError.Database.toUserMessage()))
-                }
-                .collect { entries ->
-                    _uiState.value = _uiState.value.copy(
-                        journalEntries = entries,
-                        isLoading = false
-                    )
-                }
+        viewModelScope.launch {
+            try {
+                getJournalEntriesUseCase()
+                    .catch { e ->
+                        Timber.e(e, "Error fetching journal entries")
+                        _uiState.value = _uiState.value.copy(
+                            error = e.message ?: "An error occurred",
+                            isLoading = false
+                        )
+                        _eventFlow.emit(UiEvent.ShowSnackbar(AppError.Database.toUserMessage()))
+                    }
+                    .collect { entries ->
+                        Timber.d("HomeViewModel: Fetched ${entries.size} journal entries")
+                        _uiState.value = _uiState.value.copy(
+                            journalEntries = entries,
+                            isLoading = false
+                        )
+                    }
+            } catch (e: Exception) {
+                Timber.e(e, "Exception in fetchJournalEntries")
+                _uiState.value = _uiState.value.copy(
+                    error = e.message ?: "An error occurred",
+                    isLoading = false
+                )
+            }
         }
     }
 
@@ -246,44 +210,22 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun checkMoodCheckInStatus() {
-        viewModelScope.launch(coroutineExceptionHandler) {
+        viewModelScope.launch {
             try {
                 val userId = sessionManager.currentUserId.first()
                 if (userId != null && !sessionManager.isGuest.first()) {
-                    // OPTIMIZATION: Check cache first for instant response
-                    val cachedStatus = sessionManager.hasCachedMoodCheckInToday(userId)
-
-                    if (cachedStatus != null) {
-                        // Instant response from cache - no loading animation needed
-                        _uiState.value = _uiState.value.copy(
-                            needsMoodCheckIn = !cachedStatus
-                        )
-                        Timber.d("⚡ HomeViewModel: Instant mood check-in status from cache - needsCheckIn: ${!cachedStatus}")
-                        return@launch
-                    }
-
-                    // Fallback to database if no cache (but this should rarely happen)
                     val today = java.util.Date()
                     val result = hasMoodCheckInForDateUseCase(userId, today)
-
                     when (result) {
-                        is com.orielle.domain.model.Response.Success -> {
+                        is Response.Success -> {
                             val hasCheckedIn = result.data
                             _uiState.value = _uiState.value.copy(needsMoodCheckIn = !hasCheckedIn)
-
-                            // Cache the result for future instant access
-                            if (hasCheckedIn) {
-                                val dateString = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(today)
-                                sessionManager.cacheMoodCheckInCompleted(userId, dateString)
-                            }
-
-                            Timber.d("📋 HomeViewModel: Mood check-in status from database - needsCheckIn: ${!hasCheckedIn}")
                         }
-                        is com.orielle.domain.model.Response.Failure -> {
+                        is Response.Failure -> {
                             Timber.e(result.exception, "Error checking mood check-in status")
                             _uiState.value = _uiState.value.copy(needsMoodCheckIn = false)
                         }
-                        is com.orielle.domain.model.Response.Loading -> { /* Optionally handle loading */ }
+                        is Response.Loading -> { /* Optionally handle loading */ }
                     }
                 } else {
                     _uiState.value = _uiState.value.copy(needsMoodCheckIn = false)
@@ -296,55 +238,27 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun checkDashboardState() {
-        viewModelScope.launch(coroutineExceptionHandler) {
+        viewModelScope.launch {
             try {
                 val userId = sessionManager.currentUserId.first()
                 if (userId != null && !sessionManager.isGuest.first()) {
-                    // OPTIMIZATION: Check cache first for instant dashboard state
-                    val cachedStatus = sessionManager.hasCachedMoodCheckInToday(userId)
-
-                    if (cachedStatus != null) {
-                        // Instant dashboard state from cache - no loading needed
-                        val newState = if (cachedStatus) DashboardState.Unfolded else DashboardState.Initial
-                        _dashboardState.value = newState
-                        Timber.d("⚡ HomeViewModel: Instant dashboard state from cache - ${if (cachedStatus) "Unfolded" else "Initial"}")
-                        return@launch
-                    }
-
-                    // Fallback to database if no cache
                     val today = java.util.Date()
                     val result = hasMoodCheckInForDateUseCase(userId, today)
-
                     when (result) {
-                        is com.orielle.domain.model.Response.Success -> {
+                        is Response.Success -> {
                             val hasCheckedIn = result.data
                             val newState = if (hasCheckedIn) DashboardState.Unfolded else DashboardState.Initial
-
-                            // Small delay for smooth transition if coming from loading state
-                            if (_dashboardState.value == DashboardState.Loading) {
-                                kotlinx.coroutines.delay(150)
-                            }
-
                             _dashboardState.value = newState
-
-                            // Cache the result for future instant access
-                            if (hasCheckedIn) {
-                                val dateString = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(today)
-                                sessionManager.cacheMoodCheckInCompleted(userId, dateString)
-                            }
-
-                            Timber.d("📋 HomeViewModel: Dashboard state from database - ${if (hasCheckedIn) "Unfolded" else "Initial"}")
                         }
-                        is com.orielle.domain.model.Response.Failure -> {
+                        is Response.Failure -> {
                             Timber.e(result.exception, "Error checking mood check-in for dashboard state")
                             _dashboardState.value = DashboardState.Initial
                         }
-                        is com.orielle.domain.model.Response.Loading -> {
+                        is Response.Loading -> {
                             // Keep current state while loading
                         }
                     }
                 } else {
-                    // Guest users always see initial state (can still do check-ins)
                     _dashboardState.value = DashboardState.Initial
                 }
             } catch (e: Exception) {
@@ -355,69 +269,39 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onCheckInCompletedOrSkipped() {
-        viewModelScope.launch(coroutineExceptionHandler) {
+        viewModelScope.launch {
             val userId = sessionManager.currentUserId.first()
             if (userId != null) {
-                // CRITICAL: Cache the mood check-in completion immediately
                 val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
                 sessionManager.cacheMoodCheckInCompleted(userId, today)
-
-                // Update UI state instantly
                 _uiState.value = _uiState.value.copy(needsMoodCheckIn = false)
                 _dashboardState.value = DashboardState.Unfolded
-
-                Timber.d("✅ HomeViewModel: Mood check-in completed and cached for user: $userId")
             }
-
             sessionManager.setLastCheckInTimestamp(System.currentTimeMillis())
-            // Refresh mood data after check-in (dashboard state already updated above)
             fetchWeeklyMoodView()
         }
     }
 
     fun refreshHomeData() {
-        Timber.d("🔄 HomeViewModel: Refreshing home data after screen return")
-        viewModelScope.launch(coroutineExceptionHandler) {
-            // OPTIMIZATION: Load cached data first for instant UI, then refresh in background
-            val userId = sessionManager.currentUserId.first()
-
-            // 1. Instant profile data from cache (no network call needed)
-            if (userId != null && !sessionManager.isGuest.first()) {
-                loadCachedUserProfile()
-            }
-
-            // 2. Instant mood check-in status from cache (no database query needed)
-            checkMoodCheckInStatus()
-
-            // 3. Instant dashboard state from cache (no database query needed)
-            checkDashboardState()
-
-            // 4. Background refresh for mood view (non-critical for initial display)
-            launch { fetchWeeklyMoodView() }
-
-            Timber.d("⚡ HomeViewModel: Critical data loaded instantly from cache")
-        }
+        fetchJournalEntries()
+        fetchWeeklyMoodView()
     }
 
     fun logOut(navController: NavController?) {
         viewModelScope.launch {
             try {
-                // Clear all cached data before signing out
                 val userId = sessionManager.currentUserId.first()
                 if (userId != null) {
                     sessionManager.clearCachedUserProfile(userId)
                     sessionManager.clearCachedMoodCheckIn(userId)
-                    Timber.d("🗑️ Cleared all cached data on logout for: $userId")
                 }
-
                 auth.signOut()
                 sessionManager.endGuestSession()
                 navController?.navigate("sign_in") {
                     popUpTo("home_graph") { inclusive = true }
                 }
             } catch (e: Exception) {
-                Timber.e(e, "❌ Error during logout")
-                // Continue with logout even if cache clearing fails
+                Timber.e(e, "Error during logout")
                 auth.signOut()
                 sessionManager.endGuestSession()
                 navController?.navigate("sign_in") {
@@ -427,50 +311,56 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun refreshUserProfile() {
-        observeSessionState()
+    /**
+     * TEMPORARY DEBUG: Clear today's mood check-in to allow testing
+     */
+    fun debugClearTodaysMoodCheckIn() {
+        viewModelScope.launch {
+            try {
+                val userId = sessionManager.currentUserId.first()
+                if (userId != null) {
+                    // Clear the cached mood check-in
+                    sessionManager.clearCachedMoodCheckIn(userId)
+
+                    // Update UI state to show check-in is needed
+                    _uiState.value = _uiState.value.copy(needsMoodCheckIn = true)
+                    _dashboardState.value = DashboardState.Initial
+
+                    Timber.d("DEBUG: Cleared today's mood check-in for testing")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "DEBUG: Error clearing mood check-in")
+            }
+        }
     }
 
-    /**
-     * Loads cached user profile data from SessionManager for efficient display
-     * This prevents unnecessary network calls and provides instant UI updates
-     */
-    private suspend fun loadCachedUserProfile() {
-        try {
-            val userId = sessionManager.currentUserId.first()
-            if (userId != null && !sessionManager.isGuest.first()) {
-                val cachedProfile = sessionManager.getCachedUserProfile(userId)
-                if (cachedProfile != null) {
-                    _uiState.update { currentState ->
-                        currentState.copy(
-                            userName = cachedProfile.displayName ?: cachedProfile.firstName,
-                            userProfileImageUrl = cachedProfile.profileImageUrl,
-                            userLocalImagePath = cachedProfile.localImagePath,
-                            userSelectedAvatarId = cachedProfile.selectedAvatarId,
-                            isPremium = cachedProfile.isPremium
-                            // Note: Don't override needsMoodCheckIn - let checkMoodCheckInStatus() handle that
-                        )
-                    }
-                    Timber.d("📋 Loaded cached profile data for user: $userId")
-                } else {
-                    // If no cached data, fetch from Firebase and cache it
-                    refreshUserProfileFromFirebase(userId)
+    fun refreshUserProfile() {
+        viewModelScope.launch {
+            try {
+                val userId = sessionManager.currentUserId.first()
+                if (userId != null) {
+                    android.util.Log.d("HomeViewModel", "Refreshing user profile data")
+                    loadUserProfileData(userId)
                 }
+            } catch (e: Exception) {
+                Timber.e(e, "Error refreshing user profile")
             }
-        } catch (e: Exception) {
-            Timber.e(e, "❌ Failed to load cached user profile")
         }
     }
 
     private fun fetchWeeklyMoodView() {
-        viewModelScope.launch(coroutineExceptionHandler) {
-            println("HomeViewModel: Starting to fetch weekly mood view")
-            getWeeklyMoodViewUseCase().collect { weeklyView ->
-                println("HomeViewModel: Received weekly view with ${weeklyView.days.size} days")
-                weeklyView.days.forEachIndexed { index, day ->
-                    println("HomeViewModel: Day $index: ${day.dayLabel}, isToday: ${day.isToday}")
-                }
-                _uiState.value = _uiState.value.copy(weeklyMoodView = weeklyView)
+        viewModelScope.launch {
+            try {
+                getWeeklyMoodViewUseCase()
+                    .catch { e ->
+                        Timber.e(e, "Error fetching weekly mood view")
+                    }
+                    .collect { weeklyView ->
+                        Timber.d("HomeViewModel: Fetched weekly mood view with ${weeklyView.days.size} entries")
+                        _uiState.value = _uiState.value.copy(weeklyMoodView = weeklyView)
+                    }
+            } catch (e: Exception) {
+                Timber.e(e, "Exception in fetchWeeklyMoodView")
             }
         }
     }

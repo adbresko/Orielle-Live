@@ -10,6 +10,7 @@ import com.orielle.data.local.dao.ChatConversationDao
 import com.orielle.data.local.dao.ChatMessageDao
 import com.orielle.data.local.dao.TagDao
 import com.orielle.data.local.dao.MemoryEntryDao
+import com.orielle.data.local.dao.QuoteDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -79,5 +80,11 @@ object DatabaseModule {
     @Singleton
     fun provideMemoryEntryDao(database: OrielleDatabase): MemoryEntryDao {
         return database.memoryEntryDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideQuoteDao(database: OrielleDatabase): QuoteDao {
+        return database.quoteDao()
     }
 }

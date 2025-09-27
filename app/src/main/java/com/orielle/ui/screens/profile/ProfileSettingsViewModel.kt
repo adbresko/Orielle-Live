@@ -128,6 +128,9 @@ class ProfileSettingsViewModel @Inject constructor(
                         isLoading = false
                     )
 
+                    // Debug logging
+                    android.util.Log.d("ProfileSettingsViewModel", "Loaded cached profile - ImageUrl: ${cachedProfile.profileImageUrl}, LocalPath: ${cachedProfile.localImagePath}, AvatarId: ${cachedProfile.selectedAvatarId}, BackgroundColor: ${cachedProfile.backgroundColorHex}")
+
                     // Check if cache is getting stale and refresh in background
                     val cacheAge = System.currentTimeMillis() - cachedProfile.cachedAt
                     if (cacheAge > 1800000) { // 30 minutes
@@ -220,7 +223,10 @@ class ProfileSettingsViewModel @Inject constructor(
 
                 // Save to Firestore
                 firestore.collection("users").document(userId)
-                    .update("profileImageUrl", downloadUrl).await()
+                    .update(
+                        "profileImageUrl", downloadUrl,
+                        "selectedAvatarId", null
+                    ).await()
 
                 // Update UI state with both local and remote URLs
                 _uiState.value = _uiState.value.copy(
@@ -270,6 +276,7 @@ class ProfileSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val userId = _uiState.value.userId
+                android.util.Log.d("ProfileSettingsViewModel", "Selecting avatar: ${avatar.id}, ImageUrl: ${avatar.imageUrl}")
 
                 // Check if user is premium for premium avatars
                 if (avatar.isPremium) {
@@ -287,10 +294,14 @@ class ProfileSettingsViewModel @Inject constructor(
                     // Clear background color when avatar is selected
                     backgroundColorHex = null
                 )
+                android.util.Log.d("ProfileSettingsViewModel", "Updated UI state - ImageUrl: ${avatar.imageUrl}, AvatarId: ${avatar.id}")
 
                 // Save to Firestore
                 firestore.collection("users").document(userId)
-                    .update("profileImageUrl", avatar.imageUrl).await()
+                    .update(
+                        "profileImageUrl", avatar.imageUrl,
+                        "selectedAvatarId", avatar.id
+                    ).await()
 
                 // Update cached profile data
                 sessionManager.updateCachedUserProfile(
@@ -349,6 +360,60 @@ class ProfileSettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.e(e, "❌ Failed to remove profile image")
                 showMessage("Failed to remove image: ${e.message}", isError = true)
+            }
+        }
+    }
+
+    // Clear all profile data (image, avatar, background color) - reset to initials
+    fun clearProfile(context: Context) {
+        viewModelScope.launch {
+            try {
+                val userId = _uiState.value.userId
+
+                // Remove from Firebase Storage if exists
+                try {
+                    val storageRef = FirebaseStorage.getInstance().reference.child("profile_images/$userId.jpg")
+                    storageRef.delete().await()
+                } catch (e: Exception) {
+                    // Ignore if file doesn't exist
+                }
+
+                // Remove local file if exists
+                val localFile = File(context.filesDir, "profile_image_$userId.jpg")
+                if (localFile.exists()) {
+                    localFile.delete()
+                }
+
+                // Clear all profile data in Firestore
+                firestore.collection("users").document(userId)
+                    .update(
+                        "profileImageUrl", null,
+                        "selectedAvatarId", null,
+                        "backgroundColorHex", null
+                    ).await()
+
+                // Update UI state to show initials only
+                _uiState.value = _uiState.value.copy(
+                    profileImageUrl = null,
+                    localImagePath = null,
+                    selectedAvatarId = null,
+                    backgroundColorHex = null
+                )
+
+                // Update cached profile data
+                sessionManager.updateCachedUserProfile(
+                    userId = userId,
+                    profileImageUrl = null,
+                    selectedAvatarId = null,
+                    backgroundColorHex = null
+                )
+
+                showMessage("Profile cleared successfully! Showing initials only.")
+                Timber.d("✅ Profile cleared - reset to initials")
+
+            } catch (e: Exception) {
+                Timber.e(e, "❌ Failed to clear profile")
+                showMessage("Failed to clear profile: ${e.message}", isError = true)
             }
         }
     }
@@ -671,7 +736,10 @@ class ProfileSettingsViewModel @Inject constructor(
 
                     // Update Firebase
                     firestore.collection("users").document(userId)
-                        .update("backgroundColorHex", colorHex)
+                        .update(
+                            "backgroundColorHex", colorHex,
+                            "selectedAvatarId", null
+                        )
                         .await()
 
                     // Update cached profile

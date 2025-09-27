@@ -65,7 +65,12 @@ class RememberViewModel @Inject constructor(
                     kotlinx.coroutines.delay(300)
                 }
                 // Load journal entries and convert to activities
-                val journalEntries = journalRepository.getJournalEntries().first()
+                val journalEntries = try {
+                    journalRepository.getJournalEntries().first()
+                } catch (e: Exception) {
+                    println("DEBUG: Error loading journal entries: ${e.message}")
+                    emptyList()
+                }
                 println("DEBUG: Loaded ${journalEntries.size} journal entries")
                 val journalActivities = journalEntries.map { entry ->
                     UserActivity(
@@ -82,7 +87,12 @@ class RememberViewModel @Inject constructor(
                 }
 
                 // Load conversations and convert to activities
-                val conversationsResponse = chatRepository.getConversationsForUser().first()
+                val conversationsResponse = try {
+                    chatRepository.getConversationsForUser().first()
+                } catch (e: Exception) {
+                    println("DEBUG: Error loading conversations: ${e.message}")
+                    Response.Failure(com.orielle.domain.model.AppError.Database)
+                }
                 val conversationActivities = when (conversationsResponse) {
                     is Response.Success -> {
                         println("DEBUG: Loaded ${conversationsResponse.data.size} conversations")

@@ -48,10 +48,13 @@ fun ProfileImageSelector(
     onAvatarSelect: (AvatarOption) -> Unit,
     onColorSelect: (String) -> Unit,
     onImageRemove: () -> Unit,
+    onClearProfile: () -> Unit,
     avatarLibrary: List<AvatarOption>,
     isPremiumUser: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    // Debug logging
+    android.util.Log.d("ProfileImageSelector", "Profile data - ImageUrl: $profileImageUrl, LocalPath: $localImagePath, AvatarId: $selectedAvatarId, BackgroundColor: $backgroundColorHex, UserName: $userName")
     var showImageOptions by remember { mutableStateOf(false) }
     var showAvatarLibrary by remember { mutableStateOf(false) }
     var showColorPicker by remember { mutableStateOf(false) }
@@ -106,8 +109,8 @@ fun ProfileImageSelector(
                             contentScale = ContentScale.Crop
                         )
                     }
-                    profileImageUrl != null -> {
-                        // Show remote image
+                    profileImageUrl != null && !profileImageUrl.startsWith("mood_icon") -> {
+                        // Show remote image (but not mood icons)
                         Image(
                             painter = rememberAsyncImagePainter(profileImageUrl),
                             contentDescription = "Profile Image",
@@ -118,6 +121,7 @@ fun ProfileImageSelector(
                     selectedAvatarId != null -> {
                         // Show selected mood icon directly
                         val resourceId = getDrawableResourceId(selectedAvatarId)
+                        android.util.Log.d("ProfileImageSelector", "Selected avatar ID: $selectedAvatarId, Resource ID: $resourceId")
                         if (resourceId != null) {
                             Image(
                                 painter = painterResource(id = resourceId),
@@ -126,6 +130,7 @@ fun ProfileImageSelector(
                                 contentScale = ContentScale.Crop
                             )
                         } else {
+                            android.util.Log.w("ProfileImageSelector", "No resource found for avatar ID: $selectedAvatarId")
                             // Fallback to initials
                             UserInitialsDisplay(userName = userName)
                         }
@@ -221,27 +226,53 @@ fun ProfileImageSelector(
             }
         }
 
-        // Remove button (only show if there's an image) - centered below
-        if (profileImageUrl != null || localImagePath != null) {
+        // Action buttons (only show if there's profile data) - centered below
+        if (profileImageUrl != null || localImagePath != null || selectedAvatarId != null || backgroundColorHex != null) {
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(
-                    onClick = onImageRemove,
-                    enabled = !isUploading,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Remove Image", style = MaterialTheme.typography.bodyMedium)
+                // Remove Image button (only show if there's an image)
+                if (profileImageUrl != null || localImagePath != null) {
+                    TextButton(
+                        onClick = onImageRemove,
+                        enabled = !isUploading,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Remove Image", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+
+                // Clear Profile button (show if there's any profile data)
+                if (profileImageUrl != null || localImagePath != null || selectedAvatarId != null || backgroundColorHex != null) {
+                    if (profileImageUrl != null || localImagePath != null) {
+                        Spacer(modifier = Modifier.width(16.dp))
+                    }
+                    TextButton(
+                        onClick = onClearProfile,
+                        enabled = !isUploading,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Clear Profile", style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
         }
@@ -441,17 +472,29 @@ private fun ImageOptionsDialog(
 
 @Composable
 private fun UserInitialsDisplay(userName: String?) {
-    Text(
-        text = userName?.let { name ->
-            name.split(" ").mapNotNull { it.firstOrNull()?.toString() }
-                .take(2).joinToString("").uppercase()
-        } ?: "U",
-        style = MaterialTheme.typography.headlineMedium.copy(
-            fontWeight = FontWeight.Bold
-        ),
-        color = Color.White,
-        textAlign = TextAlign.Center
-    )
+    val initials = userName?.let { name ->
+        name.split(" ").mapNotNull { it.firstOrNull()?.toString() }
+            .take(2).joinToString("").uppercase()
+    } ?: "U"
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                color = MaterialTheme.colorScheme.primary,
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = initials,
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold
+            ),
+            color = MaterialTheme.colorScheme.onPrimary,
+            textAlign = TextAlign.Center
+        )
+    }
 }
 
 // Helper function to get drawable resource ID for mood icons
