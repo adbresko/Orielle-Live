@@ -57,6 +57,7 @@ fun ProfileImageSelector(
 ) {
     // Debug logging
     android.util.Log.d("ProfileImageSelector", "Profile data - ImageUrl: $profileImageUrl, LocalPath: $localImagePath, AvatarId: $selectedAvatarId, BackgroundColor: $backgroundColorHex, UserName: $userName")
+    android.util.Log.d("ProfileImageSelector", "Display logic - will show background color: ${backgroundColorHex != null}")
 
     // Additional debug logging for display logic
     LaunchedEffect(profileImageUrl, localImagePath, selectedAvatarId, backgroundColorHex) {
@@ -85,102 +86,135 @@ fun ProfileImageSelector(
         horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 2),
         verticalAlignment = Alignment.Top
     ) {
-        // Column 1: Profile Image Display (spans full height)
-        Box(
-            modifier = Modifier
-                .size(ScreenUtils.responsiveIconSize(120.dp))
-                .clip(CircleShape)
-                .background(
-                    // Only show background color if no other content is being displayed
-                    if (localImagePath == null && profileImageUrl == null && selectedAvatarId == null && backgroundColorHex == null) {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    } else {
-                        Color.Transparent
-                    }
-                )
-                .border(
-                    width = ScreenUtils.responsivePadding() * 0.5f,
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = CircleShape
-                )
-                .clickable { showImageOptions = true }
+        // Column 1: Profile Image Display + Reset Button
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
         ) {
-            when {
-                isUploading -> {
-                    android.util.Log.d("ProfileImageSelector", "Displaying: Loading state")
-                    // Loading state
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                localImagePath != null && File(localImagePath).exists() -> {
-                    android.util.Log.d("ProfileImageSelector", "Displaying: Local image from $localImagePath")
-                    // Show local image first (offline access)
-                    Image(
-                        painter = rememberAsyncImagePainter(File(localImagePath)),
-                        contentDescription = "Profile Image",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                profileImageUrl != null && !profileImageUrl.startsWith("mood_icon") -> {
-                    android.util.Log.d("ProfileImageSelector", "Displaying: Remote image from $profileImageUrl")
-                    // Show remote image (but not mood icons)
-                    Image(
-                        painter = rememberAsyncImagePainter(profileImageUrl),
-                        contentDescription = "Profile Image",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                selectedAvatarId != null -> {
-                    android.util.Log.d("ProfileImageSelector", "Displaying: Avatar with ID $selectedAvatarId")
-                    // Show selected mood icon directly
-                    val resourceId = getDrawableResourceId(selectedAvatarId)
-                    android.util.Log.d("ProfileImageSelector", "Selected avatar ID: $selectedAvatarId, Resource ID: $resourceId")
-                    if (resourceId != null) {
-                        Image(
-                            painter = painterResource(id = resourceId),
-                            contentDescription = "Your Mood Avatar",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        android.util.Log.w("ProfileImageSelector", "No resource found for avatar ID: $selectedAvatarId")
-                        // Fallback to initials
-                        UserInitialsDisplay(userName = userName)
-                    }
-                }
-                backgroundColorHex != null -> {
-                    android.util.Log.d("ProfileImageSelector", "Displaying: Initials with background color $backgroundColorHex")
-                    // Show initials on colored background
-                    UserInitialsDisplay(userName = userName, backgroundColorHex = backgroundColorHex)
-                }
-                else -> {
-                    android.util.Log.d("ProfileImageSelector", "Displaying: Default initials (no special data)")
-                    // Default - show initials
-                    UserInitialsDisplay(userName = userName)
-                }
-            }
-
-            // Edit overlay
+            // Profile Image Display
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(ScreenUtils.responsiveIconSize(32.dp))
+                    .size(ScreenUtils.responsiveIconSize(120.dp))
+                    .clip(CircleShape)
                     .background(
+                        // Only show background color if no other content is being displayed
+                        if (localImagePath == null && profileImageUrl == null && selectedAvatarId == null && backgroundColorHex == null) {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        } else {
+                            Color.Transparent
+                        }
+                    )
+                    .border(
+                        width = ScreenUtils.responsivePadding() * 0.5f,
                         color = MaterialTheme.colorScheme.primary,
                         shape = CircleShape
                     )
-                    .padding(ScreenUtils.responsivePadding() * 0.5f)
+                    .clickable { showImageOptions = true }
             ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit Profile Image",
-                    tint = Color.White,
-                    modifier = Modifier.size(ScreenUtils.responsiveIconSize(20.dp))
-                )
+                when {
+                    isUploading -> {
+                        android.util.Log.d("ProfileImageSelector", "Displaying: Loading state")
+                        // Loading state
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    localImagePath != null && File(localImagePath).exists() -> {
+                        android.util.Log.d("ProfileImageSelector", "Displaying: Local image from $localImagePath")
+                        // Show local image first (offline access)
+                        Image(
+                            painter = rememberAsyncImagePainter(File(localImagePath)),
+                            contentDescription = "Profile Image",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    profileImageUrl != null && !profileImageUrl.startsWith("mood_icon") -> {
+                        android.util.Log.d("ProfileImageSelector", "Displaying: Remote image from $profileImageUrl")
+                        // Show remote image (but not mood icons)
+                        Image(
+                            painter = rememberAsyncImagePainter(profileImageUrl),
+                            contentDescription = "Profile Image",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    selectedAvatarId != null -> {
+                        android.util.Log.d("ProfileImageSelector", "Displaying: Avatar with ID $selectedAvatarId")
+                        // Show selected mood icon directly
+                        val resourceId = getDrawableResourceId(selectedAvatarId)
+                        android.util.Log.d("ProfileImageSelector", "Selected avatar ID: $selectedAvatarId, Resource ID: $resourceId")
+                        if (resourceId != null) {
+                            Image(
+                                painter = painterResource(id = resourceId),
+                                contentDescription = "Your Mood Avatar",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            android.util.Log.w("ProfileImageSelector", "No resource found for avatar ID: $selectedAvatarId")
+                            // Fallback to initials
+                            UserInitialsDisplay(userName = userName)
+                        }
+                    }
+                    backgroundColorHex != null -> {
+                        android.util.Log.d("ProfileImageSelector", "Displaying: Initials with background color $backgroundColorHex")
+                        // Show initials on colored background
+                        UserInitialsDisplay(userName = userName, backgroundColorHex = backgroundColorHex)
+                    }
+                    else -> {
+                        android.util.Log.d("ProfileImageSelector", "Displaying: Default initials (no special data)")
+                        // Default - show initials
+                        UserInitialsDisplay(userName = userName)
+                    }
+                }
+
+                // Edit overlay
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(ScreenUtils.responsiveIconSize(32.dp))
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape
+                        )
+                        .padding(ScreenUtils.responsivePadding() * 0.5f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Profile Image",
+                        tint = Color.White,
+                        modifier = Modifier.size(ScreenUtils.responsiveIconSize(20.dp))
+                    )
+                }
+            }
+
+            // Reset to Default Button (under profile image)
+            if (profileImageUrl != null || localImagePath != null || selectedAvatarId != null || backgroundColorHex != null) {
+                TextButton(
+                    onClick = onResetToDefault,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    contentPadding = PaddingValues(
+                        horizontal = ScreenUtils.responsivePadding() * 0.5f,
+                        vertical = ScreenUtils.responsivePadding() * 0.25f
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(ScreenUtils.responsivePadding() * 0.25f))
+                    Text(
+                        "Reset to Default",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp
+                        )
+                    )
+                }
             }
         }
 
@@ -269,35 +303,6 @@ fun ProfileImageSelector(
                     )
                 )
             }
-
-            // Reset to Default button (show if there's any profile data)
-            if (profileImageUrl != null || localImagePath != null || selectedAvatarId != null || backgroundColorHex != null) {
-                TextButton(
-                    onClick = onResetToDefault,
-                    enabled = !isUploading,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    ),
-                    contentPadding = PaddingValues(
-                        horizontal = ScreenUtils.responsivePadding() * 0.5f,
-                        vertical = ScreenUtils.responsivePadding() * 0.25f
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(ScreenUtils.responsivePadding() * 0.25f))
-                    Text(
-                        "Reset to Default",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp
-                        )
-                    )
-                }
-            }
         }
     }
 
@@ -312,6 +317,10 @@ fun ProfileImageSelector(
             onChooseAvatar = {
                 showImageOptions = false
                 showAvatarLibrary = true
+            },
+            onChooseColor = {
+                showImageOptions = false
+                showColorPicker = true
             },
             onRemoveImage = {
                 showImageOptions = false
@@ -379,6 +388,7 @@ private fun ImageOptionsDialog(
     onDismiss: () -> Unit,
     onUploadPhoto: () -> Unit,
     onChooseAvatar: () -> Unit,
+    onChooseColor: () -> Unit,
     onRemoveImage: () -> Unit,
     hasImage: Boolean
 ) {
@@ -454,6 +464,29 @@ private fun ImageOptionsDialog(
                     )
                 }
 
+                HorizontalDivider()
+
+                // Choose Background Color Option
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onChooseColor() }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Choose Background Color",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+
                 // Remove Image Option (only if there's an image)
                 if (hasImage) {
                     HorizontalDivider()
@@ -522,6 +555,8 @@ private fun UserInitialsDisplay(userName: String?, backgroundColorHex: String? =
         color
     } ?: MaterialTheme.colorScheme.primary
 
+    android.util.Log.d("ProfileImageSelector", "UserInitialsDisplay - initials: '$initials', backgroundColor: $backgroundColor")
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -541,7 +576,6 @@ private fun UserInitialsDisplay(userName: String?, backgroundColorHex: String? =
         )
     }
 }
-
 
 // Preview functions
 @Preview(showBackground = true, name = "Profile Image Selector - Light")

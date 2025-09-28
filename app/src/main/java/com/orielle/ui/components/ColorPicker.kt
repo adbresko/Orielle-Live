@@ -77,8 +77,14 @@ fun ColorPicker(
             modifier = Modifier.height(200.dp)
         ) {
             items(avatarColorPalette) { color ->
-                val colorHex = color.toArgb().toString(16).let { hex ->
-                    "#${hex.drop(2)}" // Remove alpha and add #
+                val colorHex = run {
+                    val argb = color.toArgb()
+                    val rgb = argb and 0x00FFFFFF // Remove alpha, keep only RGB
+                    val hex = rgb.toString(16).uppercase()
+                    val paddedHex = hex.padStart(6, '0')
+                    val finalHex = "#$paddedHex"
+                    android.util.Log.d("ColorPicker", "Color: $color -> ARGB: ${argb.toString(16)} -> RGB: ${rgb.toString(16)} -> Hex: $hex -> Padded: $paddedHex -> Final: $finalHex")
+                    finalHex
                 }
                 val isSelected = selectedColor == colorHex
 

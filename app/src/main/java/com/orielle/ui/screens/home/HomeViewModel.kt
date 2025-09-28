@@ -136,7 +136,7 @@ class HomeViewModel @Inject constructor(
                 )
 
                 // Debug logging
-                android.util.Log.d("HomeViewModel", "Loaded cached profile - ImageUrl: ${cachedProfile.profileImageUrl}, LocalPath: ${cachedProfile.localImagePath}, AvatarId: ${cachedProfile.selectedAvatarId}")
+                android.util.Log.d("HomeViewModel", "Loaded cached profile - ImageUrl: ${cachedProfile.profileImageUrl}, LocalPath: ${cachedProfile.localImagePath}, AvatarId: ${cachedProfile.selectedAvatarId}, BackgroundColor: ${cachedProfile.backgroundColorHex}")
             } else {
                 refreshUserProfileFromFirebase(userId)
             }

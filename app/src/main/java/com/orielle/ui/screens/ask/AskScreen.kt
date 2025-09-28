@@ -61,6 +61,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
+import androidx.core.graphics.toColorInt
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,7 +69,7 @@ import coil.compose.rememberAsyncImagePainter
 fun AskScreen(
     navController: NavController,
     sessionManager: SessionManager,
-    viewModel: AskViewModel = hiltViewModel()
+    viewModel: AskViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -82,6 +83,7 @@ fun AskScreen(
     var userProfileImageUrl by remember { mutableStateOf<String?>(null) }
     var userLocalImagePath by remember { mutableStateOf<String?>(null) }
     var userSelectedAvatarId by remember { mutableStateOf<String?>(null) }
+    var userBackgroundColorHex by remember { mutableStateOf<String?>(null) }
     var userName by remember { mutableStateOf<String?>(null) }
 
     // Load user profile data from cached profile
@@ -95,6 +97,7 @@ fun AskScreen(
                     userProfileImageUrl = cachedProfile.profileImageUrl
                     userLocalImagePath = cachedProfile.localImagePath
                     userSelectedAvatarId = cachedProfile.selectedAvatarId
+                    userBackgroundColorHex = cachedProfile.backgroundColorHex
                     Timber.d("📋 AskScreen: Loaded cached profile data for user: $userId")
                 }
             }
@@ -194,7 +197,7 @@ fun AskScreen(
                         userProfileImageUrl = userProfileImageUrl,
                         userLocalImagePath = userLocalImagePath,
                         userSelectedAvatarId = userSelectedAvatarId,
-                        userBackgroundColorHex = null, // TODO: Get from session manager
+                        userBackgroundColorHex = userBackgroundColorHex,
                         userName = userName
                     )
                 }
@@ -273,7 +276,7 @@ fun ChatBubble(
     userLocalImagePath: String? = null,
     userSelectedAvatarId: String? = null,
     userBackgroundColorHex: String? = null,
-    userName: String? = null
+    userName: String? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -401,7 +404,7 @@ fun TextInputBar(
     messageText: String,
     onMessageTextChange: (String) -> Unit,
     onSendMessage: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val hasText = messageText.isNotBlank()
 
@@ -541,7 +544,7 @@ fun PrivacyCoachMark(onDismiss: () -> Unit) {
 @Composable
 fun ChoiceModal(
     onSaveConversation: () -> Unit,
-    onLetItGo: () -> Unit
+    onLetItGo: () -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -802,7 +805,7 @@ private fun TitleAndTaggingModal(
     onDismiss: () -> Unit,
     onSaveTitleAndTags: (String, List<String>) -> Unit,
     textColor: Color,
-    cardColor: Color
+    cardColor: Color,
 ) {
     var titleInput by remember { mutableStateOf(currentTitle) }
     var selectedTags by remember { mutableStateOf(currentTags.toSet()) }
@@ -1045,7 +1048,7 @@ private fun TaggingModal(
     onDismiss: () -> Unit,
     onSaveTags: (List<String>) -> Unit,
     textColor: Color,
-    cardColor: Color
+    cardColor: Color,
 ) {
     var selectedTags by remember { mutableStateOf(currentTags.toSet()) }
     var customTagInput by remember { mutableStateOf("") }
@@ -1262,12 +1265,22 @@ private fun UserAvatar(
     userLocalImagePath: String?,
     userSelectedAvatarId: String?,
     userBackgroundColorHex: String?,
-    userName: String?
+    userName: String?,
 ) {
+    android.util.Log.d("UserAvatar", "AskScreen UserAvatar - ImageUrl: $userProfileImageUrl, LocalPath: $userLocalImagePath, AvatarId: $userSelectedAvatarId, BackgroundColor: $userBackgroundColorHex, UserName: $userName")
+
+    // Debug each condition
+    android.util.Log.d("UserAvatar", "AskScreen Conditions:")
+    android.util.Log.d("UserAvatar", "  - Local image: ${userLocalImagePath != null && File(userLocalImagePath).exists()}")
+    android.util.Log.d("UserAvatar", "  - Remote image: ${userProfileImageUrl != null && userProfileImageUrl.isNotBlank() && userProfileImageUrl != "mood_icon"}")
+    android.util.Log.d("UserAvatar", "  - Selected avatar: ${userSelectedAvatarId != null}")
+    android.util.Log.d("UserAvatar", "  - Background color: ${userBackgroundColorHex != null}")
+    android.util.Log.d("UserAvatar", "  - User name: ${!userName.isNullOrBlank()}")
 
     when {
         // Priority 1: Local uploaded image
         userLocalImagePath != null && File(userLocalImagePath).exists() -> {
+            android.util.Log.d("UserAvatar", "AskScreen: Showing local image from $userLocalImagePath")
             Image(
                 painter = rememberAsyncImagePainter(File(userLocalImagePath)),
                 contentDescription = "Your Profile",
@@ -1278,8 +1291,9 @@ private fun UserAvatar(
             )
         }
 
-        // Priority 2: Remote profile image
-        userProfileImageUrl != null && userProfileImageUrl.isNotBlank() -> {
+        // Priority 2: Remote profile image (but not mood_icon)
+        userProfileImageUrl != null && userProfileImageUrl.isNotBlank() && userProfileImageUrl != "mood_icon" -> {
+            android.util.Log.d("UserAvatar", "AskScreen: Showing remote image from $userProfileImageUrl")
             AsyncImage(
                 model = userProfileImageUrl,
                 contentDescription = "Your Profile",
@@ -1294,6 +1308,7 @@ private fun UserAvatar(
 
         // Priority 3: Selected avatar from library (mood icons)
         userSelectedAvatarId != null -> {
+            android.util.Log.d("UserAvatar", "AskScreen: Showing selected avatar $userSelectedAvatarId")
             // Get mood icon resource directly
             val resourceId = getDrawableResourceId(userSelectedAvatarId)
             if (resourceId != null) {
@@ -1306,6 +1321,7 @@ private fun UserAvatar(
                     contentScale = ContentScale.Fit
                 )
             } else {
+                android.util.Log.w("UserAvatar", "AskScreen: No resource found for avatar $userSelectedAvatarId, falling back to initials")
                 // Fallback to colored background with initials
                 UserInitialAvatarWithColor(userName = userName, backgroundColorHex = userBackgroundColorHex)
             }
@@ -1313,6 +1329,7 @@ private fun UserAvatar(
 
         // Priority 4: Background color with initials
         userBackgroundColorHex != null -> {
+            android.util.Log.d("UserAvatar", "AskScreen: Showing background color with initials")
             UserInitialAvatarWithColor(userName = userName, backgroundColorHex = userBackgroundColorHex)
         }
 
@@ -1340,7 +1357,7 @@ private fun UserAvatar(
 
 @Composable
 private fun UserInitialAvatar(
-    userName: String
+    userName: String,
 ) {
     val avatarSize = ScreenUtils.responsiveIconSize(36.dp)
 
@@ -1365,20 +1382,40 @@ private fun UserInitialAvatar(
 @Composable
 private fun UserInitialAvatarWithColor(
     userName: String?,
-    backgroundColorHex: String?
+    backgroundColorHex: String?,
 ) {
     val avatarSize = ScreenUtils.responsiveIconSize(36.dp)
     val initials = userName?.let { name ->
-        name.split(" ").mapNotNull { it.firstOrNull()?.toString() }
-            .take(2).joinToString("").uppercase()
+        name.trim().split(" ").firstOrNull()?.take(1)?.uppercase() ?: "U"
     } ?: "U"
+
+    val themeColors = MaterialTheme.colorScheme
+
+    // Parse background color from hex string, fallback to theme color
+    val backgroundColor = remember(backgroundColorHex) {
+        try {
+            if (!backgroundColorHex.isNullOrBlank()) {
+                val color = Color(backgroundColorHex.toColorInt())
+                Timber.tag("UserAvatarWithColor")
+                    .d("Using background color: $backgroundColorHex -> $color")
+                color
+            } else {
+                Timber.tag("UserAvatarWithColor")
+                    .d("No background color provided, using theme primary")
+                themeColors.primary
+            }
+        } catch (e: Exception) {
+            Timber.tag("UserAvatarWithColor")
+                .w(e, "Invalid background color hex: $backgroundColorHex, using theme color")
+            themeColors.primary
+        }
+    }
 
     Box(
         modifier = Modifier
             .size(avatarSize)
             .background(
-                color = backgroundColorHex?.let { hexToColor(it) }
-                    ?: MaterialTheme.colorScheme.primary,
+                color = backgroundColor,
                 shape = CircleShape
             ),
         contentAlignment = Alignment.Center

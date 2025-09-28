@@ -147,6 +147,7 @@ class ReflectViewModel @Inject constructor(
                             userSelectedAvatarId = cachedProfile.selectedAvatarId,
                             userBackgroundColorHex = cachedProfile.backgroundColorHex
                         )
+                        android.util.Log.d("ReflectViewModel", "📋 Loaded cached profile - ImageUrl: ${cachedProfile.profileImageUrl}, LocalPath: ${cachedProfile.localImagePath}, AvatarId: ${cachedProfile.selectedAvatarId}, BackgroundColor: ${cachedProfile.backgroundColorHex}")
                         Timber.d("📋 ReflectViewModel: Loaded cached profile data for user: $userId")
                     }
                 }
@@ -161,7 +162,7 @@ class ReflectViewModel @Inject constructor(
             try {
                 val userId = sessionManager.currentUserId.first()
                 if (userId != null) {
-                    android.util.Log.d("ReflectViewModel", "Refreshing user profile data")
+                    android.util.Log.d("ReflectViewModel", "🔄 Refreshing user profile data for user: $userId")
                     loadCachedUserProfile()
                 }
             } catch (e: Exception) {

@@ -118,8 +118,11 @@ private fun UserInitialAvatar(
     val backgroundColor = remember(backgroundColorHex) {
         try {
             if (!backgroundColorHex.isNullOrBlank()) {
-                Color(android.graphics.Color.parseColor(backgroundColorHex))
+                val color = Color(android.graphics.Color.parseColor(backgroundColorHex))
+                android.util.Log.d("UserInitialAvatar", "Using background color: $backgroundColorHex -> $color")
+                color
             } else {
+                android.util.Log.d("UserInitialAvatar", "No background color provided, using theme primary: ${themeColors.primary}")
                 themeColors.primary
             }
         } catch (e: Exception) {
@@ -161,7 +164,7 @@ internal fun UserMiniatureAvatar(
     val themeColors = MaterialTheme.colorScheme
 
     // Debug logging
-    android.util.Log.d("UserMiniatureAvatar", "Profile data - ImageUrl: $userProfileImageUrl, LocalPath: $userLocalImagePath, AvatarId: $userSelectedAvatarId, UserName: $userName")
+    android.util.Log.d("UserMiniatureAvatar", "Profile data - ImageUrl: $userProfileImageUrl, LocalPath: $userLocalImagePath, AvatarId: $userSelectedAvatarId, UserName: $userName, BackgroundColor: $backgroundColorHex")
 
     // Subtle animation states
     var isVisible by remember { mutableStateOf(false) }

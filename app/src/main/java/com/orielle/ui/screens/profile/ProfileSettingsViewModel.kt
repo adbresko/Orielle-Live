@@ -1,5 +1,6 @@
 package com.orielle.ui.screens.profile
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -28,7 +29,7 @@ class ProfileSettingsViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val auth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
-    val themeManager: ThemeManager
+    val themeManager: ThemeManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileSettingsUiState())
@@ -64,14 +65,33 @@ class ProfileSettingsViewModel @Inject constructor(
                     return@launch
                 }
 
-                _uiState.value = _uiState.value.copy(
-                    userId = userId,
-                    userName = userName,
-                    userEmail = userEmail,
-                    profileImageUrl = profileImageUrl,
-                    editingName = userName ?: "",
-                    editingEmail = userEmail ?: ""
-                )
+                // Load cached profile data first
+                val cachedProfile = sessionManager.getCachedUserProfile(userId)
+                if (cachedProfile != null) {
+                    Timber.d("📋 Loaded cached profile - ImageUrl: ${cachedProfile.profileImageUrl}, LocalPath: ${cachedProfile.localImagePath}, AvatarId: ${cachedProfile.selectedAvatarId}, BackgroundColor: ${cachedProfile.backgroundColorHex}")
+
+                    _uiState.value = _uiState.value.copy(
+                        userId = userId,
+                        userName = cachedProfile.displayName ?: cachedProfile.firstName ?: userName,
+                        userEmail = cachedProfile.email ?: userEmail,
+                        profileImageUrl = cachedProfile.profileImageUrl,
+                        localImagePath = cachedProfile.localImagePath,
+                        selectedAvatarId = cachedProfile.selectedAvatarId,
+                        backgroundColorHex = cachedProfile.backgroundColorHex,
+                        editingName = cachedProfile.displayName ?: cachedProfile.firstName ?: userName ?: "",
+                        editingEmail = cachedProfile.email ?: userEmail ?: ""
+                    )
+                } else {
+                    // Fallback to passed parameters if no cached data
+                    _uiState.value = _uiState.value.copy(
+                        userId = userId,
+                        userName = userName,
+                        userEmail = userEmail,
+                        profileImageUrl = profileImageUrl,
+                        editingName = userName ?: "",
+                        editingEmail = userEmail ?: ""
+                    )
+                }
 
                 // Load saved preferences with authentication check
                 loadUserPreferences(userId)
@@ -284,6 +304,7 @@ class ProfileSettingsViewModel @Inject constructor(
     }
 
     // Select avatar from library
+    @SuppressLint("LogNotTimber")
     fun selectAvatar(avatar: AvatarOption) {
         viewModelScope.launch {
             try {
@@ -306,7 +327,8 @@ class ProfileSettingsViewModel @Inject constructor(
                     // Clear background color when avatar is selected
                     backgroundColorHex = null
                 )
-                android.util.Log.d("ProfileSettingsViewModel", "Updated UI state - ImageUrl: ${avatar.imageUrl}, AvatarId: ${avatar.id}")
+                Timber.tag("ProfileViewModel")
+                    .d("Updated UI state - ImageUrl: ${avatar.imageUrl}, AvatarId: ${avatar.id}")
 
                 // Save to Firestore
                 firestore.collection("users").document(userId)
@@ -775,5 +797,5 @@ data class ProfileSettingsUiState(
     // UI state
     val isLoading: Boolean = true, // Add loading state
     val message: String? = null,
-    val isError: Boolean = false
+    val isError: Boolean = false,
 )
