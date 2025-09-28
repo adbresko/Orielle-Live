@@ -89,7 +89,8 @@ fun ProfileImageSelector(
         // Column 1: Profile Image Display + Reset Button
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
+            verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding()),
+            modifier = Modifier.heightIn(min = ScreenUtils.responsiveIconSize(180.dp)) // Fixed minimum height
         ) {
             // Profile Image Display
             Box(
@@ -190,30 +191,35 @@ fun ProfileImageSelector(
                 }
             }
 
-            // Reset to Default Button (under profile image)
-            if (profileImageUrl != null || localImagePath != null || selectedAvatarId != null || backgroundColorHex != null) {
-                TextButton(
-                    onClick = onResetToDefault,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    ),
-                    contentPadding = PaddingValues(
-                        horizontal = ScreenUtils.responsivePadding() * 0.5f,
-                        vertical = ScreenUtils.responsivePadding() * 0.25f
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(ScreenUtils.responsivePadding() * 0.25f))
-                    Text(
-                        "Reset to Default",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp
+            // Reset to Default Button (under profile image) - Fixed height container
+            Box(
+                modifier = Modifier.height(ScreenUtils.responsiveIconSize(40.dp)), // Fixed height
+                contentAlignment = Alignment.Center
+            ) {
+                if (profileImageUrl != null || localImagePath != null || selectedAvatarId != null || backgroundColorHex != null) {
+                    TextButton(
+                        onClick = onResetToDefault,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        contentPadding = PaddingValues(
+                            horizontal = ScreenUtils.responsivePadding() * 0.5f,
+                            vertical = ScreenUtils.responsivePadding() * 0.25f
                         )
-                    )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(ScreenUtils.responsivePadding() * 0.25f))
+                        Text(
+                            "Reset to Default",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -221,7 +227,9 @@ fun ProfileImageSelector(
         // Column 2: Action buttons (stacked vertically)
         Column(
             verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding()),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = ScreenUtils.responsiveIconSize(180.dp)) // Fixed minimum height to match Column 1
         ) {
             // Upload Photo Button
             Button(
@@ -631,6 +639,35 @@ private fun ProfileImageSelectorDarkPreview() {
                     AvatarOption(id = "sad", name = "Sad", imageUrl = "mood_icon", isPremium = false)
                 ),
                 isPremiumUser = true
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Profile Image Selector - With Avatar (Reset Button Visible)")
+@Composable
+private fun ProfileImageSelectorWithAvatarPreview() {
+    com.orielle.ui.theme.OrielleTheme(darkTheme = false) {
+        Surface(
+            modifier = Modifier.padding(16.dp),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            ProfileImageSelector(
+                profileImageUrl = null,
+                localImagePath = null,
+                selectedAvatarId = "happy", // This will show the reset button
+                backgroundColorHex = null,
+                userName = "John Doe",
+                isUploading = false,
+                onImageUpload = {},
+                onAvatarSelect = {},
+                onColorSelect = {},
+                onResetToDefault = {},
+                avatarLibrary = listOf(
+                    AvatarOption(id = "happy", name = "Happy", imageUrl = "mood_icon", isPremium = false),
+                    AvatarOption(id = "sad", name = "Sad", imageUrl = "mood_icon", isPremium = false)
+                ),
+                isPremiumUser = false
             )
         }
     }

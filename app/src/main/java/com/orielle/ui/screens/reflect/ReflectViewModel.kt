@@ -3,6 +3,7 @@ package com.orielle.ui.screens.reflect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.orielle.data.repository.JournalPromptRepository
+import com.orielle.data.manager.DailyContentManager
 import com.orielle.domain.model.JournalEntry
 import com.orielle.domain.use_case.GetJournalEntriesUseCase
 import com.orielle.domain.use_case.HasMoodCheckInForDateUseCase
@@ -23,6 +24,7 @@ class ReflectViewModel @Inject constructor(
     private val getJournalEntriesUseCase: GetJournalEntriesUseCase,
     private val sessionManager: SessionManager,
     private val journalPromptRepository: JournalPromptRepository,
+    private val dailyContentManager: DailyContentManager,
     private val hasMoodCheckInForDateUseCase: HasMoodCheckInForDateUseCase,
     private val getMoodCheckInForDateUseCase: GetMoodCheckInForDateUseCase
 ) : ViewModel() {
@@ -96,17 +98,17 @@ class ReflectViewModel @Inject constructor(
                 val moodCheckIn = moodCheckInResponse.data
                 if (moodCheckIn != null) {
                     Timber.d("🎯 ReflectViewModel: Found mood check-in with mood: '${moodCheckIn.mood}'")
-                    // Get random prompt for this mood
-                    val prompt = journalPromptRepository.getRandomPromptByMood(moodCheckIn.mood)
-                    Timber.d("📝 ReflectViewModel: Retrieved prompt for mood '${moodCheckIn.mood}': ${prompt?.promptText ?: "null"}")
-                    if (prompt != null) {
+                    // Get today's prompt for this mood (same prompt all day)
+                    val todaysPrompt = dailyContentManager.getTodaysPrompt(moodCheckIn.mood)
+                    Timber.d("📝 ReflectViewModel: Retrieved today's prompt for mood '${moodCheckIn.mood}': ${todaysPrompt ?: "null"}")
+                    if (todaysPrompt != null) {
                         _uiState.value = _uiState.value.copy(
                             hasMoodCheckIn = true,
-                            todaysPrompt = prompt.promptText,
+                            todaysPrompt = todaysPrompt,
                             todaysMood = moodCheckIn.mood,
                             isLoading = false
                         )
-                        Timber.d("✅ ReflectViewModel: Set personalized prompt: '${prompt.promptText}'")
+                        Timber.d("✅ ReflectViewModel: Set today's prompt: '$todaysPrompt'")
                     } else {
                         // Fallback if no prompt found for mood
                         Timber.w("⚠️ ReflectViewModel: No prompt found for mood '${moodCheckIn.mood}', using fallback")

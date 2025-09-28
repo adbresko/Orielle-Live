@@ -42,8 +42,6 @@ import com.orielle.ui.screens.mood.MoodFinalScreen
 import com.orielle.ui.screens.mood.MoodReflectionScreen
 import com.orielle.ui.screens.mood.GentleRewardScreen
 import com.orielle.ui.screens.mood.GentleRewardViewModel
-import com.orielle.ui.screens.mood.ShareScreen
-import com.orielle.ui.screens.mood.ShareViewModel
 import com.orielle.ui.screens.onboarding.OnboardingScreen
 import com.orielle.ui.screens.profile.ProfileSettingsScreen
 import com.orielle.ui.screens.reflect.JournalDetailScreen
@@ -216,41 +214,10 @@ fun AppNavigation(
                     navController.navigate("home_graph") {
                         popUpTo("gentle_reward/$moodName") { inclusive = true }
                     }
-                },
-                onShare = { quote, mood ->
-                    navController.navigate("share_quote/${quote.id}/$mood")
                 }
             )
         }
 
-        // Share Screen
-        composable(
-            route = "share_quote/{quoteId}/{moodName}",
-            arguments = listOf(
-                navArgument("quoteId") { type = NavType.StringType },
-                navArgument("moodName") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val quoteId = backStackEntry.arguments?.getString("quoteId") ?: ""
-            val moodName = backStackEntry.arguments?.getString("moodName") ?: "Happy"
-
-            // For now, we'll create a mock quote. In a real implementation,
-            // you'd fetch the quote from the database using the quoteId
-            val mockQuote = QuoteEntity(
-                id = quoteId,
-                quote = "The power of finding beauty in the humblest things makes home happy and life lovely.",
-                source = "Louisa May Alcott",
-                mood = moodName
-            )
-
-            ShareScreen(
-                quote = mockQuote,
-                mood = moodName,
-                onBack = {
-                    navController.popBackStack()
-                }
-            )
-        }
 
         // Final saved for today screen (kept for backward compatibility)
         composable("mood_final") {

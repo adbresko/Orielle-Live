@@ -128,7 +128,7 @@ private fun ReflectScreenContent(
         ) {
 
             // Top spacing to position card 50% below top bar
-            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 10))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 8))
 
             // Content with proper spacing - Simple working structure
             Column(

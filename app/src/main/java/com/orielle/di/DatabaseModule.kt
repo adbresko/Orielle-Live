@@ -12,6 +12,7 @@ import com.orielle.data.local.dao.TagDao
 import com.orielle.data.local.dao.MemoryEntryDao
 import com.orielle.data.local.dao.QuoteDao
 import com.orielle.data.local.dao.JournalPromptDao
+import com.orielle.data.manager.DailyContentManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -93,5 +94,15 @@ object DatabaseModule {
     @Singleton
     fun provideJournalPromptDao(database: OrielleDatabase): JournalPromptDao {
         return database.journalPromptDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDailyContentManager(
+        @ApplicationContext context: Context,
+        quoteRepository: com.orielle.data.repository.QuoteRepository,
+        journalPromptRepository: com.orielle.data.repository.JournalPromptRepository
+    ): DailyContentManager {
+        return DailyContentManager(context, quoteRepository, journalPromptRepository)
     }
 }

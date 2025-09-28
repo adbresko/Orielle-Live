@@ -13,10 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.animation.core.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -33,10 +37,10 @@ import com.orielle.ui.util.ResponsivePreview
 fun GentleRewardScreen(
     mood: String,
     onDone: () -> Unit,
-    onShare: (QuoteEntity, String) -> Unit,
     viewModel: GentleRewardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     // Initialize with the selected mood
     LaunchedEffect(mood) {
@@ -48,8 +52,9 @@ fun GentleRewardScreen(
         quote = uiState.quote,
         isLoading = uiState.isLoading,
         error = uiState.error,
+        isSharing = uiState.isSharing,
         onDone = onDone,
-        onShare = onShare,
+        onShare = { viewModel.shareQuote(context) },
         onRetry = { viewModel.loadQuoteForMood(mood) }
     )
 }
@@ -60,8 +65,9 @@ private fun GentleRewardScreenContent(
     quote: QuoteEntity?,
     isLoading: Boolean,
     error: String?,
+    isSharing: Boolean,
     onDone: () -> Unit,
-    onShare: (QuoteEntity, String) -> Unit,
+    onShare: () -> Unit,
     onRetry: () -> Unit
 ) {
     // Get mood-specific background color
@@ -84,7 +90,7 @@ private fun GentleRewardScreenContent(
     ) {
         // Header
         OrielleScreenHeader(
-            text = "Your daily insight"
+            text = "Saved for today"
         )
 
         Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 2))
@@ -97,8 +103,7 @@ private fun GentleRewardScreenContent(
             quote != null -> {
                 QuoteCard(
                     quote = quote,
-                    mood = mood,
-                    onShare = { onShare(quote, mood) }
+                    onShare = onShare
                 )
             }
             error != null -> {
@@ -114,9 +119,8 @@ private fun GentleRewardScreenContent(
         // Action Buttons
         ActionButtons(
             onDone = onDone,
-            onShare = if (quote != null) {
-                { onShare(quote, mood) }
-            } else null
+            onShare = if (quote != null) onShare else null,
+            isSharing = isSharing
         )
     }
 }
@@ -124,77 +128,94 @@ private fun GentleRewardScreenContent(
 @Composable
 private fun QuoteCard(
     quote: QuoteEntity,
-    mood: String,
     onShare: () -> Unit
 ) {
-    val backgroundColor = getMoodBackgroundColor(mood)
-
     Card(
         shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 2),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+            containerColor = Color(0xFFF5F5DC) // Parchment/aged paper color
         ),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = ScreenUtils.responsivePadding())
             .clickable { onShare() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(ScreenUtils.responsivePadding() * 2),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(ScreenUtils.responsivePadding() * 2)
         ) {
-            // Mood indicator
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+            // Pulsating blue glowing orb effect inside the card
+            val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+            val pulseScale by infiniteTransition.animateFloat(
+                initialValue = 0.8f,
+                targetValue = 1.2f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000, easing = EaseInOut),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "pulse_scale"
+            )
+            val pulseAlpha by infiniteTransition.animateFloat(
+                initialValue = 0.3f,
+                targetValue = 0.7f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1500, easing = EaseInOut),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "pulse_alpha"
+            )
+
+            // Circular orb background
+            Box(
+                modifier = Modifier
+                    .size(160.dp * pulseScale)
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                            colors = listOf(
+                                Color(0xFF87CEEB).copy(alpha = pulseAlpha),
+                                Color(0xFF87CEEB).copy(alpha = pulseAlpha * 0.6f),
+                                Color(0xFF87CEEB).copy(alpha = pulseAlpha * 0.3f),
+                                Color.Transparent
+                            ),
+                            radius = 80f
+                        ),
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    )
+                    .align(Alignment.Center)
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = ScreenUtils.responsivePadding()),
+                horizontalAlignment = Alignment.Start // Left-aligned text
             ) {
-                Image(
-                    painter = painterResource(id = getMoodIcon(mood)),
-                    contentDescription = mood,
-                    modifier = Modifier.size(ScreenUtils.responsiveIconSize(24.dp))
-                )
+                // Quote text (main focus, no mood indicator in the card)
                 Text(
-                    text = mood,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = backgroundColor,
-                    fontWeight = FontWeight.Medium
+                    text = quote.quote,
+                    fontSize = 24.sp,
+                    fontFamily = FontFamily(androidx.compose.ui.text.font.Font(R.font.lora_bold)),
+                    color = Color.Black,
+                    textAlign = TextAlign.Start, // Left-aligned
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 32.sp
                 )
+
+                Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
+
+                // Source (only show if author exists)
+                if (quote.source.isNotBlank()) {
+                    Text(
+                        text = quote.source,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Start, // Left-aligned
+                        fontWeight = FontWeight.Normal
+                    )
+                }
             }
-
-            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
-
-            // Quote text
-            Text(
-                text = "\"${quote.quote}\"",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Medium,
-                lineHeight = 28.sp
-            )
-
-            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 1.5f))
-
-            // Source
-            Text(
-                text = "— ${quote.source}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Normal
-            )
-
-            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
-
-            // Orielle drop icon
-            Image(
-                painter = painterResource(id = R.drawable.ic_orielle_drop),
-                contentDescription = "Orielle Drop",
-                modifier = Modifier.size(ScreenUtils.responsiveIconSize(32.dp))
-            )
         }
     }
 }
@@ -254,37 +275,58 @@ private fun ErrorCard(
 @Composable
 private fun ActionButtons(
     onDone: () -> Unit,
-    onShare: (() -> Unit)?
+    onShare: (() -> Unit)?,
+    isSharing: Boolean
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing() * 2)
     ) {
+        // Share link (above the Done button as in the design)
+        if (onShare != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+            ) {
+                Text(
+                    text = "Share your insight",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.clickable { onShare() }
+                )
+                if (isSharing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(ScreenUtils.responsiveIconSize(20.dp)),
+                        color = StillwaterTeal,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.icon_share),
+                        contentDescription = "Share",
+                        modifier = Modifier
+                            .size(ScreenUtils.responsiveIconSize(24.dp))
+                            .clickable { onShare() }
+                    )
+                }
+            }
+        }
+
         // Done button
         Button(
             onClick = onDone,
             shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 2),
             colors = ButtonDefaults.buttonColors(containerColor = StillwaterTeal),
             modifier = Modifier
-                .width(180.dp)
+                .fillMaxWidth()
                 .height(48.dp)
+                .padding(horizontal = ScreenUtils.responsivePadding() * 2)
         ) {
             Text(
                 text = "Done",
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
-            )
-        }
-
-        // Share link
-        if (onShare != null) {
-            Text(
-                text = "Share your insight  ➔",
-                style = MaterialTheme.typography.bodyMedium,
-                color = StillwaterTeal,
-                modifier = Modifier
-                    .clickable { onShare() }
-                    .padding(ScreenUtils.responsiveSpacing())
             )
         }
     }
@@ -321,7 +363,7 @@ private fun getMoodIcon(mood: String): Int {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Gentle Reward - Happy")
 @Composable
 private fun GentleRewardScreenPreview() {
     OrielleTheme {
@@ -329,20 +371,21 @@ private fun GentleRewardScreenPreview() {
             mood = "Happy",
             quote = QuoteEntity(
                 id = "happy_01",
-                quote = "The power of finding beauty in the humblest things makes home happy and life lovely.",
-                source = "Louisa May Alcott",
+                quote = "The best way to predict the future is to create it.",
+                source = "Abraham Lincoln",
                 mood = "Happy"
             ),
             isLoading = false,
             error = null,
+            isSharing = false,
             onDone = {},
-            onShare = { _, _ -> },
+            onShare = {},
             onRetry = {}
         )
     }
 }
 
-@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, name = "Gentle Reward - Dark")
 @Composable
 private fun GentleRewardScreenDarkPreview() {
     OrielleTheme {
@@ -356,8 +399,48 @@ private fun GentleRewardScreenDarkPreview() {
             ),
             isLoading = false,
             error = null,
+            isSharing = false,
             onDone = {},
-            onShare = { _, _ -> },
+            onShare = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Gentle Reward - Loading")
+@Composable
+private fun GentleRewardLoadingPreview() {
+    OrielleTheme {
+        GentleRewardScreenContent(
+            mood = "Peaceful",
+            quote = null,
+            isLoading = true,
+            error = null,
+            isSharing = false,
+            onDone = {},
+            onShare = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Gentle Reward - No Author")
+@Composable
+private fun GentleRewardNoAuthorPreview() {
+    OrielleTheme {
+        GentleRewardScreenContent(
+            mood = "Playful",
+            quote = QuoteEntity(
+                id = "playful_01",
+                quote = "Life is what happens to you while you're busy making other plans.",
+                source = "", // No author
+                mood = "Playful"
+            ),
+            isLoading = false,
+            error = null,
+            isSharing = false,
+            onDone = {},
+            onShare = {},
             onRetry = {}
         )
     }
