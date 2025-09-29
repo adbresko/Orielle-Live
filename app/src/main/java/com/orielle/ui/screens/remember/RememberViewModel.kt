@@ -12,13 +12,18 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
+import timber.log.Timber
 
 @HiltViewModel
 class RememberViewModel @Inject constructor(
     private val journalRepository: JournalRepository,
     private val chatRepository: ChatRepository,
     private val moodCheckInRepository: MoodCheckInRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val firestore: FirebaseFirestore,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RememberUiState())
@@ -41,7 +46,67 @@ class RememberViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             currentMonthYear = "${getMonthName(month)} $year"
         )
-        loadRememberData()
+        initializeData()
+    }
+
+    private fun initializeData() {
+        viewModelScope.launch {
+            try {
+                // Load profile data immediately (synchronous)
+                loadProfileDataImmediately()
+
+                // Load session state
+                observeSessionState()
+
+                // Load remember data
+                loadRememberData()
+
+            } catch (e: Exception) {
+                Timber.e(e, "❌ RememberViewModel: Error in initialization")
+                _uiState.value = _uiState.value.copy(error = "Failed to initialize")
+            }
+        }
+    }
+
+    private suspend fun loadProfileDataImmediately() {
+        try {
+            val userId = sessionManager.currentUserId.first()
+            if (userId != null) {
+                val cachedProfile = sessionManager.getCachedUserProfile(userId)
+                if (cachedProfile != null) {
+                    val userName = cachedProfile.firstName ?: cachedProfile.displayName ?: "User"
+                    _uiState.value = _uiState.value.copy(
+                        userName = userName,
+                        userProfileImageUrl = cachedProfile.profileImageUrl,
+                        userLocalImagePath = cachedProfile.localImagePath,
+                        userSelectedAvatarId = cachedProfile.selectedAvatarId,
+                        userBackgroundColorHex = cachedProfile.backgroundColorHex
+                    )
+                    android.util.Log.d("RememberViewModel", "✅ Loaded profile immediately - userName: $userName, AvatarId: ${cachedProfile.selectedAvatarId}")
+                }
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error loading profile data immediately")
+        }
+    }
+
+    private fun observeSessionState() {
+        viewModelScope.launch {
+            sessionManager.isGuest.collect { isGuest ->
+                android.util.Log.d("RememberViewModel", "🔍 observeSessionState - isGuest: $isGuest")
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                if (!isGuest) {
+                    val userId = sessionManager.currentUserId.first()
+                    android.util.Log.d("RememberViewModel", "🔍 Not guest, userId: $userId")
+                    if (userId != null) {
+                        loadUserProfileData(userId)
+                    }
+                } else {
+                    android.util.Log.d("RememberViewModel", "🔍 Is guest, setting userName to null")
+                    _uiState.value = _uiState.value.copy(userName = null)
+                }
+            }
+        }
     }
 
     fun loadRememberData() {
@@ -362,26 +427,74 @@ class RememberViewModel @Inject constructor(
         filterActivities()
     }
 
+    private suspend fun loadUserProfileData(userId: String) {
+        try {
+            android.util.Log.d("RememberViewModel", "🔍 Loading profile data for userId: $userId")
+            val cachedProfile = sessionManager.getCachedUserProfile(userId)
+            android.util.Log.d("RememberViewModel", "🔍 Cached profile: $cachedProfile")
+            if (cachedProfile != null) {
+                val userName = cachedProfile.firstName ?: cachedProfile.displayName ?: "User"
+                android.util.Log.d("RememberViewModel", "🔍 Setting userName to: $userName")
+                _uiState.value = _uiState.value.copy(
+                    userName = userName,
+                    userProfileImageUrl = cachedProfile.profileImageUrl,
+                    userLocalImagePath = cachedProfile.localImagePath,
+                    userSelectedAvatarId = cachedProfile.selectedAvatarId,
+                    userBackgroundColorHex = cachedProfile.backgroundColorHex
+                )
+                android.util.Log.d("RememberViewModel", "🔍 Updated uiState - userName: ${_uiState.value.userName}, AvatarId: ${_uiState.value.userSelectedAvatarId}")
+            } else {
+                android.util.Log.d("RememberViewModel", "🔍 No cached profile found, loading from Firebase")
+                refreshUserProfileFromFirebase(userId)
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error loading user profile data")
+            _uiState.value = _uiState.value.copy(userName = "User")
+        }
+    }
+
+    private suspend fun refreshUserProfileFromFirebase(userId: String) {
+        try {
+            firestore.collection("users").document(userId).get()
+                .addOnSuccessListener { document ->
+                    val firstName = document.getString("firstName")
+                    val displayName = document.getString("displayName")
+                    val profileImageUrl = document.getString("profileImageUrl")
+                    val localImagePath = document.getString("localImagePath")
+                    val selectedAvatarId = document.getString("selectedAvatarId")
+                    val backgroundColorHex = document.getString("backgroundColorHex")
+                    val userName = firstName ?: displayName ?: "User"
+                    _uiState.value = _uiState.value.copy(
+                        userName = userName,
+                        userProfileImageUrl = profileImageUrl,
+                        userLocalImagePath = localImagePath,
+                        userSelectedAvatarId = selectedAvatarId,
+                        userBackgroundColorHex = backgroundColorHex
+                    )
+
+                    // Debug logging
+                    android.util.Log.d("RememberViewModel", "Loaded from Firebase - ImageUrl: $profileImageUrl, LocalPath: $localImagePath, AvatarId: $selectedAvatarId, UserName: $userName")
+                }
+                .addOnFailureListener { exception ->
+                    Timber.e(exception, "Failed to fetch user profile from Firebase")
+                    _uiState.value = _uiState.value.copy(userName = "User")
+                }
+        } catch (e: Exception) {
+            Timber.e(e, "Exception during Firebase profile fetch")
+            _uiState.value = _uiState.value.copy(userName = "User")
+        }
+    }
+
     fun refreshUserProfile() {
         viewModelScope.launch {
             try {
                 val userId = sessionManager.currentUserId.first()
-                if (userId != null && !sessionManager.isGuest.first()) {
-                    val cachedProfile = sessionManager.getCachedUserProfile(userId)
-                    if (cachedProfile != null) {
-                        val userName = cachedProfile.firstName ?: cachedProfile.displayName ?: "User"
-                        _uiState.value = _uiState.value.copy(
-                            userName = userName,
-                            userProfileImageUrl = cachedProfile.profileImageUrl,
-                            userLocalImagePath = cachedProfile.localImagePath,
-                            userSelectedAvatarId = cachedProfile.selectedAvatarId,
-                            userBackgroundColorHex = cachedProfile.backgroundColorHex
-                        )
-                        android.util.Log.d("RememberViewModel", "📋 Loaded cached profile - ImageUrl: ${cachedProfile.profileImageUrl}, LocalPath: ${cachedProfile.localImagePath}, AvatarId: ${cachedProfile.selectedAvatarId}, BackgroundColor: ${cachedProfile.backgroundColorHex}")
-                    }
+                if (userId != null) {
+                    android.util.Log.d("RememberViewModel", "Refreshing user profile data")
+                    loadUserProfileData(userId)
                 }
             } catch (e: Exception) {
-                println("DEBUG: Error loading user profile: ${e.message}")
+                Timber.e(e, "Error refreshing user profile")
             }
         }
     }

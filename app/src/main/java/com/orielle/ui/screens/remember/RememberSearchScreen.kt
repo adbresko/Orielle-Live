@@ -133,8 +133,8 @@ private fun DateRangeSelector(
                 color = WaterBlue.copy(alpha = 0.08f),
                 shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
             )
-            .padding(ScreenUtils.responsivePadding()),
-        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+            .padding(ScreenUtils.responsivePadding() * 0.75f),
+        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing() * 0.75f),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Date range icon
@@ -162,7 +162,7 @@ private fun DateRangeSelector(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = ScreenUtils.responsiveSpacing(), vertical = 8.dp),
+                    .padding(horizontal = ScreenUtils.responsiveSpacing(), vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
@@ -206,7 +206,7 @@ private fun DateRangeSelector(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = ScreenUtils.responsiveSpacing(), vertical = 8.dp),
+                    .padding(horizontal = ScreenUtils.responsiveSpacing(), vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
@@ -307,7 +307,7 @@ fun RememberSearchScreen(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing()))
+                    Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing() * 0.5f))
                 }
 
                 item {
@@ -324,7 +324,7 @@ fun RememberSearchScreen(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
+                    Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing() * 0.75f))
                 }
 
                 item {

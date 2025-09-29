@@ -41,7 +41,6 @@ import com.orielle.ui.theme.NotoSans
 import com.orielle.ui.theme.Typography
 import com.orielle.ui.components.BottomNavigation
 import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @Composable
 fun ReflectScreen(
@@ -160,7 +159,7 @@ private fun ReflectScreenContent(
                 Button(
                     onClick = {
                         if (uiState.hasMoodCheckIn) {
-                            val encodedPrompt = URLEncoder.encode(uiState.todaysPrompt, StandardCharsets.UTF_8.toString())
+                            val encodedPrompt = URLEncoder.encode(uiState.todaysPrompt, "UTF-8")
                             navController.navigate("journal_editor?promptText=$encodedPrompt")
                         } else {
                             navController.navigate("mood_check_in")
@@ -247,12 +246,12 @@ private fun TodaysPromptCard(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-ScreenUtils.responsivePadding() * 0.75f)) // Position above the card
+                    .offset(y = (ScreenUtils.responsivePadding() * 0.9f)) // Drop 2 lines down into the card
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.wand_stars),
                     contentDescription = "Wand stars",
-                    modifier = Modifier.size(ScreenUtils.responsiveImageSize(32.dp)),
+                    modifier = Modifier.size(ScreenUtils.responsiveImageSize(28.dp)), // Slightly smaller size
                     contentScale = ContentScale.Fit
                 )
             }
@@ -347,7 +346,7 @@ private fun PersonalizedPromptStateContent(
     // Primary action button - Respond to Prompt (OUTSIDE the card)
     Button(
         onClick = {
-            val encodedPrompt = URLEncoder.encode(uiState.todaysPrompt, StandardCharsets.UTF_8.toString())
+            val encodedPrompt = URLEncoder.encode(uiState.todaysPrompt, "UTF-8")
             navController.navigate("journal_editor?promptText=$encodedPrompt")
         },
         modifier = Modifier.fillMaxWidth(),

@@ -33,6 +33,9 @@ interface ChatConversationDao {
     @Query("UPDATE chat_conversations SET title = :title WHERE id = :conversationId")
     suspend fun updateTitle(conversationId: String, title: String)
 
+    @Query("UPDATE chat_conversations SET tags = :tags WHERE id = :conversationId")
+    suspend fun updateTags(conversationId: String, tags: List<String>)
+
     // Get conversations with their tags
     @Transaction
     @Query("SELECT * FROM chat_conversations WHERE userId = :userId ORDER BY updatedAt DESC")

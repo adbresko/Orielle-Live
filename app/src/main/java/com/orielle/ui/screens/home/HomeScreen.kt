@@ -113,7 +113,9 @@ private fun UserInitialAvatar(
 ) {
     val themeColors = MaterialTheme.colorScheme
     val initial = remember(userName) {
-        userName.trim().split(" ").firstOrNull()?.take(1)?.uppercase() ?: "U"
+        val extractedInitial = userName.trim().split(" ").firstOrNull()?.take(1)?.uppercase() ?: "U"
+        android.util.Log.d("UserInitialAvatar", "Extracting initial from userName: '$userName' -> '$extractedInitial'")
+        extractedInitial
     }
 
     // Parse background color from hex string, fallback to theme color
@@ -166,7 +168,30 @@ internal fun UserMiniatureAvatar(
     val themeColors = MaterialTheme.colorScheme
 
     // Debug logging
-    android.util.Log.d("UserMiniatureAvatar", "Profile data - ImageUrl: $userProfileImageUrl, LocalPath: $userLocalImagePath, AvatarId: $userSelectedAvatarId, UserName: $userName, BackgroundColor: $backgroundColorHex")
+    android.util.Log.d("UserMiniatureAvatar", "Profile data - ImageUrl: $userProfileImageUrl, LocalPath: $userLocalImagePath, AvatarId: $userSelectedAvatarId, UserName: '$userName', BackgroundColor: $backgroundColorHex")
+
+    // Check if we have any meaningful profile data to show
+    val hasProfileData = userProfileImageUrl != null || userLocalImagePath != null || userSelectedAvatarId != null || (!userName.isNullOrBlank() && userName != "User")
+
+    // Show loading placeholder until we have profile data
+    if (!hasProfileData) {
+        Box(
+            modifier = Modifier
+                .size(size)
+                .background(
+                    color = themeColors.outline.copy(alpha = 0.1f),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(size * 0.4f),
+                color = themeColors.outline.copy(alpha = 0.3f),
+                strokeWidth = 2.dp
+            )
+        }
+        return
+    }
 
     // Subtle animation states
     var isVisible by remember { mutableStateOf(false) }
@@ -182,8 +207,10 @@ internal fun UserMiniatureAvatar(
     )
 
     // Trigger animation when component appears
-    LaunchedEffect(Unit) {
-        isVisible = true
+    LaunchedEffect(hasProfileData) {
+        if (hasProfileData) {
+            isVisible = true
+        }
     }
 
     Box(

@@ -61,7 +61,6 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
-import androidx.core.graphics.toColorInt
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,7 +68,7 @@ import androidx.core.graphics.toColorInt
 fun AskScreen(
     navController: NavController,
     sessionManager: SessionManager,
-    viewModel: AskViewModel = hiltViewModel(),
+    viewModel: AskViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -262,6 +261,12 @@ fun AskScreen(
                     viewModel.hideTaggingModal()
                     // Don't close the chat - just hide the modal and continue the conversation
                 },
+                onSaveAndExit = { title, tags ->
+                    viewModel.updateConversationTitle(title)
+                    viewModel.addTags(tags)
+                    viewModel.hideTaggingModal()
+                    navController.popBackStack()
+                },
                 textColor = textColor,
                 cardColor = cardColor
             )
@@ -276,7 +281,7 @@ fun ChatBubble(
     userLocalImagePath: String? = null,
     userSelectedAvatarId: String? = null,
     userBackgroundColorHex: String? = null,
-    userName: String? = null,
+    userName: String? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -404,7 +409,7 @@ fun TextInputBar(
     messageText: String,
     onMessageTextChange: (String) -> Unit,
     onSendMessage: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val hasText = messageText.isNotBlank()
 
@@ -544,7 +549,7 @@ fun PrivacyCoachMark(onDismiss: () -> Unit) {
 @Composable
 fun ChoiceModal(
     onSaveConversation: () -> Unit,
-    onLetItGo: () -> Unit,
+    onLetItGo: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -804,8 +809,9 @@ private fun TitleAndTaggingModal(
     currentTags: List<String>,
     onDismiss: () -> Unit,
     onSaveTitleAndTags: (String, List<String>) -> Unit,
+    onSaveAndExit: (String, List<String>) -> Unit,
     textColor: Color,
-    cardColor: Color,
+    cardColor: Color
 ) {
     var titleInput by remember { mutableStateOf(currentTitle) }
     var selectedTags by remember { mutableStateOf(currentTags.toSet()) }
@@ -1022,16 +1028,30 @@ private fun TitleAndTaggingModal(
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    onSaveTitleAndTags(
-                        titleInput.ifEmpty { suggestedTitle },
-                        selectedTags.toList()
-                    )
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = StillwaterTeal)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Save", color = Color.White)
+                TextButton(
+                    onClick = {
+                        onSaveTitleAndTags(
+                            titleInput.ifEmpty { suggestedTitle },
+                            selectedTags.toList()
+                        )
+                    }
+                ) {
+                    Text("Save", color = StillwaterTeal)
+                }
+                Button(
+                    onClick = {
+                        onSaveAndExit(
+                            titleInput.ifEmpty { suggestedTitle },
+                            selectedTags.toList()
+                        )
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = StillwaterTeal)
+                ) {
+                    Text("Save & Exit", color = Color.White)
+                }
             }
         },
         dismissButton = {
@@ -1048,7 +1068,7 @@ private fun TaggingModal(
     onDismiss: () -> Unit,
     onSaveTags: (List<String>) -> Unit,
     textColor: Color,
-    cardColor: Color,
+    cardColor: Color
 ) {
     var selectedTags by remember { mutableStateOf(currentTags.toSet()) }
     var customTagInput by remember { mutableStateOf("") }
@@ -1237,6 +1257,7 @@ fun Preview_TitleAndTaggingModal_Light() {
             currentTags = listOf("anxiety", "work"),
             onDismiss = {},
             onSaveTitleAndTags = { _, _ -> },
+            onSaveAndExit = { _, _ -> },
             textColor = Charcoal,
             cardColor = Color.White
         )
@@ -1253,6 +1274,7 @@ fun Preview_TitleAndTaggingModal_Dark() {
             currentTags = emptyList(),
             onDismiss = {},
             onSaveTitleAndTags = { _, _ -> },
+            onSaveAndExit = { _, _ -> },
             textColor = SoftSand,
             cardColor = Color(0xFF2A2A2A)
         )
@@ -1265,7 +1287,7 @@ private fun UserAvatar(
     userLocalImagePath: String?,
     userSelectedAvatarId: String?,
     userBackgroundColorHex: String?,
-    userName: String?,
+    userName: String?
 ) {
     android.util.Log.d("UserAvatar", "AskScreen UserAvatar - ImageUrl: $userProfileImageUrl, LocalPath: $userLocalImagePath, AvatarId: $userSelectedAvatarId, BackgroundColor: $userBackgroundColorHex, UserName: $userName")
 
@@ -1357,7 +1379,7 @@ private fun UserAvatar(
 
 @Composable
 private fun UserInitialAvatar(
-    userName: String,
+    userName: String
 ) {
     val avatarSize = ScreenUtils.responsiveIconSize(36.dp)
 
@@ -1382,7 +1404,7 @@ private fun UserInitialAvatar(
 @Composable
 private fun UserInitialAvatarWithColor(
     userName: String?,
-    backgroundColorHex: String?,
+    backgroundColorHex: String?
 ) {
     val avatarSize = ScreenUtils.responsiveIconSize(36.dp)
     val initials = userName?.let { name ->
@@ -1395,18 +1417,15 @@ private fun UserInitialAvatarWithColor(
     val backgroundColor = remember(backgroundColorHex) {
         try {
             if (!backgroundColorHex.isNullOrBlank()) {
-                val color = Color(backgroundColorHex.toColorInt())
-                Timber.tag("InitialAvatarColor")
-                    .d("Using background color: $backgroundColorHex -> $color")
+                val color = Color(android.graphics.Color.parseColor(backgroundColorHex))
+                android.util.Log.d("UserInitialAvatarWithColor", "Using background color: $backgroundColorHex -> $color")
                 color
             } else {
-                Timber.tag("InitialAvatarColor")
-                    .d("No background color provided, using theme primary")
+                android.util.Log.d("UserInitialAvatarWithColor", "No background color provided, using theme primary")
                 themeColors.primary
             }
         } catch (e: Exception) {
-            Timber.tag("InitialAvatarColor")
-                .w(e, "Invalid background color hex: $backgroundColorHex, using theme color")
+            android.util.Log.w("UserInitialAvatarWithColor", "Invalid background color hex: $backgroundColorHex, using theme color", e)
             themeColors.primary
         }
     }

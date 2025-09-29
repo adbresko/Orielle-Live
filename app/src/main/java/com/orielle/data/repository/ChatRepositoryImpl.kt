@@ -132,6 +132,9 @@ class ChatRepositoryImpl @Inject constructor(
             // Update conversation title
             conversationDao.updateTitle(conversationId, title)
 
+            // Update tags field in conversation entity
+            conversationDao.updateTags(conversationId, tags)
+
             // Remove all existing tags for this conversation
             tagDao.removeAllTagsFromConversation(conversationId)
 
