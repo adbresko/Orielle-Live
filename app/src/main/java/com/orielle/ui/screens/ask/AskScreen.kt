@@ -93,7 +93,7 @@ fun AskScreen(
             if (userId != null && !sessionManager.isGuest.first()) {
                 val cachedProfile = sessionManager.getCachedUserProfile(userId)
                 if (cachedProfile != null) {
-                    userName = cachedProfile.displayName ?: cachedProfile.firstName ?: "User"
+                    userName = cachedProfile.firstName ?: cachedProfile.displayName ?: "User"
                     userProfileImageUrl = cachedProfile.profileImageUrl
                     userLocalImagePath = cachedProfile.localImagePath
                     userSelectedAvatarId = cachedProfile.selectedAvatarId
@@ -260,7 +260,7 @@ fun AskScreen(
                     viewModel.updateConversationTitle(title)
                     viewModel.addTags(tags)
                     viewModel.hideTaggingModal()
-                    navController.popBackStack()
+                    // Don't close the chat - just hide the modal and continue the conversation
                 },
                 textColor = textColor,
                 cardColor = cardColor
@@ -1396,16 +1396,16 @@ private fun UserInitialAvatarWithColor(
         try {
             if (!backgroundColorHex.isNullOrBlank()) {
                 val color = Color(backgroundColorHex.toColorInt())
-                Timber.tag("UserAvatarWithColor")
+                Timber.tag("InitialAvatarColor")
                     .d("Using background color: $backgroundColorHex -> $color")
                 color
             } else {
-                Timber.tag("UserAvatarWithColor")
+                Timber.tag("InitialAvatarColor")
                     .d("No background color provided, using theme primary")
                 themeColors.primary
             }
         } catch (e: Exception) {
-            Timber.tag("UserAvatarWithColor")
+            Timber.tag("InitialAvatarColor")
                 .w(e, "Invalid background color hex: $backgroundColorHex, using theme color")
             themeColors.primary
         }

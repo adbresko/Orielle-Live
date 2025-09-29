@@ -77,11 +77,13 @@ object RepositoryModule {
     fun provideChatRepository(
         conversationDao: ChatConversationDao,
         messageDao: ChatMessageDao,
+        tagDao: TagDao,
         firestore: FirebaseFirestore,
         sessionManager: SessionManager
     ): ChatRepository = ChatRepositoryImpl(
         conversationDao = conversationDao,
         messageDao = messageDao,
+        tagDao = tagDao,
         firestore = firestore,
         sessionManager = sessionManager
     )

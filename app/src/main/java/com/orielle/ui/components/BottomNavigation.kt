@@ -34,7 +34,7 @@ fun BottomNavigation(
 ) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route ?: "home_graph"
     val isDarkTheme by themeManager.isDarkTheme.collectAsState(initial = false)
-    val backgroundColor = MaterialTheme.colorScheme.surface
+    val backgroundColor = if (isDarkTheme) BottomNavDark else LightGray
 
     Card(
         modifier = Modifier

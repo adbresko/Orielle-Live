@@ -82,6 +82,8 @@ import com.orielle.ui.util.ScreenUtils
 import com.orielle.ui.components.BottomNavigation
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
+import com.orielle.ui.theme.StillwaterTeal
 import java.io.File
 
 // Import the WeeklyMoodView composable from the same package (auto-resolved)
@@ -619,7 +621,12 @@ fun HomeDashboardScreen(
                         ) {
                             Text(
                                 text = "YOUR INNER WEATHER",
-                                style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+                                style = Typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontFamily = FontFamily(androidx.compose.ui.text.font.Font(R.font.noto_sans_bold)),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                ),
                                 textAlign = TextAlign.Start
                             )
                             Spacer(Modifier.height(ScreenUtils.responsivePadding()))
@@ -659,26 +666,156 @@ fun HomeDashboardScreen(
                         ) {
                             Text(
                                 text = "A THOUGHT FROM YOUR PAST",
-                                style = Typography.titleMedium.copy(color = accentColor),
-                                textAlign = TextAlign.Start
-                            )
-                            Spacer(Modifier.height(12.dp))
-                            // Random thought selection
-                            val randomThought = remember(journalEntries) {
-                                if (journalEntries.isNotEmpty()) {
-                                    journalEntries.random().content
-                                } else {
-                                    "Felt a real sense of growth today after that challenging conversation."
-                                }
-                            }
-                            Text(
-                                text = randomThought,
                                 style = Typography.bodyMedium.copy(
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    fontStyle = FontStyle.Italic
+                                    fontFamily = FontFamily(androidx.compose.ui.text.font.Font(R.font.noto_sans_bold)),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
                                 ),
                                 textAlign = TextAlign.Start
                             )
+                            Spacer(Modifier.height(12.dp))
+                            // Random thought selection with metadata
+                            val randomEntry = remember(journalEntries) {
+                                if (journalEntries.isNotEmpty()) {
+                                    journalEntries.random()
+                                } else {
+                                    null
+                                }
+                            }
+
+                            if (randomEntry != null) {
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    // Main content
+                                    Text(
+                                        text = randomEntry.content,
+                                        style = Typography.bodyMedium.copy(
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontStyle = FontStyle.Italic
+                                        ),
+                                        textAlign = TextAlign.Start
+                                    )
+
+                                    // Metadata section
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                                    ) {
+                                        // Prompt (if available)
+                                        if (randomEntry.promptText != null && randomEntry.promptText.isNotEmpty()) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                                            ) {
+                                                Text(
+                                                    text = "💭",
+                                                    fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp
+                                                )
+                                                Text(
+                                                    text = randomEntry.promptText?.replace("+", " ") ?: "",
+                                                    style = Typography.bodySmall.copy(
+                                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                                        fontWeight = FontWeight.Medium
+                                                    ),
+                                                    maxLines = 1,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                            }
+                                        }
+
+                                        // Location (if available)
+                                        if (randomEntry.location != null && randomEntry.location.isNotEmpty()) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                                            ) {
+                                                Text(
+                                                    text = "📍",
+                                                    fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp
+                                                )
+                                                Text(
+                                                    text = randomEntry.location,
+                                                    style = Typography.bodySmall.copy(
+                                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                                    ),
+                                                    maxLines = 1,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                            }
+                                        }
+
+                                        // Mood (if available)
+                                        if (randomEntry.mood != null && randomEntry.mood.isNotEmpty()) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Text(
+                                                    text = "🌤️",
+                                                    fontSize = 12.sp
+                                                )
+                                                Text(
+                                                    text = randomEntry.mood,
+                                                    style = Typography.bodySmall.copy(
+                                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                                        fontWeight = FontWeight.Medium
+                                                    )
+                                                )
+                                            }
+                                        }
+
+                                        // Tags (if available)
+                                        if (randomEntry.tags.isNotEmpty()) {
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                                            ) {
+                                                randomEntry.tags.take(2).forEach { tag ->
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .background(
+                                                                color = StillwaterTeal.copy(alpha = 0.15f),
+                                                                shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
+                                                            )
+                                                            .padding(
+                                                                horizontal = ScreenUtils.responsivePadding(),
+                                                                vertical = ScreenUtils.responsiveTextSpacing()
+                                                            )
+                                                    ) {
+                                                        Text(
+                                                            text = tag,
+                                                            style = Typography.bodySmall.copy(
+                                                                color = StillwaterTeal,
+                                                                fontWeight = FontWeight.Medium,
+                                                                fontSize = (10 * ScreenUtils.getTextScaleFactor()).sp
+                                                            )
+                                                        )
+                                                    }
+                                                }
+
+                                                if (randomEntry.tags.size > 2) {
+                                                    Text(
+                                                        text = "+${randomEntry.tags.size - 2}",
+                                                        style = Typography.bodySmall.copy(
+                                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                                            fontSize = (10 * ScreenUtils.getTextScaleFactor()).sp
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                Text(
+                                    text = "Felt a real sense of growth today after that challenging conversation.",
+                                    style = Typography.bodyMedium.copy(
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontStyle = FontStyle.Italic
+                                    ),
+                                    textAlign = TextAlign.Start
+                                )
+                            }
                         }
                     }
                 }
@@ -727,8 +864,11 @@ fun Preview_HomeDashboard_Initial_Light() {
                 com.orielle.domain.model.JournalEntry(
                     id = "1",
                     userId = "user1",
-                    content = "Felt a real sense of growth today after that challenging conversation.",
-                    mood = "Reflective"
+                    content = "Felt a real sense of growth today after that challenging conversation. The way I handled the situation showed me how much I've evolved.",
+                    mood = "Reflective",
+                    location = "San Francisco, CA",
+                    promptText = "What is one thing on your mind today?",
+                    tags = listOf("growth", "reflection", "challenge")
                 )
             ),
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
@@ -753,8 +893,11 @@ fun Preview_HomeDashboard_Initial_Dark() {
                 com.orielle.domain.model.JournalEntry(
                     id = "1",
                     userId = "user1",
-                    content = "Felt a real sense of growth today after that challenging conversation.",
-                    mood = "Reflective"
+                    content = "Felt a real sense of growth today after that challenging conversation. The way I handled the situation showed me how much I've evolved.",
+                    mood = "Reflective",
+                    location = "San Francisco, CA",
+                    promptText = "What is one thing on your mind today?",
+                    tags = listOf("growth", "reflection", "challenge")
                 )
             ),
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
@@ -778,8 +921,11 @@ fun Preview_HomeDashboard_Unfolded_Light() {
                 com.orielle.domain.model.JournalEntry(
                     id = "1",
                     userId = "user1",
-                    content = "Felt a real sense of growth today after that challenging conversation.",
-                    mood = "Reflective"
+                    content = "Felt a real sense of growth today after that challenging conversation. The way I handled the situation showed me how much I've evolved.",
+                    mood = "Reflective",
+                    location = "San Francisco, CA",
+                    promptText = "What is one thing on your mind today?",
+                    tags = listOf("growth", "reflection", "challenge")
                 )
             ),
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),
@@ -804,8 +950,11 @@ fun Preview_HomeDashboard_Unfolded_Dark() {
                 com.orielle.domain.model.JournalEntry(
                     id = "1",
                     userId = "user1",
-                    content = "Felt a real sense of growth today after that challenging conversation.",
-                    mood = "Reflective"
+                    content = "Felt a real sense of growth today after that challenging conversation. The way I handled the situation showed me how much I've evolved.",
+                    mood = "Reflective",
+                    location = "San Francisco, CA",
+                    promptText = "What is one thing on your mind today?",
+                    tags = listOf("growth", "reflection", "challenge")
                 )
             ),
             weeklyMoodView = com.orielle.domain.model.WeeklyMoodView(emptyList(), 0),

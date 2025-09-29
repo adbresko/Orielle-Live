@@ -1,5 +1,6 @@
 package com.orielle.ui.screens.remember
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +15,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -39,6 +46,207 @@ import com.orielle.R
 import com.orielle.ui.util.ScreenUtils
 import com.orielle.ui.components.WaterDropLoading
 import java.util.Date
+import java.text.SimpleDateFormat
+import java.util.Locale
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateRangeSelector(
+    startDate: Date?,
+    endDate: Date?,
+    onStartDateChange: (Date?) -> Unit,
+    onEndDateChange: (Date?) -> Unit,
+    onClearDates: () -> Unit,
+    textColor: Color,
+    cardColor: Color
+) {
+    val dateFormat = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
+    val showStartDatePicker = remember { mutableStateOf(false) }
+    val showEndDatePicker = remember { mutableStateOf(false) }
+
+    // Date picker dialogs
+    if (showStartDatePicker.value) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = startDate?.time
+        )
+        DatePickerDialog(
+            onDismissRequest = { showStartDatePicker.value = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            onStartDateChange(Date(millis))
+                        }
+                        showStartDatePicker.value = false
+                    }
+                ) {
+                    Text("OK", color = WaterBlue)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showStartDatePicker.value = false }
+                ) {
+                    Text("Cancel", color = textColor.copy(alpha = 0.6f))
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showEndDatePicker.value) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = endDate?.time
+        )
+        DatePickerDialog(
+            onDismissRequest = { showEndDatePicker.value = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            onEndDateChange(Date(millis))
+                        }
+                        showEndDatePicker.value = false
+                    }
+                ) {
+                    Text("OK", color = WaterBlue)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showEndDatePicker.value = false }
+                ) {
+                    Text("Cancel", color = textColor.copy(alpha = 0.6f))
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    // Compact horizontal layout
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = WaterBlue.copy(alpha = 0.08f),
+                shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
+            )
+            .padding(ScreenUtils.responsivePadding()),
+        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Date range icon
+        Icon(
+            imageVector = Icons.Default.DateRange,
+            contentDescription = "Date Range",
+            tint = WaterBlue,
+            modifier = Modifier.size(ScreenUtils.responsiveIconSize(18.dp))
+        )
+
+        // Start date button
+        Card(
+            modifier = Modifier
+                .weight(1f)
+                .clickable { showStartDatePicker.value = true },
+            shape = RoundedCornerShape(ScreenUtils.responsiveSpacing()),
+            colors = CardDefaults.cardColors(
+                containerColor = if (startDate != null) WaterBlue.copy(alpha = 0.1f) else Color.Transparent
+            ),
+            border = BorderStroke(
+                1.dp,
+                if (startDate != null) WaterBlue else textColor.copy(alpha = 0.3f)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = ScreenUtils.responsiveSpacing(), vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = "Start Date",
+                    tint = if (startDate != null) WaterBlue else textColor.copy(alpha = 0.6f),
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = startDate?.let { dateFormat.format(it) } ?: "From",
+                    fontFamily = NotoSans,
+                    fontSize = 13.sp,
+                    fontWeight = if (startDate != null) FontWeight.Medium else FontWeight.Normal,
+                    color = if (startDate != null) WaterBlue else textColor.copy(alpha = 0.6f)
+                )
+            }
+        }
+
+        // Arrow separator
+        Text(
+            text = "→",
+            fontSize = 16.sp,
+            color = textColor.copy(alpha = 0.4f)
+        )
+
+        // End date button
+        Card(
+            modifier = Modifier
+                .weight(1f)
+                .clickable { showEndDatePicker.value = true },
+            shape = RoundedCornerShape(ScreenUtils.responsiveSpacing()),
+            colors = CardDefaults.cardColors(
+                containerColor = if (endDate != null) WaterBlue.copy(alpha = 0.1f) else Color.Transparent
+            ),
+            border = BorderStroke(
+                1.dp,
+                if (endDate != null) WaterBlue else textColor.copy(alpha = 0.3f)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = ScreenUtils.responsiveSpacing(), vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = "End Date",
+                    tint = if (endDate != null) WaterBlue else textColor.copy(alpha = 0.6f),
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = endDate?.let { dateFormat.format(it) } ?: "To",
+                    fontFamily = NotoSans,
+                    fontSize = 13.sp,
+                    fontWeight = if (endDate != null) FontWeight.Medium else FontWeight.Normal,
+                    color = if (endDate != null) WaterBlue else textColor.copy(alpha = 0.6f)
+                )
+            }
+        }
+
+        // Clear button (only show if dates are selected)
+        if (startDate != null || endDate != null) {
+            IconButton(
+                onClick = onClearDates,
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(
+                        color = WaterBlue.copy(alpha = 0.1f),
+                        shape = CircleShape
+                    )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Clear dates",
+                    tint = WaterBlue,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun RememberSearchScreen(
@@ -87,7 +295,7 @@ fun RememberSearchScreen(
                     .background(MaterialTheme.colorScheme.background)
                     .padding(paddingValues)
                     .padding(horizontal = ScreenUtils.responsivePadding()),
-                contentPadding = PaddingValues(top = 8.dp, bottom = ScreenUtils.responsiveIconSize()),
+                contentPadding = PaddingValues(bottom = ScreenUtils.responsiveIconSize()),
                 verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
             ) {
                 item {
@@ -95,6 +303,23 @@ fun RememberSearchScreen(
                     SearchInput(
                         query = uiState.searchQuery,
                         onQueryChange = { viewModel.updateSearchQuery(it) }
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing()))
+                }
+
+                item {
+                    // Date Range Selector
+                    DateRangeSelector(
+                        startDate = uiState.startDate,
+                        endDate = uiState.endDate,
+                        onStartDateChange = { viewModel.updateStartDate(it) },
+                        onEndDateChange = { viewModel.updateEndDate(it) },
+                        onClearDates = { viewModel.clearDateRange() },
+                        textColor = MaterialTheme.colorScheme.onBackground,
+                        cardColor = MaterialTheme.colorScheme.surface
                     )
                 }
 
@@ -157,34 +382,41 @@ fun RememberSearchScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchTopBar(
     onNavigateBack: () -> Unit
 ) {
-    TopAppBar(
-        title = {
-            Text(
-                text = "Filter & Search",
-                fontFamily = Lora,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                end = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                top = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp,
+                bottom = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        IconButton(onClick = onNavigateBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = MaterialTheme.colorScheme.onSurface
             )
-        },
-        navigationIcon = {
-            IconButton(onClick = onNavigateBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background
+        }
+
+        Text(
+            text = "Filter & Search",
+            fontFamily = Lora,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
-    )
+
+        // Empty space to center the title
+        Spacer(modifier = Modifier.width(48.dp))
+    }
 }
 
 @Composable
@@ -297,24 +529,22 @@ private fun FilterSection(
             FilterGroup(
                 title = "Mood",
                 content = {
-                    // Create a 3x3 grid layout for mood icons
+                    // Create a 3x3 grid layout for mood icons - similar to mood check-in but smaller
                     val moodChunks = availableMoods.chunked(3)
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                        verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 0.75f)
                     ) {
                         moodChunks.forEach { moodRow ->
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 0.75f),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 moodRow.forEach { mood ->
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        MoodFilterChip(
-                                            mood = mood,
-                                            isSelected = selectedMoods.contains(mood),
-                                            onClick = { onMoodToggle(mood) }
-                                        )
-                                    }
+                                    MoodFilterChip(
+                                        mood = mood,
+                                        isSelected = selectedMoods.contains(mood),
+                                        onClick = { onMoodToggle(mood) }
+                                    )
                                 }
                                 // Fill remaining space if row has less than 3 items
                                 repeat(3 - moodRow.size) {
@@ -330,10 +560,10 @@ private fun FilterSection(
         }
 
         // Tags Filter
-        if (availableTags.isNotEmpty()) {
-            FilterGroup(
-                title = "Tags",
-                content = {
+        FilterGroup(
+            title = "Tags",
+            content = {
+                if (availableTags.isNotEmpty()) {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -345,9 +575,17 @@ private fun FilterSection(
                             )
                         }
                     }
+                } else {
+                    Text(
+                        text = "No tags available",
+                        fontFamily = NotoSans,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        fontStyle = FontStyle.Italic
+                    )
                 }
-            )
-        }
+            }
+        )
     }
 }
 
@@ -420,10 +658,9 @@ private fun MoodFilterChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val (baseContainerSize, baseIconSize) = getResponsiveSizes()
-    // Increase sizes slightly using dynamic scaling
-    val containerSize = baseContainerSize * 1.15f
-    val iconSize = baseIconSize * 1.15f
+    // Use larger sizes to take up more of the row space
+    val containerSize = (80 * ScreenUtils.getTextScaleFactor()).dp
+    val iconSize = (48 * ScreenUtils.getTextScaleFactor()).dp
 
     // Color mapping similar to mood check-in screen
     val moodColors = mapOf(
@@ -440,9 +677,11 @@ private fun MoodFilterChip(
 
     val backgroundColor = moodColors[mood.lowercase()] ?: Color(0xFFF5F5F5)
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
+    Box(
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(ScreenUtils.responsiveTextSpacing()),
+        contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
@@ -526,16 +765,7 @@ private fun MoodFilterChip(
             }
         }
 
-        // Add mood label below the icon
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = mood.replaceFirstChar { it.uppercase() },
-            fontFamily = NotoSans,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = if (isSelected) WaterBlue else MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
-        )
+        // No text below the icon - show only the icon
     }
 }
 
@@ -654,39 +884,156 @@ private fun SearchResultCard(
                 )
             }
 
-            // Tags (only show if there are tags and it's not a mood check-in)
-            if (activity.tags.isNotEmpty() && activity.activityType != ActivityType.CHECK_IN) {
-                Row(
-                    modifier = Modifier.padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+            // Metadata section for REFLECT activities
+            if (activity.activityType == ActivityType.REFLECT) {
+                Column(
+                    modifier = Modifier.padding(top = ScreenUtils.responsivePadding()),
+                    verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
                 ) {
-                    activity.tags.take(3).forEach { tag ->
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
-                                )
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                    // Prompt (if available)
+                    if (activity.promptText != null && activity.promptText.isNotEmpty()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
                         ) {
                             Text(
-                                text = tag,
+                                text = "💭",
+                                fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp
+                            )
+                            Text(
+                                text = activity.promptText?.replace("+", " ") ?: "",
                                 fontFamily = NotoSans,
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Medium
+                                fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
 
-                    if (activity.tags.size > 3) {
-                        Text(
-                            text = "+${activity.tags.size - 3}",
-                            fontFamily = NotoSans,
-                            fontSize = 11.sp,
-                            color = Color(0xFF999999),
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
+                    // Location (if available)
+                    if (activity.location != null && activity.location.isNotEmpty()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                        ) {
+                            Text(
+                                text = "📍",
+                                fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp
+                            )
+                            Text(
+                                text = activity.location,
+                                fontFamily = NotoSans,
+                                fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+
+                    // Mood (if available) - show only icon, not text
+                    // Note: Disabled for reflection results as mood should only show for check-ins
+                    // if (activity.mood != null && activity.mood.isNotEmpty()) {
+                    //     Row(
+                    //         verticalAlignment = Alignment.CenterVertically,
+                    //         horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                    //     ) {
+                    //         // Mood icon based on mood type
+                    //         val moodIcon = when (activity.mood.lowercase()) {
+                    //             "happy" -> "☀️"
+                    //             "sad" -> "🌧️"
+                    //             "angry" -> "⛈️"
+                    //             "peaceful" -> "🌙"
+                    //             "playful" -> "⭐"
+                    //             "scared" -> "👻"
+                    //             "shy" -> "😊"
+                    //             "surprised" -> "❗"
+                    //             "frustrated" -> "⚡"
+                    //             else -> "🌤️"
+                    //         }
+                    //         Text(
+                    //             text = moodIcon,
+                    //             fontSize = (16 * ScreenUtils.getTextScaleFactor()).sp
+                    //         )
+                    //     }
+                    // }
+
+                    // Tags (if available)
+                    if (activity.tags.isNotEmpty()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                        ) {
+                            activity.tags.take(3).forEach { tag ->
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            color = StillwaterTeal.copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
+                                        )
+                                        .padding(
+                                            horizontal = ScreenUtils.responsivePadding(),
+                                            vertical = ScreenUtils.responsiveTextSpacing()
+                                        )
+                                ) {
+                                    Text(
+                                        text = tag,
+                                        fontFamily = NotoSans,
+                                        fontSize = (10 * ScreenUtils.getTextScaleFactor()).sp,
+                                        color = StillwaterTeal,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+
+                            if (activity.tags.size > 3) {
+                                Text(
+                                    text = "+${activity.tags.size - 3}",
+                                    fontFamily = NotoSans,
+                                    fontSize = (10 * ScreenUtils.getTextScaleFactor()).sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(start = ScreenUtils.responsiveTextSpacing())
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Tags for non-REFLECT activities (existing logic)
+                if (activity.tags.isNotEmpty() && activity.activityType != ActivityType.CHECK_IN) {
+                    Row(
+                        modifier = Modifier.padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        activity.tags.take(3).forEach { tag ->
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                        shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = tag,
+                                    fontFamily = NotoSans,
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        if (activity.tags.size > 3) {
+                            Text(
+                                text = "+${activity.tags.size - 3}",
+                                fontFamily = NotoSans,
+                                fontSize = 11.sp,
+                                color = Color(0xFF999999),
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
                     }
                 }
             }

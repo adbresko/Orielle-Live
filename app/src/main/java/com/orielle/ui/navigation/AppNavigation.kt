@@ -29,7 +29,6 @@ import com.orielle.R
 import com.orielle.data.manager.SessionManagerImpl
 import com.orielle.ui.components.WaterDropLoading
 import com.orielle.ui.screens.ask.AskScreen
-import com.orielle.ui.screens.ask.AskTaggingScreen
 import com.orielle.ui.screens.auth.AuthViewModel
 import com.orielle.ui.screens.auth.DataTransparencyScreen
 import com.orielle.ui.screens.auth.EmailSignUpScreen
@@ -277,22 +276,6 @@ fun AppNavigation(
             )
         }
 
-        composable(
-            "ask_tagging?conversationId={conversationId}",
-            arguments = listOf(
-                navArgument("conversationId") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                }
-            )
-        ) { backStackEntry ->
-            val conversationId = backStackEntry.arguments?.getString("conversationId")
-            AskTaggingScreen(
-                navController = navController,
-                conversationId = conversationId
-            )
-        }
 
         // Reflect/Journal screens
         composable("reflect") {
@@ -352,14 +335,6 @@ fun AppNavigation(
             )
         }
 
-        composable(
-            "journal_tagging/{tempEntryId}",
-            arguments = listOf(navArgument("tempEntryId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val tempEntryId = backStackEntry.arguments?.getString("tempEntryId") ?: ""
-            // Reuse the Ask tagging screen for journal entries
-            AskTaggingScreen(navController = navController, tempEntryId = tempEntryId)
-        }
 
         // Remember screen
         composable("remember") {

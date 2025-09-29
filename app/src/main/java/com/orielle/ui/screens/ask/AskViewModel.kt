@@ -243,8 +243,20 @@ class AskViewModel @Inject constructor(
         currentConversationId?.let { conversationId ->
             viewModelScope.launch {
                 try {
-                    // TODO: Add updateConversationTags method to repository
-                    Timber.d("Would update conversation $conversationId with tags: $tags")
+                    val title = _uiState.value.conversationTitle.ifEmpty { _uiState.value.suggestedTitle }
+                    val response = chatRepository.updateConversationTitleAndTags(conversationId, title, tags)
+
+                    when (response) {
+                        is com.orielle.domain.model.Response.Success -> {
+                            Timber.d("Successfully updated conversation $conversationId with title: '$title' and tags: $tags")
+                        }
+                        is com.orielle.domain.model.Response.Failure -> {
+                            Timber.e("Failed to update conversation tags: ${response.error}")
+                        }
+                        is com.orielle.domain.model.Response.Loading -> {
+                            // Loading state - no action needed
+                        }
+                    }
                 } catch (e: Exception) {
                     Timber.e(e, "Error updating conversation tags")
                 }

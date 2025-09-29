@@ -15,7 +15,9 @@ data class UserActivity(
     val title: String? = null,
     val preview: String? = null,
     val tags: List<String> = emptyList(),
-    val mood: String? = null
+    val mood: String? = null,
+    val location: String? = null,
+    val promptText: String? = null
 )
 
 /**

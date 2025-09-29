@@ -2,6 +2,7 @@ package com.orielle.ui.screens.reflect
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.location.Geocoder
 import android.location.LocationManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,11 +12,14 @@ import com.orielle.domain.model.JournalEntryType
 import com.orielle.domain.use_case.GetJournalEntriesUseCase
 import com.orielle.domain.use_case.SaveJournalEntryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.util.*
 import javax.inject.Inject
 
@@ -89,19 +93,43 @@ class JournalEditorViewModel @Inject constructor(
 
     @SuppressLint("MissingPermission")
     fun getCurrentLocation(context: Context) {
-        try {
-            val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            val lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                ?: locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+        viewModelScope.launch {
+            try {
+                val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                val lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                    ?: locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
 
-            lastKnownLocation?.let { location ->
-                // In a real app, you would use a geocoding service to convert coordinates to a readable address
-                // For now, we'll use a placeholder
-                val locationString = "Current Location" // TODO: Implement geocoding
-                _uiState.value = _uiState.value.copy(location = locationString)
+                lastKnownLocation?.let { location ->
+                    val locationString = withContext(Dispatchers.IO) {
+                        try {
+                            val geocoder = Geocoder(context, Locale.getDefault())
+                            val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                            if (addresses?.isNotEmpty() == true) {
+                                val address = addresses[0]
+                                // Create a readable location string
+                                val city = address.locality ?: address.subAdminArea
+                                val state = address.adminArea
+                                val country = address.countryName
+
+                                when {
+                                    city != null && state != null -> "$city, $state"
+                                    city != null -> city
+                                    state != null -> state
+                                    country != null -> country
+                                    else -> "Current Location"
+                                }
+                            } else {
+                                "Current Location"
+                            }
+                        } catch (e: IOException) {
+                            "Current Location"
+                        }
+                    }
+                    _uiState.value = _uiState.value.copy(location = locationString)
+                }
+            } catch (e: Exception) {
+                // Handle location error silently
             }
-        } catch (e: Exception) {
-            // Handle location error silently
         }
     }
 

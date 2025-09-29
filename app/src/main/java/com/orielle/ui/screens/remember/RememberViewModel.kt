@@ -82,7 +82,9 @@ class RememberViewModel @Inject constructor(
                         title = entry.title,
                         preview = entry.content.take(100),
                         tags = entry.tags,
-                        mood = entry.mood
+                        mood = entry.mood,
+                        location = entry.location,
+                        promptText = entry.promptText
                     )
                 }
 
@@ -96,8 +98,8 @@ class RememberViewModel @Inject constructor(
                 val conversationActivities = when (conversationsResponse) {
                     is Response.Success -> {
                         println("DEBUG: Loaded ${conversationsResponse.data.size} conversations")
+                        // Show ALL conversations, not just saved ones
                         conversationsResponse.data
-                            .filter { it.isSaved }
                             .map { conversation ->
                                 UserActivity(
                                     id = conversation.id,
@@ -359,6 +361,30 @@ class RememberViewModel @Inject constructor(
         searchQuery = ""
         filterActivities()
     }
+
+    fun refreshUserProfile() {
+        viewModelScope.launch {
+            try {
+                val userId = sessionManager.currentUserId.first()
+                if (userId != null && !sessionManager.isGuest.first()) {
+                    val cachedProfile = sessionManager.getCachedUserProfile(userId)
+                    if (cachedProfile != null) {
+                        val userName = cachedProfile.firstName ?: cachedProfile.displayName ?: "User"
+                        _uiState.value = _uiState.value.copy(
+                            userName = userName,
+                            userProfileImageUrl = cachedProfile.profileImageUrl,
+                            userLocalImagePath = cachedProfile.localImagePath,
+                            userSelectedAvatarId = cachedProfile.selectedAvatarId,
+                            userBackgroundColorHex = cachedProfile.backgroundColorHex
+                        )
+                        android.util.Log.d("RememberViewModel", "📋 Loaded cached profile - ImageUrl: ${cachedProfile.profileImageUrl}, LocalPath: ${cachedProfile.localImagePath}, AvatarId: ${cachedProfile.selectedAvatarId}, BackgroundColor: ${cachedProfile.backgroundColorHex}")
+                    }
+                }
+            } catch (e: Exception) {
+                println("DEBUG: Error loading user profile: ${e.message}")
+            }
+        }
+    }
 }
 
 data class RememberUiState(
@@ -369,6 +395,11 @@ data class RememberUiState(
     val selectedDay: CalendarDay? = null,
     val showDayDetail: Boolean = false,
     val showMonthSelector: Boolean = false,
-    val showYearSelector: Boolean = false
+    val showYearSelector: Boolean = false,
+    // Profile data
+    val userName: String? = null,
+    val userProfileImageUrl: String? = null,
+    val userLocalImagePath: String? = null,
+    val userSelectedAvatarId: String? = null,
+    val userBackgroundColorHex: String? = null
 )
-

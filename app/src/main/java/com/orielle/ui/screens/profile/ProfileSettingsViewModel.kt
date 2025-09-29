@@ -1,6 +1,5 @@
 package com.orielle.ui.screens.profile
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -72,7 +71,7 @@ class ProfileSettingsViewModel @Inject constructor(
 
                     _uiState.value = _uiState.value.copy(
                         userId = userId,
-                        userName = cachedProfile.displayName ?: cachedProfile.firstName ?: userName,
+                        userName = cachedProfile.firstName ?: cachedProfile.displayName ?: userName,
                         userEmail = cachedProfile.email ?: userEmail,
                         profileImageUrl = cachedProfile.profileImageUrl,
                         localImagePath = cachedProfile.localImagePath,
@@ -304,7 +303,6 @@ class ProfileSettingsViewModel @Inject constructor(
     }
 
     // Select avatar from library
-    @SuppressLint("LogNotTimber")
     fun selectAvatar(avatar: AvatarOption) {
         viewModelScope.launch {
             try {

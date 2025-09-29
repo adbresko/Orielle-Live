@@ -14,7 +14,8 @@ val White = Color(0xFFFFFFFF)
 val DarkGray = Color(0xFF1A1A1A) // Deep Space for dark theme background
 val DarkSurface = Color(0xFF2D2D2D) // Distinct surface color for dark mode
 val MediumGray = Color(0xFF666666) // For dark mode card borders
-val LightGray = Color(0xFFE0E0E0) // For light mode borders
+val LightGray = Color(0xFFE0E0E0) // For light mode borders and bottom navbar
+val BottomNavDark = Color(0xFF2C2C2C) // For dark mode bottom navbar
 
 // Semantic Colors
 val ErrorRed = Color(0xFFD32F2F)

@@ -38,6 +38,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.orielle.ui.util.ScreenUtils
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.ui.draw.clip
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -46,6 +51,120 @@ import com.orielle.R
 import com.orielle.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
+
+@Composable
+private fun FontSizeAdjuster(
+    currentFontSize: Float,
+    onFontSizeChange: (Float) -> Unit,
+    textColor: Color,
+    cardColor: Color
+) {
+    val minFontSize = 12f
+    val maxFontSize = 24f
+    val fontSizeStep = 2f
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = ScreenUtils.responsivePadding()),
+        shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(ScreenUtils.responsivePadding()),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Font size label
+            Text(
+                text = "Font Size",
+                fontFamily = NotoSans,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = textColor
+            )
+
+            // Font size controls
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Decrease button
+                IconButton(
+                    onClick = {
+                        val newSize = (currentFontSize - fontSizeStep).coerceAtLeast(minFontSize)
+                        onFontSizeChange(newSize)
+                    },
+                    enabled = currentFontSize > minFontSize,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (currentFontSize > minFontSize)
+                                WaterBlue.copy(alpha = 0.1f)
+                            else
+                                Color.Transparent
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = if (currentFontSize > minFontSize) WaterBlue else textColor.copy(alpha = 0.3f),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Remove,
+                        contentDescription = "Decrease font size",
+                        tint = if (currentFontSize > minFontSize) WaterBlue else textColor.copy(alpha = 0.3f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // Current font size display
+                Text(
+                    text = "${currentFontSize.toInt()}sp",
+                    fontFamily = NotoSans,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = WaterBlue,
+                    modifier = Modifier.padding(horizontal = ScreenUtils.responsiveSpacing())
+                )
+
+                // Increase button
+                IconButton(
+                    onClick = {
+                        val newSize = (currentFontSize + fontSizeStep).coerceAtMost(maxFontSize)
+                        onFontSizeChange(newSize)
+                    },
+                    enabled = currentFontSize < maxFontSize,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (currentFontSize < maxFontSize)
+                                WaterBlue.copy(alpha = 0.1f)
+                            else
+                                Color.Transparent
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = if (currentFontSize < maxFontSize) WaterBlue else textColor.copy(alpha = 0.3f),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Increase font size",
+                        tint = if (currentFontSize < maxFontSize) WaterBlue else textColor.copy(alpha = 0.3f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,11 +178,13 @@ fun JournalEditorScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val isDark = !MaterialTheme.colorScheme.background.equals(SoftSand)
+    val themeColors = getThemeColors()
+    val backgroundColor = themeColors.background
+    val textColor = themeColors.onBackground
+    val cardColor = themeColors.surface
 
-    val backgroundColor = if (isDark) DarkGray else SoftSand
-    val textColor = if (isDark) SoftSand else Charcoal
-    val cardColor = if (isDark) Color(0xFF2A2A2A) else Color.White
+    // Font size state for rich editing experience
+    var currentFontSize by remember { mutableStateOf(16f) }
 
     // Initialize the editor with prompt text or existing entry
     LaunchedEffect(promptText, entryId, tags) {
@@ -217,7 +338,7 @@ fun JournalEditorScreen(
                     shape = RoundedCornerShape(ScreenUtils.responsiveSpacing() * 1.5f)
                 ) {
                     Text(
-                        text = uiState.promptText!!,
+                        text = uiState.promptText!!.replace("+", " "),
                         modifier = Modifier.padding(ScreenUtils.responsivePadding()),
                         style = Typography.bodyMedium.copy(
                             color = textColor.copy(alpha = 0.8f),
@@ -228,6 +349,16 @@ fun JournalEditorScreen(
 
                 Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
             }
+
+            // Font Size Adjuster
+            FontSizeAdjuster(
+                currentFontSize = currentFontSize,
+                onFontSizeChange = { currentFontSize = it },
+                textColor = textColor,
+                cardColor = cardColor
+            )
+
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding()))
 
             // Tags display (if any) - simplified
             if (uiState.tags.isNotEmpty()) {
@@ -286,7 +417,8 @@ fun JournalEditorScreen(
                         .padding(ScreenUtils.responsivePadding() * 1.25f),
                     textStyle = Typography.bodyLarge.copy(
                         color = textColor,
-                        lineHeight = 24.sp
+                        fontSize = currentFontSize.sp,
+                        lineHeight = (currentFontSize * 1.5).sp
                     ),
                     cursorBrush = SolidColor(WaterBlue),
                     decorationBox = { innerTextField ->
@@ -299,7 +431,8 @@ fun JournalEditorScreen(
                                 },
                                 style = Typography.bodyLarge.copy(
                                     color = textColor.copy(alpha = 0.5f),
-                                    lineHeight = 24.sp
+                                    fontSize = currentFontSize.sp,
+                                    lineHeight = (currentFontSize * 1.5).sp
                                 )
                             )
                         }
@@ -372,22 +505,33 @@ private fun JournalMetadataBar(
         )
 
         if (location != null) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
+                shape = RoundedCornerShape(8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = "Location",
-                    tint = textColor.copy(alpha = 0.7f),
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = location,
-                    style = Typography.bodySmall.copy(
-                        color = textColor.copy(alpha = 0.7f)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(ScreenUtils.responsivePadding()),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "Location",
+                        tint = Color(0xFF1976D2),
+                        modifier = Modifier.size(20.dp)
                     )
-                )
+                    Text(
+                        text = location,
+                        style = Typography.bodyMedium.copy(
+                            color = Color(0xFF1976D2),
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
             }
         }
     }
@@ -441,10 +585,11 @@ private fun JournalEditorBottomBar(
     }
 }
 
-@Preview(showBackground = true, name = "Journal Editor - Light")
+@Preview(showBackground = true, name = "Journal Editor - Light", backgroundColor = 0xFFF6F5F1)
 @Composable
 fun JournalEditorScreenLightPreview() {
-    OrielleTheme(darkTheme = false) {
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
+    com.orielle.ui.theme.OrielleThemeWithPreference(themeManager = fakeThemeManager) {
         JournalEditorScreen(
             navController = rememberNavController(),
             promptText = "How can you grow from this experience? What can you learn from this matter?"
@@ -452,10 +597,11 @@ fun JournalEditorScreenLightPreview() {
     }
 }
 
-@Preview(showBackground = true, name = "Journal Editor - Dark")
+@Preview(showBackground = true, name = "Journal Editor - Dark", backgroundColor = 0xFF1A1A1A)
 @Composable
 fun JournalEditorScreenDarkPreview() {
-    OrielleTheme(darkTheme = true) {
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
+    com.orielle.ui.theme.OrielleTheme(darkTheme = true) {
         JournalEditorScreen(
             navController = rememberNavController(),
             isQuickEntry = true

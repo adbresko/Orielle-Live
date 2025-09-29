@@ -142,8 +142,9 @@ class ReflectViewModel @Inject constructor(
                 if (userId != null && !sessionManager.isGuest.first()) {
                     val cachedProfile = sessionManager.getCachedUserProfile(userId)
                     if (cachedProfile != null) {
+                        val userName = cachedProfile.firstName ?: cachedProfile.displayName ?: "User"
                         _uiState.value = _uiState.value.copy(
-                            userName = cachedProfile.displayName ?: cachedProfile.firstName,
+                            userName = userName,
                             userProfileImageUrl = cachedProfile.profileImageUrl,
                             userLocalImagePath = cachedProfile.localImagePath,
                             userSelectedAvatarId = cachedProfile.selectedAvatarId,

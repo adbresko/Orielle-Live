@@ -19,19 +19,29 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
+import com.orielle.R
 import com.orielle.ui.util.ScreenUtils
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.orielle.R
 import com.orielle.domain.model.DefaultJournalPrompts
-import com.orielle.ui.theme.*
+import com.orielle.ui.theme.OrielleTheme
+import com.orielle.ui.theme.StillwaterTeal
+import com.orielle.ui.theme.getThemeColors
+import com.orielle.ui.theme.Lora
+import com.orielle.ui.theme.NotoSans
+import com.orielle.ui.theme.Typography
 import com.orielle.ui.components.BottomNavigation
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Composable
 fun ReflectScreen(
@@ -128,7 +138,7 @@ private fun ReflectScreenContent(
         ) {
 
             // Top spacing to position card 50% below top bar
-            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 8))
+            Spacer(modifier = Modifier.height(ScreenUtils.responsivePadding() * 6))
 
             // Content with proper spacing - Simple working structure
             Column(
@@ -142,14 +152,16 @@ private fun ReflectScreenContent(
                 TodaysPromptCard(
                     prompt = if (uiState.hasMoodCheckIn) uiState.todaysPrompt else "How is your inner weather?",
                     cardColor = cardColor,
-                    textColor = textColor
+                    textColor = textColor,
+                    showWandStars = !uiState.hasMoodCheckIn
                 )
 
                 // Primary action button - works for both states
                 Button(
                     onClick = {
                         if (uiState.hasMoodCheckIn) {
-                            navController.navigate("journal_editor?promptText=${uiState.todaysPrompt}")
+                            val encodedPrompt = URLEncoder.encode(uiState.todaysPrompt, StandardCharsets.UTF_8.toString())
+                            navController.navigate("journal_editor?promptText=$encodedPrompt")
                         } else {
                             navController.navigate("mood_check_in")
                         }
@@ -195,34 +207,55 @@ private fun ReflectScreenContent(
 private fun TodaysPromptCard(
     prompt: String,
     cardColor: Color,
-    textColor: Color
+    textColor: Color,
+    showWandStars: Boolean = false
 ) {
     val themeColors = getThemeColors()
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.25f),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    Box(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(
-                horizontal = ScreenUtils.responsivePadding() * 1.5f,
-                vertical = ScreenUtils.responsivePadding() * 3f // More top and bottom padding inside card
-            ),
-            verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 1.5f)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = cardColor),
+            shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.25f),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            // Prompt text - LORA Bold 30pt with proper line spacing
-            Text(
-                text = prompt,
-                style = Typography.headlineSmall.copy(
-                    color = textColor,
-                    fontFamily = Lora,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = (30 * ScreenUtils.getTextScaleFactor()).sp,
-                    lineHeight = (40 * ScreenUtils.getTextScaleFactor()).sp // More line spacing
+            Column(
+                modifier = Modifier.padding(
+                    horizontal = ScreenUtils.responsivePadding() * 1.5f,
+                    vertical = ScreenUtils.responsivePadding() * 3f // More top and bottom padding inside card
                 ),
-                textAlign = TextAlign.Center
-            )
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+            ) {
+                // Prompt text - Lora Bold 30pt with proper line spacing
+                Text(
+                    text = prompt,
+                    style = Typography.headlineSmall.copy(
+                        color = textColor,
+                        fontFamily = Lora,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = (30 * ScreenUtils.getTextScaleFactor()).sp,
+                        lineHeight = (40 * ScreenUtils.getTextScaleFactor()).sp // More line spacing
+                    ),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        // Wand stars icon positioned at the top center of the card
+        if (showWandStars) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = (-ScreenUtils.responsivePadding() * 0.75f)) // Position above the card
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.wand_stars),
+                    contentDescription = "Wand stars",
+                    modifier = Modifier.size(ScreenUtils.responsiveImageSize(32.dp)),
+                    contentScale = ContentScale.Fit
+                )
+            }
         }
     }
 }
@@ -247,15 +280,14 @@ private fun InvitationStateContent(
             ),
             verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 1.5f)
         ) {
-            // Invitation text - LORA Bold 30pt with proper line spacing (matching original prompt card)
+            // Invitation text - Noto Sans Bold 14sp with default color
             Text(
                 text = "How is your inner weather?",
-                style = Typography.headlineSmall.copy(
+                style = Typography.bodyMedium.copy(
                     color = textColor,
-                    fontFamily = Lora,
+                    fontFamily = FontFamily(Font(R.font.noto_sans_bold)),
                     fontWeight = FontWeight.Bold,
-                    fontSize = (30 * ScreenUtils.getTextScaleFactor()).sp,
-                    lineHeight = (40 * ScreenUtils.getTextScaleFactor()).sp // More line spacing
+                    fontSize = 14.sp
                 ),
                 textAlign = TextAlign.Center
             )
@@ -314,7 +346,10 @@ private fun PersonalizedPromptStateContent(
 
     // Primary action button - Respond to Prompt (OUTSIDE the card)
     Button(
-        onClick = { navController.navigate("journal_editor?promptText=${uiState.todaysPrompt}") },
+        onClick = {
+            val encodedPrompt = URLEncoder.encode(uiState.todaysPrompt, StandardCharsets.UTF_8.toString())
+            navController.navigate("journal_editor?promptText=$encodedPrompt")
+        },
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
         colors = ButtonDefaults.buttonColors(
@@ -424,6 +459,32 @@ fun ReflectScreenPersonalizedDarkPreview() {
             ),
             navController = fakeNavController,
             themeManager = fakeThemeManager
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "TodaysPromptCard - With Wand Stars")
+@Composable
+fun TodaysPromptCardWithWandStarsPreview() {
+    OrielleTheme(darkTheme = false) {
+        TodaysPromptCard(
+            prompt = "How is your inner weather?",
+            cardColor = Color(0xFFF6F5F1),
+            textColor = Color(0xFF2D2D2D),
+            showWandStars = true
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "TodaysPromptCard - Without Wand Stars")
+@Composable
+fun TodaysPromptCardWithoutWandStarsPreview() {
+    OrielleTheme(darkTheme = false) {
+        TodaysPromptCard(
+            prompt = "What is one thing on your mind today?",
+            cardColor = Color(0xFFF6F5F1),
+            textColor = Color(0xFF2D2D2D),
+            showWandStars = false
         )
     }
 }

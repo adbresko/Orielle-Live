@@ -25,6 +25,8 @@ data class RememberSearchUiState(
     val selectedTags: Set<String> = emptySet(),
     val availableMoods: List<String> = emptyList(),
     val availableTags: List<String> = emptyList(),
+    val startDate: Date? = null,
+    val endDate: Date? = null,
     val error: String? = null
 )
 
@@ -58,7 +60,10 @@ class RememberSearchViewModel @Inject constructor(
                         relatedId = entry.id,
                         title = entry.title,
                         preview = entry.content.take(150) + if (entry.content.length > 150) "..." else "",
-                        tags = entry.tags
+                        tags = entry.tags,
+                        mood = entry.mood,
+                        location = entry.location,
+                        promptText = entry.promptText
                     )
                 }
                 allActivities.addAll(journalActivities)
@@ -66,7 +71,7 @@ class RememberSearchViewModel @Inject constructor(
                 // Load chat conversations and convert to activities
                 val conversationsResponse = chatRepository.getConversationsForUser().first()
                 val conversations = when (conversationsResponse) {
-                    is Response.Success -> conversationsResponse.data.filter { it.isSaved }
+                    is Response.Success -> conversationsResponse.data // Show ALL conversations, not just saved ones
                     else -> emptyList()
                 }
                 val chatActivities = conversations.map { conversation ->
@@ -78,7 +83,10 @@ class RememberSearchViewModel @Inject constructor(
                         relatedId = conversation.id,
                         title = conversation.title,
                         preview = conversation.lastMessagePreview?.take(150) + if ((conversation.lastMessagePreview?.length ?: 0) > 150) "..." else "",
-                        tags = conversation.tags
+                        tags = conversation.tags,
+                        mood = null,
+                        location = null,
+                        promptText = null
                     )
                 }
                 allActivities.addAll(chatActivities)
@@ -219,10 +227,38 @@ class RememberSearchViewModel @Inject constructor(
                 activity.tags.any { currentState.selectedTags.contains(it) }
             }
 
-            matchesQuery && matchesType && matchesMood && matchesTags
+            // Apply date range filter
+            val matchesDateRange = if (currentState.startDate == null && currentState.endDate == null) {
+                true
+            } else {
+                val activityDate = activity.timestamp
+                val afterStart = currentState.startDate?.let { activityDate >= it } ?: true
+                val beforeEnd = currentState.endDate?.let { activityDate <= it } ?: true
+                afterStart && beforeEnd
+            }
+
+            matchesQuery && matchesType && matchesMood && matchesTags && matchesDateRange
         }
 
         _uiState.value = currentState.copy(filteredResults = filtered)
+    }
+
+    fun updateStartDate(date: Date?) {
+        _uiState.value = _uiState.value.copy(startDate = date)
+        applyFilters()
+    }
+
+    fun updateEndDate(date: Date?) {
+        _uiState.value = _uiState.value.copy(endDate = date)
+        applyFilters()
+    }
+
+    fun clearDateRange() {
+        _uiState.value = _uiState.value.copy(
+            startDate = null,
+            endDate = null
+        )
+        applyFilters()
     }
 
     fun clearAllFilters() {
@@ -231,6 +267,8 @@ class RememberSearchViewModel @Inject constructor(
             selectedTypes = emptySet(),
             selectedMoods = emptySet(),
             selectedTags = emptySet(),
+            startDate = null,
+            endDate = null,
             filteredResults = _uiState.value.allActivities
         )
     }

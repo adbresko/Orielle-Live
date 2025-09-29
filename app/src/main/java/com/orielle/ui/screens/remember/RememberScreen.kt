@@ -38,6 +38,7 @@ import androidx.navigation.NavController
 import androidx.compose.ui.tooling.preview.Preview
 import com.orielle.ui.theme.*
 import com.orielle.ui.theme.OrielleTheme
+import com.orielle.ui.theme.OrielleThemeWithPreference
 import com.orielle.domain.model.CalendarDay
 import com.orielle.domain.model.UserActivity
 import com.orielle.domain.model.ActivityType
@@ -65,6 +66,11 @@ fun RememberScreen(
     val textColor = themeColors.onBackground
     val cardColor = themeColors.surface
 
+    // Refresh profile data when screen becomes visible
+    LaunchedEffect(navController.currentBackStackEntry) {
+        viewModel.refreshUserProfile()
+    }
+
     LaunchedEffect(Unit) {
         viewModel.loadRememberData()
     }
@@ -74,9 +80,15 @@ fun RememberScreen(
             RememberHeader(
                 backgroundColor = backgroundColor,
                 textColor = textColor,
+                userProfileImageUrl = uiState.userProfileImageUrl,
+                userLocalImagePath = uiState.userLocalImagePath,
+                userSelectedAvatarId = uiState.userSelectedAvatarId,
+                userName = uiState.userName,
+                userBackgroundColorHex = uiState.userBackgroundColorHex,
                 onClearSearch = { viewModel.clearSearch() },
                 onNavigateToSearch = { navController.navigate("remember_search") },
-                onNavigateToWeatherHistory = { navController.navigate("inner_weather_history") }
+                onNavigateToWeatherHistory = { navController.navigate("inner_weather_history") },
+                onNavigateToProfile = { navController.navigate("profile_settings") }
             )
         },
         bottomBar = {
@@ -182,9 +194,15 @@ fun RememberScreen(
 private fun RememberHeader(
     backgroundColor: Color,
     textColor: Color,
+    userProfileImageUrl: String?,
+    userLocalImagePath: String?,
+    userSelectedAvatarId: String?,
+    userName: String?,
+    userBackgroundColorHex: String?,
     onClearSearch: () -> Unit,
     onNavigateToSearch: () -> Unit,
-    onNavigateToWeatherHistory: () -> Unit
+    onNavigateToWeatherHistory: () -> Unit,
+    onNavigateToProfile: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
@@ -192,12 +210,17 @@ private fun RememberHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(backgroundColor)
-            .padding(ScreenUtils.responsivePadding())
     ) {
-        // Top row with title and weather history icon
+        // Top row with title, weather history icon, and profile
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                    end = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                    top = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp,
+                    bottom = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp
+                ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Title
@@ -209,18 +232,35 @@ private fun RememberHeader(
                 color = textColor
             )
 
-            // Weather History icon
-            Icon(
-                imageVector = Icons.Default.Timeline,
-                contentDescription = "Inner Weather History",
-                modifier = Modifier
-                    .size(ScreenUtils.responsiveIconSize(28.dp))
-                    .clickable { onNavigateToWeatherHistory() },
-                tint = textColor
-            )
-        }
+            Spacer(Modifier.weight(1f))
 
-        Spacer(modifier = Modifier.height(ScreenUtils.responsiveSpacing()))
+            // Right side - Weather History icon and User avatar
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Weather History icon
+                Icon(
+                    imageVector = Icons.Default.Timeline,
+                    contentDescription = "Inner Weather History",
+                    modifier = Modifier
+                        .size(ScreenUtils.responsiveIconSize(28.dp))
+                        .clickable { onNavigateToWeatherHistory() },
+                    tint = textColor
+                )
+
+                // User avatar (matching Home screen exactly)
+                com.orielle.ui.screens.home.UserMiniatureAvatar(
+                    userProfileImageUrl = userProfileImageUrl,
+                    userLocalImagePath = userLocalImagePath,
+                    userSelectedAvatarId = userSelectedAvatarId,
+                    userName = userName,
+                    size = ScreenUtils.responsiveIconSize(40.dp),
+                    backgroundColorHex = userBackgroundColorHex,
+                    onClick = onNavigateToProfile
+                )
+            }
+        }
 
         // Search Bar
         SearchBar(
@@ -247,6 +287,12 @@ private fun SearchBar(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(
+                start = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                end = if (ScreenUtils.isSmallScreen()) 16.dp else 24.dp,
+                top = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp,
+                bottom = if (ScreenUtils.isSmallScreen()) 6.dp else 8.dp
+            )
             .clickable { onNavigateToSearch() },
         shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
         colors = CardDefaults.cardColors(containerColor = cardColor),
@@ -931,7 +977,117 @@ private fun GlimpseActivityItem(
             )
         }
 
-        // Tags for ASK activities
+        // Metadata section for REFLECT activities
+        if (activity.activityType == ActivityType.REFLECT) {
+            Column(
+                modifier = Modifier.padding(top = ScreenUtils.responsivePadding()),
+                verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+            ) {
+                // Prompt (if available)
+                if (activity.promptText != null && activity.promptText.isNotEmpty()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                    ) {
+                        Text(
+                            text = "💭",
+                            fontSize = (14 * ScreenUtils.getTextScaleFactor()).sp
+                        )
+                        Text(
+                            text = activity.promptText?.replace("+", " ") ?: "",
+                            fontFamily = NotoSans,
+                            fontSize = (13 * ScreenUtils.getTextScaleFactor()).sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // Location (if available)
+                if (activity.location != null && activity.location.isNotEmpty()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                    ) {
+                        Text(
+                            text = "📍",
+                            fontSize = (14 * ScreenUtils.getTextScaleFactor()).sp
+                        )
+                        Text(
+                            text = activity.location,
+                            fontFamily = NotoSans,
+                            fontSize = (13 * ScreenUtils.getTextScaleFactor()).sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // Mood (if available)
+                if (activity.mood != null && activity.mood.isNotEmpty()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                    ) {
+                        Text(
+                            text = "🌤️",
+                            fontSize = (14 * ScreenUtils.getTextScaleFactor()).sp
+                        )
+                        Text(
+                            text = activity.mood,
+                            fontFamily = NotoSans,
+                            fontSize = (13 * ScreenUtils.getTextScaleFactor()).sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                // Tags (if available)
+                if (activity.tags.isNotEmpty()) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing())
+                    ) {
+                        activity.tags.take(3).forEach { tag ->
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        color = StillwaterTeal.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(ScreenUtils.responsiveSpacing())
+                                    )
+                                    .padding(
+                                        horizontal = ScreenUtils.responsivePadding(),
+                                        vertical = ScreenUtils.responsiveTextSpacing()
+                                    )
+                            ) {
+                                Text(
+                                    text = tag,
+                                    fontFamily = NotoSans,
+                                    fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp,
+                                    color = StillwaterTeal,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        if (activity.tags.size > 3) {
+                            Text(
+                                text = "+${activity.tags.size - 3}",
+                                fontFamily = NotoSans,
+                                fontSize = (12 * ScreenUtils.getTextScaleFactor()).sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                modifier = Modifier.padding(start = ScreenUtils.responsiveTextSpacing())
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Tags for ASK activities (existing logic)
         if (activity.activityType == ActivityType.ASK && activity.tags.isNotEmpty()) {
             Row(
                 modifier = Modifier.padding(top = 8.dp),
@@ -1107,10 +1263,11 @@ private fun SkeletonLoading() {
 @Preview(showBackground = true, name = "Remember Screen - Light", backgroundColor = 0xFFF6F5F1)
 @Composable
 fun RememberScreenLightPreview() {
+    val fakeNavController = androidx.navigation.compose.rememberNavController()
     val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
-    OrielleTheme(darkTheme = false) {
+    com.orielle.ui.theme.OrielleThemeWithPreference(themeManager = fakeThemeManager) {
         RememberScreen(
-            navController = androidx.navigation.compose.rememberNavController(),
+            navController = fakeNavController,
             themeManager = fakeThemeManager
         )
     }
@@ -1119,10 +1276,12 @@ fun RememberScreenLightPreview() {
 @Preview(showBackground = true, name = "Remember Screen - Dark", backgroundColor = 0xFF1A1A1A)
 @Composable
 fun RememberScreenDarkPreview() {
+    val fakeNavController = androidx.navigation.compose.rememberNavController()
     val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
-    OrielleTheme(darkTheme = true) {
+    // Force dark theme for this preview
+    com.orielle.ui.theme.OrielleTheme(darkTheme = true) {
         RememberScreen(
-            navController = androidx.navigation.compose.rememberNavController(),
+            navController = fakeNavController,
             themeManager = fakeThemeManager
         )
     }

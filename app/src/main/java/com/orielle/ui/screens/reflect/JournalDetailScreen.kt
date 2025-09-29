@@ -11,6 +11,11 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +39,120 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun FontSizeAdjuster(
+    currentFontSize: Float,
+    onFontSizeChange: (Float) -> Unit,
+    textColor: Color,
+    cardColor: Color
+) {
+    val minFontSize = 12f
+    val maxFontSize = 28f
+    val fontSizeStep = 2f
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = ScreenUtils.responsivePadding()),
+        shape = RoundedCornerShape(ScreenUtils.responsivePadding()),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(ScreenUtils.responsivePadding()),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Font size label
+            Text(
+                text = "Text Size",
+                fontFamily = NotoSans,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = textColor
+            )
+
+            // Font size controls
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(ScreenUtils.responsiveSpacing()),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Decrease button
+                IconButton(
+                    onClick = {
+                        val newSize = (currentFontSize - fontSizeStep).coerceAtLeast(minFontSize)
+                        onFontSizeChange(newSize)
+                    },
+                    enabled = currentFontSize > minFontSize,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (currentFontSize > minFontSize)
+                                WaterBlue.copy(alpha = 0.1f)
+                            else
+                                Color.Transparent
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = if (currentFontSize > minFontSize) WaterBlue else textColor.copy(alpha = 0.3f),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Remove,
+                        contentDescription = "Decrease text size",
+                        tint = if (currentFontSize > minFontSize) WaterBlue else textColor.copy(alpha = 0.3f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // Current font size display
+                Text(
+                    text = "${currentFontSize.toInt()}sp",
+                    fontFamily = NotoSans,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = WaterBlue,
+                    modifier = Modifier.padding(horizontal = ScreenUtils.responsiveSpacing())
+                )
+
+                // Increase button
+                IconButton(
+                    onClick = {
+                        val newSize = (currentFontSize + fontSizeStep).coerceAtMost(maxFontSize)
+                        onFontSizeChange(newSize)
+                    },
+                    enabled = currentFontSize < maxFontSize,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (currentFontSize < maxFontSize)
+                                WaterBlue.copy(alpha = 0.1f)
+                            else
+                                Color.Transparent
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = if (currentFontSize < maxFontSize) WaterBlue else textColor.copy(alpha = 0.3f),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Increase text size",
+                        tint = if (currentFontSize < maxFontSize) WaterBlue else textColor.copy(alpha = 0.3f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun JournalDetailScreen(
     navController: NavController,
     entryId: String,
@@ -45,6 +164,9 @@ fun JournalDetailScreen(
     val backgroundColor = themeColors.background
     val textColor = themeColors.onBackground
     val cardColor = themeColors.surface
+
+    // Font size state for reading experience
+    var currentFontSize by remember { mutableStateOf(16f) }
 
     // Load entry on startup
     LaunchedEffect(entryId) {
@@ -117,6 +239,8 @@ fun JournalDetailScreen(
                     entry = entry,
                     cardColor = cardColor,
                     textColor = textColor,
+                    currentFontSize = currentFontSize,
+                    onFontSizeChange = { currentFontSize = it },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
@@ -247,18 +371,60 @@ private fun JournalDetailContent(
     entry: JournalEntry,
     cardColor: Color,
     textColor: Color,
+    currentFontSize: Float,
+    onFontSizeChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding() * 1.5f)
     ) {
+        // Font Size Adjuster
+        FontSizeAdjuster(
+            currentFontSize = currentFontSize,
+            onFontSizeChange = onFontSizeChange,
+            textColor = textColor,
+            cardColor = cardColor
+        )
+
+        // Prompt section (if applicable)
+        if (entry.promptText != null && entry.promptText.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardColor),
+                shape = RoundedCornerShape(ScreenUtils.responsivePadding() * 1.25f),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(ScreenUtils.responsivePadding() * 1.5f),
+                    verticalArrangement = Arrangement.spacedBy(ScreenUtils.responsivePadding())
+                ) {
+                    Text(
+                        text = "Prompt",
+                        style = Typography.bodySmall.copy(
+                            color = textColor.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                    Text(
+                        text = entry.promptText?.replace("+", " ") ?: "",
+                        fontFamily = Lora,
+                        fontSize = (currentFontSize * 1.5).sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                        lineHeight = (currentFontSize * 1.8).sp
+                    )
+                }
+            }
+        }
+
         // Main content - simple text display
         Text(
             text = entry.content,
             style = Typography.bodyLarge.copy(
                 color = textColor,
-                lineHeight = 24.sp
+                fontSize = currentFontSize.sp,
+                lineHeight = (currentFontSize * 1.5).sp
             )
         )
 
@@ -301,10 +467,11 @@ private fun JournalDetailContent(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Journal Detail - Light", backgroundColor = 0xFFF6F5F1)
 @Composable
 fun JournalDetailScreenLightPreview() {
-    OrielleTheme(darkTheme = false) {
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
+    com.orielle.ui.theme.OrielleThemeWithPreference(themeManager = fakeThemeManager) {
         JournalDetailScreen(
             navController = rememberNavController(),
             entryId = "preview_entry"
@@ -312,10 +479,11 @@ fun JournalDetailScreenLightPreview() {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Journal Detail - Dark", backgroundColor = 0xFF1A1A1A)
 @Composable
 fun JournalDetailScreenDarkPreview() {
-    OrielleTheme(darkTheme = true) {
+    val fakeThemeManager = com.orielle.ui.theme.ThemeManager(androidx.compose.ui.platform.LocalContext.current)
+    com.orielle.ui.theme.OrielleTheme(darkTheme = true) {
         JournalDetailScreen(
             navController = rememberNavController(),
             entryId = "preview_entry"

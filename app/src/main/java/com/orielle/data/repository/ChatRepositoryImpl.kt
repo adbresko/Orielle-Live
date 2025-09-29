@@ -4,6 +4,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.orielle.data.local.dao.ChatConversationDao
 import com.orielle.data.local.dao.ChatMessageDao
+import com.orielle.data.local.dao.TagDao
+import com.orielle.data.local.model.TagEntity
+import com.orielle.data.local.model.ConversationTagCrossRef
 import com.orielle.data.mapper.toDomain
 import com.orielle.data.mapper.toEntity
 import com.orielle.domain.manager.SessionManager
@@ -23,6 +26,7 @@ import javax.inject.Inject
 class ChatRepositoryImpl @Inject constructor(
     private val conversationDao: ChatConversationDao,
     private val messageDao: ChatMessageDao,
+    private val tagDao: TagDao,
     private val firestore: FirebaseFirestore,
     private val sessionManager: SessionManager
 ) : ChatRepository {
@@ -115,6 +119,55 @@ class ChatRepositoryImpl @Inject constructor(
             Response.Success(Unit)
         } catch (e: Exception) {
             Timber.e(e, "Error updating conversation saved status")
+            FirebaseCrashlytics.getInstance().recordException(e)
+            Response.Failure(AppError.Database, e)
+        }
+    }
+
+    override suspend fun updateConversationTitleAndTags(conversationId: String, title: String, tags: List<String>): Response<Unit> {
+        return try {
+            val userId = sessionManager.currentUserId.first()
+                ?: return Response.Failure(AppError.Auth, Exception("No user session found."))
+
+            // Update conversation title
+            conversationDao.updateTitle(conversationId, title)
+
+            // Remove all existing tags for this conversation
+            tagDao.removeAllTagsFromConversation(conversationId)
+
+            // Add new tags
+            for (tagName in tags) {
+                // Get or create tag
+                var tag = tagDao.getTagByName(tagName, userId)
+                if (tag == null) {
+                    // Create new tag
+                    val newTag = TagEntity(
+                        id = UUID.randomUUID().toString(),
+                        name = tagName,
+                        userId = userId,
+                        isUserCreated = true,
+                        usageCount = 0,
+                        createdAt = java.util.Date()
+                    )
+                    tagDao.upsertTag(newTag)
+                    tag = newTag
+                } else {
+                    // Increment usage count for existing tag
+                    tagDao.incrementTagUsage(tag.id)
+                }
+
+                // Create conversation-tag relationship
+                val crossRef = ConversationTagCrossRef(
+                    conversationId = conversationId,
+                    tagId = tag.id
+                )
+                tagDao.insertConversationTagCrossRef(crossRef)
+            }
+
+            Timber.d("Updated conversation $conversationId with title: '$title' and tags: $tags")
+            Response.Success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Error updating conversation title and tags")
             FirebaseCrashlytics.getInstance().recordException(e)
             Response.Failure(AppError.Database, e)
         }

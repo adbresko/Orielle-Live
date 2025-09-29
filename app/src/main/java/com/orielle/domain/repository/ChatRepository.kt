@@ -16,6 +16,7 @@ interface ChatRepository {
     suspend fun getConversationById(conversationId: String): Response<ChatConversation?>
     suspend fun deleteConversation(conversationId: String): Response<Unit>
     suspend fun updateConversationSavedStatus(conversationId: String, isSaved: Boolean): Response<Unit>
+    suspend fun updateConversationTitleAndTags(conversationId: String, title: String, tags: List<String>): Response<Unit>
 
     // Message operations
     suspend fun saveMessage(message: ChatMessage): Response<String>
